@@ -1,5 +1,15 @@
 ---
 import "../styles/global.css";
+import { initDB } from "../lib/db/init";
+import { getProjects } from "../lib/beaver/project";
+
+// init databse at startup
+await initDB();
+
+// get projects and if there are no projects, do onboarding flow
+const projects = await getProjects();
+
+console.log(projects);
 ---
 
 <html lang="en">
@@ -10,7 +20,5 @@ import "../styles/global.css";
     <meta name="generator" content={Astro.generator} />
     <title>Astro</title>
   </head>
-  <body>
-    <h1 class="font-bold text-6xl">Astro</h1>
-  </body>
+  <body></body>
 </html>

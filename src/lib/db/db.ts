@@ -4,5 +4,5 @@ import * as schema from "./schema";
 
 // TODO: Will probably want to create a sqlite file for each project instead of storing all projects on the same db file
 
-const sqlite = new Database("mydb.sqlite");
+const sqlite = new Database("beaver.sqlite");
 export const db = drizzle(sqlite, { schema });
