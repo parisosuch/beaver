@@ -1,7 +1,7 @@
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Card } from "./ui/card";
+import { Card, CardTitle } from "./ui/card";
 
 function Onboarding() {
   return (
@@ -13,7 +13,7 @@ function Onboarding() {
       </div>
       <div className="w-1/2 flex justify-center items-center h-screen">
         <Card className="w-1/2 p-4">
-          <h2 className="text-3xl">Create your first project</h2>
+          <CardTitle className="text-3xl">Create your first project</CardTitle>
           <div className="mt-4 space-y-2">
             <Label htmlFor="project-name">Project name</Label>
             <Input
@@ -24,7 +24,7 @@ function Onboarding() {
             />
           </div>
           <div className="mt-4 w-full flex justify-end">
-            <Button>Create</Button>
+            <Button>Let's start logging</Button>
           </div>
         </Card>
       </div>
