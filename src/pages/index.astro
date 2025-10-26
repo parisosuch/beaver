@@ -21,5 +21,7 @@ console.log(projects);
     <meta name="generator" content={Astro.generator} />
     <title>Astro</title>
   </head>
-  <body>{projects.length === 0 ? <Onboarding /> : null}</body>
+  <body
+    >{projects.length === 0 ? <Onboarding client:only="react" /> : null}</body
+  >
 </html>
