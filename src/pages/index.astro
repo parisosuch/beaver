@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import { initDB } from "../lib/db/init";
 import { getProjects } from "../lib/beaver/project";
+import Onboarding from "../components/onboarding";
 
 // init databse at startup
 await initDB();
@@ -20,5 +21,5 @@ console.log(projects);
     <meta name="generator" content={Astro.generator} />
     <title>Astro</title>
   </head>
-  <body></body>
+  <body>{projects.length === 0 ? <Onboarding /> : null}</body>
 </html>
