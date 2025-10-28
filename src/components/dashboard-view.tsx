@@ -1,4 +1,5 @@
 import type { Project } from "@/lib/beaver/project";
+import { PlusIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -6,17 +7,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { PlusIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { Channel } from "@/lib/beaver/channel";
 
 export default function DashboardView({ projects }: { projects: Project[] }) {
+  const [channels, setChannels] = useState<Channel[]>([]);
+
+  const getChannels = async () => {
+    const res = await fetch("/api/project/channels", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ project_id: projects[0].id }),
+    });
+
+    const data = await res.json();
+
+    return data as Channel[];
+  };
+
+  useEffect(() => {
+    getChannels().then((res) => {
+      setChannels(res);
+    });
+  }, []);
+
   return (
     <div className="w-full flex flex-row">
       <div className="w-[250px] border-r h-screen p-8">
-        <Select>
+        <Select defaultValue={projects[0].name}>
           <SelectTrigger className="w-full">
             <SelectValue
               placeholder="Project"
-              defaultChecked
               defaultValue={projects[0].name}
             />
           </SelectTrigger>
@@ -31,7 +54,11 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
             <h1 className="font-mono">Channels</h1>
             <PlusIcon size={24} />
           </div>
-          <div></div>
+          <div>
+            {channels.map((channel) => (
+              <p>{channel.name}</p>
+            ))}
+          </div>
         </div>
       </div>
       <div className="p-8">Main content</div>
