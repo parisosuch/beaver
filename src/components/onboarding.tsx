@@ -1,9 +1,10 @@
+"use client";
+
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardTitle } from "./ui/card";
 import { useState } from "react";
-import { createProject } from "../lib/beaver/project";
 
 function Onboarding() {
   const [projectName, setProjectName] = useState("");
@@ -11,8 +12,15 @@ function Onboarding() {
 
   const handleCreateProject = async () => {
     setError("");
-    // insert project into db
-    await createProject(projectName, crypto.randomUUID());
+    const res = await fetch("/api/project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: projectName }),
+    });
+
+    const data = await res.json();
+
+    console.log(data);
   };
 
   return (
