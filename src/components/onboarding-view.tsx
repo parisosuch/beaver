@@ -5,7 +5,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardTitle } from "./ui/card";
 import { useEffect, useState } from "react";
-import { getProjects } from "@/lib/beaver/project";
 
 function OnboardingView() {
   const [projectName, setProjectName] = useState("");
@@ -28,7 +27,24 @@ function OnboardingView() {
     window.location.replace("/");
   };
 
-  useEffect(() => {}, []);
+  const getProjects = async () => {
+    const res = await fetch("/api/project", {
+      method: "GET",
+    });
+    const data = await res.json();
+
+    if (res.status !== 200) {
+      console.error(data.error);
+    }
+
+    if (data.length !== 0) {
+      window.location.replace("/");
+    }
+  };
+
+  useEffect(() => {
+    getProjects();
+  }, []);
 
   return (
     <div className="w-full min-h-screen flex flex-row">
