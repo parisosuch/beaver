@@ -4,7 +4,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardTitle } from "./ui/card";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getProjects } from "@/lib/beaver/project";
 
 function OnboardingView() {
   const [projectName, setProjectName] = useState("");
@@ -26,6 +27,8 @@ function OnboardingView() {
 
     window.location.replace("/");
   };
+
+  useEffect(() => {}, []);
 
   return (
     <div className="w-full min-h-screen flex flex-row">
