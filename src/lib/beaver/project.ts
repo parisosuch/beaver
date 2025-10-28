@@ -8,9 +8,7 @@ export async function getProjects() {
 }
 
 export async function createProject(name: string, apiKey: string) {
-  console.log("Creating project...");
   const res = await db.insert(projects).values({ name, apiKey }).returning();
 
-  console.log(res);
-  return res;
+  return res[0];
 }
