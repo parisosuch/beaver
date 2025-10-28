@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { Card, CardTitle } from "./ui/card";
 import { useState } from "react";
 
-function Onboarding() {
+function OnboardingView() {
   const [projectName, setProjectName] = useState("");
   const [error, setError] = useState("");
 
@@ -71,4 +71,4 @@ function Onboarding() {
   );
 }
 
-export default Onboarding;
+export default OnboardingView;

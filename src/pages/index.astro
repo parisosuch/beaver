@@ -2,7 +2,7 @@
 import "../styles/global.css";
 import { initDB } from "../lib/db/init";
 import { getProjects } from "../lib/beaver/project";
-import Onboarding from "../components/onboarding";
+import Onboarding from "../components/onboarding-view";
 
 // init databse at startup
 await initDB();
@@ -10,7 +10,10 @@ await initDB();
 // get projects and if there are no projects, do onboarding flow
 const projects = await getProjects();
 
-console.log(projects);
+if (projects.length === 0) {
+  console.log("Redirect...");
+  return Astro.redirect("/onboarding");
+}
 ---
 
 <html lang="en">
