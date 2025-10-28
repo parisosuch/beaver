@@ -2,7 +2,7 @@
 import "../styles/global.css";
 import { initDB } from "../lib/db/init";
 import { getProjects } from "../lib/beaver/project";
-import Onboarding from "../components/onboarding-view";
+import DashboardView from "../components/dashboard-view";
 
 // init databse at startup
 await initDB();
@@ -24,5 +24,7 @@ if (projects.length === 0) {
     <meta name="generator" content={Astro.generator} />
     <title>Astro</title>
   </head>
-  <body></body>
+  <body>
+    <DashboardView client:only="react" projects={projects} />
+  </body>
 </html>

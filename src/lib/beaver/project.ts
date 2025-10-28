@@ -1,6 +1,13 @@
 import { db } from "../db/db";
 import { projects } from "../db/schema";
 
+export type Project = {
+  id: number;
+  name: string;
+  apiKey: string;
+  createdAt: Date | null;
+};
+
 export async function getProjects() {
   const res = await db.select().from(projects);
 
