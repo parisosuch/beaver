@@ -23,6 +23,8 @@ function OnboardingView() {
     if (res.status !== 200) {
       throw new Error(data.error);
     }
+
+    window.location.replace("/");
   };
 
   return (
