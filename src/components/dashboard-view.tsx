@@ -157,6 +157,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
                 onClick={async () => {
                   const channel = await createChannel();
                   setChannels([channel, ...channels]);
+                  // TODO: close dialog or do something
                 }}
               >
                 Create
