@@ -156,7 +156,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               <Button
                 onClick={async () => {
                   const channel = await createChannel();
-                  console.log(channel);
+                  setChannels([channel, ...channels]);
                 }}
               >
                 Create
