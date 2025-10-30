@@ -17,3 +17,12 @@ export async function getChannels(project_id: number) {
 
   return res;
 }
+
+export async function createChannel(channel_name: string, project_id: number) {
+  const res = await db
+    .insert(channels)
+    .values({ name: channel_name, projectId: project_id })
+    .returning();
+
+  return res[0];
+}

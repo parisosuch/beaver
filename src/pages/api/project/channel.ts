@@ -1,4 +1,4 @@
-import { getChannels } from "@/lib/beaver/channel";
+import { createChannel, getChannels } from "@/lib/beaver/channel";
 import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ request }) => {
@@ -10,6 +10,36 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify(projects), {
       status: 200,
       headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.error(err);
+    return new Response(
+      JSON.stringify({ error: "An unkown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const { name, project_id } = await request.json();
+
+    const channel = await createChannel(name, project_id);
+
+    return new Response(JSON.stringify(channel), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
   } catch (err) {
     if (err instanceof Error) {
