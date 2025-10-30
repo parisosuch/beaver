@@ -9,6 +9,7 @@ import {
 } from "./ui/select";
 import { useEffect, useState } from "react";
 import type { Channel } from "@/lib/beaver/channel";
+import { Button } from "./ui/button";
 
 export default function DashboardView({ projects }: { projects: Project[] }) {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -61,7 +62,20 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
           </div>
         </div>
       </div>
-      <div className="p-8">Main content</div>
+      <div className="p-8 w-full flex flex-col items-center justify-center">
+        {channels.length === 0 ? (
+          <div className="flex flex-col items-center space-y-8">
+            <h1 className="text-2xl font-mono text-black/50">
+              Looks like this project has no channels.
+            </h1>
+            <Button variant="secondary">
+              Create a channel <PlusIcon />
+            </Button>
+          </div>
+        ) : (
+          <div>Channel view</div>
+        )}
+      </div>
     </div>
   );
 }
