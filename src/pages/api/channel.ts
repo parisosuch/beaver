@@ -1,11 +1,20 @@
 import { createChannel, getChannels } from "@/lib/beaver/channel";
-import type { APIRoute } from "astro";
+import type { APIContext, APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request }: APIContext) => {
   try {
-    const { project_id } = await request.json();
+    const url = new URL(request.url);
 
-    const projects = await getChannels(project_id);
+    const project_id = url.searchParams.get("project_id");
+
+    if (!project_id) {
+      return new Response(
+        JSON.stringify({ error: "project_id is a required query parameter." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const projects = await getChannels(parseInt(project_id));
 
     return new Response(JSON.stringify(projects), {
       status: 200,
@@ -58,3 +67,5 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
+
+export const prerender = false;
