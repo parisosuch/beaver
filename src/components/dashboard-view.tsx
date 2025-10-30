@@ -1,5 +1,18 @@
+import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
 import { PlusIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { Input } from "./ui/input";
 import {
   Select,
   SelectContent,
@@ -7,25 +20,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { useEffect, useState } from "react";
-import type { Channel } from "@/lib/beaver/channel";
-import { Button } from "./ui/button";
 
 export default function DashboardView({ projects }: { projects: Project[] }) {
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [currentProject, setCurrentProject] = useState(projects[0]);
+
+  const [newChannelName, setNewChannelName] = useState("");
 
   const getChannels = async () => {
-    const res = await fetch("/api/project/channels", {
+    const res = await fetch(`/api/channel?project_id=${currentProject.id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ project_id: projects[0].id }),
     });
 
     const data = await res.json();
 
     return data as Channel[];
+  };
+
+  const createChannel = async () => {
+    const res = await fetch("/api/channel", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: newChannelName,
+        project_id: currentProject.id,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.status !== 200) {
+      // TODO: handle error
+      console.error(data);
+    }
+    return data as Channel;
   };
 
   useEffect(() => {
@@ -35,47 +68,87 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
   }, []);
 
   return (
-    <div className="w-full flex flex-row">
-      <div className="w-[250px] border-r h-screen p-8">
-        <Select defaultValue={projects[0].name}>
-          <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder="Project"
-              defaultValue={projects[0].name}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
-              <SelectItem value={project.name}>{project.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div>
-          <div className="flex space-x-2 w-full justify-between mt-4">
-            <h1 className="font-mono">Channels</h1>
-            <PlusIcon size={24} />
-          </div>
+    <Dialog>
+      <div className="w-full flex flex-row">
+        <div className="w-[250px] border-r h-screen p-8">
+          <Select defaultValue={projects[0].name}>
+            <SelectTrigger className="w-full">
+              <SelectValue
+                placeholder="Project"
+                defaultValue={currentProject.name}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.name}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div>
-            {channels.map((channel) => (
-              <p>{channel.name}</p>
-            ))}
+            <div className="flex space-x-2 w-full justify-between mt-4">
+              <h1 className="font-mono">Channels</h1>
+              <DialogTrigger asChild>
+                <PlusIcon
+                  size={24}
+                  className="hover:cursor-pointer hover:text-black/50"
+                />
+              </DialogTrigger>
+            </div>
+            <div>
+              {channels.map((channel) => (
+                <p key={channel.id}>{channel.name}</p>
+              ))}
+            </div>
           </div>
         </div>
+        <div className="p-8 w-full flex flex-col items-center justify-center">
+          {channels.length === 0 ? (
+            <div className="flex flex-col items-center space-y-8">
+              <h1 className="text-2xl font-mono text-black/50">
+                Looks like this project has no channels.
+              </h1>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  Create a channel <PlusIcon />
+                </Button>
+              </DialogTrigger>
+            </div>
+          ) : (
+            <div>Channel view</div>
+          )}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create channel</DialogTitle>
+              <DialogDescription>
+                Add a new channel to {currentProject.name}
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              id="channel-name"
+              placeholder="dams"
+              onChange={(e) => {
+                e.preventDefault();
+                setNewChannelName(e.target.value);
+              }}
+            />
+            <div className="flex space-x-8 w-full justify-end">
+              <DialogClose asChild>
+                <Button variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button
+                onClick={async () => {
+                  const channel = await createChannel();
+                  console.log(channel);
+                }}
+              >
+                Create
+              </Button>
+            </div>
+          </DialogContent>
+        </div>
       </div>
-      <div className="p-8 w-full flex flex-col items-center justify-center">
-        {channels.length === 0 ? (
-          <div className="flex flex-col items-center space-y-8">
-            <h1 className="text-2xl font-mono text-black/50">
-              Looks like this project has no channels.
-            </h1>
-            <Button variant="secondary">
-              Create a channel <PlusIcon />
-            </Button>
-          </div>
-        ) : (
-          <div>Channel view</div>
-        )}
-      </div>
-    </div>
+    </Dialog>
   );
 }
