@@ -96,9 +96,14 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
                 />
               </DialogTrigger>
             </div>
-            <div>
+            <div className="space-y-2 mt-4">
               {channels.map((channel) => (
-                <p key={channel.id}>{channel.name}</p>
+                <p
+                  key={channel.id}
+                  className="font-light text-lg text-black/75"
+                >
+                  # {channel.name}
+                </p>
               ))}
             </div>
           </div>
