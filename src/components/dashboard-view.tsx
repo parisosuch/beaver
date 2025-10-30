@@ -24,6 +24,7 @@ import {
 export default function DashboardView({ projects }: { projects: Project[] }) {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [currentProject, setCurrentProject] = useState(projects[0]);
+  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
 
   const [newChannelName, setNewChannelName] = useState("");
 
@@ -64,6 +65,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
   useEffect(() => {
     getChannels().then((res) => {
       setChannels(res);
+      setCurrentChannel(res[0]);
     });
   }, []);
 
@@ -108,7 +110,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
             </div>
           </div>
         </div>
-        <div className="p-8 w-full flex flex-col items-center justify-center">
+        <div className="w-full">
           {channels.length === 0 ? (
             <div className="flex flex-col items-center space-y-8">
               <h1 className="text-2xl font-mono text-black/50">
@@ -121,7 +123,13 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               </DialogTrigger>
             </div>
           ) : (
-            <div>Channel view</div>
+            <div>
+              <div className="p-8 border-b">
+                <h1 className="text-xl">
+                  {currentChannel ? currentChannel.name : null}
+                </h1>
+              </div>
+            </div>
           )}
           <DialogContent>
             <DialogHeader>
