@@ -102,7 +102,10 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               {channels.map((channel) => (
                 <p
                   key={channel.id}
-                  className="font-light text-lg text-black/75"
+                  className="font-light text-lg text-black/75 hover:text-black hover:font-normal hover:cursor-pointer"
+                  onClick={() => {
+                    setCurrentChannel(channel);
+                  }}
                 >
                   # {channel.name}
                 </p>
