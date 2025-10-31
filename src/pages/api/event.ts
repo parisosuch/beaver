@@ -76,9 +76,15 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       );
     }
 
-    const log = await createEvent({ name, description, icon, channel, apiKey });
+    const event = await createEvent({
+      name,
+      description,
+      icon,
+      channel,
+      apiKey,
+    });
 
-    return new Response(JSON.stringify(log), {
+    return new Response(JSON.stringify(event), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
