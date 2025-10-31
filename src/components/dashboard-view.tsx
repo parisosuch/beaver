@@ -125,7 +125,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
         </div>
         <div className="w-full">
           {channels.length === 0 ? (
-            <div className="flex flex-col items-center space-y-8">
+            <div className="flex flex-col items-center mt-8 space-y-8">
               <h1 className="text-2xl font-mono text-black/50">
                 Looks like this project has no channels.
               </h1>
