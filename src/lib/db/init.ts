@@ -20,12 +20,13 @@ export async function initDB() {
     )
   `);
 
-  // Logs table
+  // Events table
   await db.run(`
-    CREATE TABLE IF NOT EXISTS logs (
+    CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      message TEXT NOT NULL,
-      level TEXT DEFAULT 'info',
+      event TEXT NOT NULL,
+      description TEXT,
+      icon TEXT,
       channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
       created_at INTEGER NOT NULL
     )
