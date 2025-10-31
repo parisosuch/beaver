@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import ChannelLogsView from "./channel-logs-view";
 
 export default function DashboardView({ projects }: { projects: Project[] }) {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -27,6 +28,8 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
 
   const [newChannelName, setNewChannelName] = useState("");
+
+  const [createChannelDialogOpen, setCreateChannelDialogOpen] = useState(false);
 
   const getChannels = async () => {
     const res = await fetch(`/api/channel?project_id=${currentProject.id}`, {
@@ -70,7 +73,10 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
   }, []);
 
   return (
-    <Dialog>
+    <Dialog
+      open={createChannelDialogOpen}
+      onOpenChange={setCreateChannelDialogOpen}
+    >
       <div className="w-full flex flex-row">
         <div className="w-[250px] border-r h-screen p-8">
           <Select defaultValue={projects[0].name}>
@@ -102,7 +108,11 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               {channels.map((channel) => (
                 <p
                   key={channel.id}
-                  className="font-light text-lg text-black/75 hover:text-black hover:font-normal hover:cursor-pointer"
+                  className={`text-lg text-black/75 hover:text-black hover:font-normal hover:cursor-pointer ${
+                    currentChannel!.id === channel.id
+                      ? "font-medium"
+                      : "font-light"
+                  }`}
                   onClick={() => {
                     setCurrentChannel(channel);
                   }}
@@ -132,6 +142,9 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
                   {currentChannel ? currentChannel.name : null}
                 </h1>
               </div>
+              <div className="p-8">
+                <ChannelLogsView channel={currentChannel!} />
+              </div>
             </div>
           )}
           <DialogContent>
@@ -157,7 +170,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
                 onClick={async () => {
                   const channel = await createChannel();
                   setChannels([channel, ...channels]);
-                  // TODO: close dialog or do something
+                  setCreateChannelDialogOpen(false);
                 }}
               >
                 Create
