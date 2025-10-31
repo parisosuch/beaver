@@ -42,7 +42,20 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { name, project_id } = await request.json();
 
-    const channel = await createChannel(name, project_id);
+    if (!name) {
+      return new Response(
+        JSON.stringify({ error: "name is required to create channel." })
+      );
+    }
+    if (!project_id) {
+      return new Response(
+        JSON.stringify({ error: "project_id is required to create channel." })
+      );
+    }
+
+    const splitName = name.replace(" ", "-");
+
+    const channel = await createChannel(splitName, project_id);
 
     return new Response(JSON.stringify(channel), {
       status: 200,
