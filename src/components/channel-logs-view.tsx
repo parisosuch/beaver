@@ -27,5 +27,14 @@ export default function ChannelLogsView({ channel }: { channel: Channel }) {
       setLogs(res);
     });
   }, [channel]);
-  return <div>{channel.name}</div>;
+  if (logs.length === 0) {
+    return (
+      <div className="flex w-full justify-center">
+        <h1 className="text-xl text-center font-medium">
+          This channel has no logs :(
+        </h1>
+      </div>
+    );
+  }
+  return <div>It has logs</div>;
 }
