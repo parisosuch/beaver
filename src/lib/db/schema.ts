@@ -27,7 +27,7 @@ export const channels = sqliteTable("channels", {
 // ---- EVENTS ----
 export const events = sqliteTable("events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  event: text("event").notNull(),
+  name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
   channelId: integer("channel_id")
