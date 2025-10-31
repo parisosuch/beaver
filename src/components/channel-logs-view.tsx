@@ -1,12 +1,12 @@
 import type { Channel } from "@/lib/beaver/channel";
-import type { Log } from "@/pages/api/log";
+import type { Event } from "@/lib/beaver/event";
 import { useEffect, useState } from "react";
 
 export default function ChannelLogsView({ channel }: { channel: Channel }) {
-  const [logs, setLogs] = useState<Log[]>([]);
+  const [logs, setLogs] = useState<Event[]>([]);
 
   const getLogs = async () => {
-    const res = await fetch(`/api/log?channel_id=${channel.id}`, {
+    const res = await fetch(`/api/event?channel_id=${channel.id}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });

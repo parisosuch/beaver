@@ -1,13 +1,5 @@
-import { createLog, getChannelLogs } from "@/lib/beaver/log";
+import { createEvent, getChannelEvents } from "@/lib/beaver/event";
 import type { APIContext, APIRoute } from "astro";
-
-export type Log = {
-  id: number;
-  message: string;
-  level: string;
-  channelId: string;
-  createdAt: Date;
-};
 
 export const GET: APIRoute = async ({ request }: APIContext) => {
   try {
@@ -22,9 +14,9 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
       );
     }
 
-    const logs = await getChannelLogs(parseInt(channel_id));
+    const events = await getChannelEvents(parseInt(channel_id));
 
-    return new Response(JSON.stringify(logs), {
+    return new Response(JSON.stringify(events), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -49,21 +41,10 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
 export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
     // extract body and verify contents
-    const { message, level, channel, apiKey } = await request.json();
-    if (!message) {
+    const { name, description, icon, channel, apiKey } = await request.json();
+    if (!name) {
       return new Response(
-        JSON.stringify({ error: "message is a required field." }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-    if (!level) {
-      return new Response(
-        JSON.stringify({ error: "level is a required field." }),
+        JSON.stringify({ error: "name is a required field." }),
         {
           status: 400,
           headers: {
@@ -95,7 +76,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       );
     }
 
-    const log = await createLog({ message, level, channel, apiKey });
+    const log = await createEvent({ name, description, icon, channel, apiKey });
 
     return new Response(JSON.stringify(log), {
       status: 200,
