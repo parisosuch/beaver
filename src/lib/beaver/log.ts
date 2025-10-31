@@ -25,23 +25,25 @@ export async function getChannelLogs(channel_id: number) {
 export async function createLog({
   message,
   level,
-  channelId,
+  channel,
   apiKey,
 }: {
   message: string;
   level: string;
-  channelId: number;
+  channel: string;
   apiKey: string;
 }) {
   // check if channel exists first
   const channelsRes = await db
     .select()
     .from(channels)
-    .where(eq(channels.id, channelId));
+    .where(eq(channels.name, channel));
 
   if (channelsRes.length === 0) {
-    throw new Error(`Channel with id ${channelId} does not exist.`);
+    throw new Error(`Channel with name ${channel} does not exist.`);
   }
+
+  const channelId = channelsRes[0].id;
 
   // validate api key
   const project = await getProject(channelsRes[0].projectId);
