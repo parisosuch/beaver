@@ -1,6 +1,7 @@
 import { db } from "../db/db";
 import { logs, channels } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { getProject } from "./project";
 
 export async function getChannelLogs(channel_id: number) {
   // check if channel exists first
@@ -25,10 +26,12 @@ export async function createLog({
   message,
   level,
   channelId,
+  apiKey,
 }: {
   message: string;
   level: string;
   channelId: number;
+  apiKey: string;
 }) {
   // check if channel exists first
   const channelsRes = await db
@@ -39,6 +42,14 @@ export async function createLog({
   if (channelsRes.length === 0) {
     throw new Error(`Channel with id ${channelId} does not exist.`);
   }
+
+  // validate api key
+  const project = await getProject(channelsRes[0].projectId);
+
+  if (project.apiKey !== apiKey) {
+    throw new Error("Invalid API key.");
+  }
+
   const res = await db
     .insert(logs)
     .values({ message, level, channelId })

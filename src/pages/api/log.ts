@@ -49,7 +49,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
 export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
     // extract body and verify contents
-    const { message, level, channelId } = await request.json();
+    const { message, level, channelId, apiKey } = await request.json();
     if (!message) {
       return new Response(
         JSON.stringify({ error: "message is a required field." }),
@@ -83,8 +83,19 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
         }
       );
     }
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "apiKey is a required field." }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
-    const log = await createLog({ message, level, channelId });
+    const log = await createLog({ message, level, channelId, apiKey });
 
     return new Response(JSON.stringify(log), {
       status: 200,
