@@ -24,11 +24,12 @@ export const channels = sqliteTable("channels", {
   ),
 });
 
-// ---- LOGS ----
-export const logs = sqliteTable("logs", {
+// ---- EVENTS ----
+export const events = sqliteTable("events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  message: text("message").notNull(),
-  level: text("level").default("info"), // info | warn | error | etc
+  event: text("event").notNull(),
+  description: text("description"),
+  icon: text("icon"),
   channelId: integer("channel_id")
     .notNull()
     .references(() => channels.id, { onDelete: "cascade" }),
@@ -47,12 +48,12 @@ export const channelRelations = relations(channels, ({ one, many }) => ({
     fields: [channels.projectId],
     references: [projects.id],
   }),
-  logs: many(logs),
+  events: many(events),
 }));
 
-export const logRelations = relations(logs, ({ one }) => ({
+export const logRelations = relations(events, ({ one }) => ({
   channel: one(channels, {
-    fields: [logs.channelId],
+    fields: [events.channelId],
     references: [channels.id],
   }),
 }));
