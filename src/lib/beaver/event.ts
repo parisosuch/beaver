@@ -1,9 +1,18 @@
 import { db } from "../db/db";
-import { logs, channels } from "../db/schema";
+import { events, channels } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getProject } from "./project";
 
-export async function getChannelLogs(channel_id: number) {
+export type Event = {
+  id: number;
+  event: string;
+  description?: string;
+  icon?: string;
+  channelId: number;
+  createdAt: Date;
+};
+
+export async function getChannelEvents(channel_id: number) {
   // check if channel exists first
   const channelsRes = await db
     .select()
@@ -16,20 +25,22 @@ export async function getChannelLogs(channel_id: number) {
 
   const logsRes = await db
     .select()
-    .from(logs)
-    .where(eq(logs.channelId, channel_id));
+    .from(events)
+    .where(eq(events.channelId, channel_id));
 
   return logsRes;
 }
 
-export async function createLog({
-  message,
-  level,
+export async function createEvent({
+  name,
+  description,
+  icon,
   channel,
   apiKey,
 }: {
-  message: string;
-  level: string;
+  name: string;
+  description?: string;
+  icon?: string;
   channel: string;
   apiKey: string;
 }) {
@@ -53,8 +64,8 @@ export async function createLog({
   }
 
   const res = await db
-    .insert(logs)
-    .values({ message, level, channelId })
+    .insert(events)
+    .values({ name, description, icon, channelId })
     .returning();
 
   return res[0];
