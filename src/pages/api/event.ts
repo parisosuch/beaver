@@ -42,6 +42,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
     // extract body and verify contents
     const { name, description, icon, channel, apiKey } = await request.json();
+
     if (!name) {
       return new Response(
         JSON.stringify({ error: "name is a required field." }),

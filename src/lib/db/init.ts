@@ -24,7 +24,7 @@ export async function initDB() {
   await db.run(`
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event TEXT NOT NULL,
+      name TEXT NOT NULL,
       description TEXT,
       icon TEXT,
       channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
