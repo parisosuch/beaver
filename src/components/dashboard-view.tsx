@@ -1,6 +1,6 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
-import { PlusIcon } from "lucide-react";
+import { InboxIcon, PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
@@ -94,7 +94,11 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               ))}
             </SelectContent>
           </Select>
-          <div>
+          <div className="mt-4">
+            <div className="flex space-x-2 items-center">
+              <InboxIcon size={20} />
+              <p>Feed</p>
+            </div>
             <div className="flex space-x-2 w-full justify-between mt-4">
               <h1 className="font-mono">Channels</h1>
               <DialogTrigger asChild>
