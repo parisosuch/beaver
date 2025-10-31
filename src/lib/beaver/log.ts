@@ -20,3 +20,29 @@ export async function getChannelLogs(channel_id: number) {
 
   return logsRes;
 }
+
+export async function createLog({
+  message,
+  level,
+  channelId,
+}: {
+  message: string;
+  level: string;
+  channelId: number;
+}) {
+  // check if channel exists first
+  const channelsRes = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, channelId));
+
+  if (channelsRes.length === 0) {
+    throw new Error(`Channel with id ${channelId} does not exist.`);
+  }
+  const res = await db
+    .insert(logs)
+    .values({ message, level, channelId })
+    .returning();
+
+  return res[0];
+}
