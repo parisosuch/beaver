@@ -1,6 +1,12 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
-import { InboxIcon, PlusIcon } from "lucide-react";
+import {
+  InboxIcon,
+  PlusIcon,
+  SearchIcon,
+  Settings,
+  Settings2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
@@ -28,7 +34,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
 
   const [newChannelName, setNewChannelName] = useState("");
-
+  const [channelCreateError, setChannelCreateError] = useState("");
   const [createChannelDialogOpen, setCreateChannelDialogOpen] = useState(false);
 
   const getChannels = async () => {
@@ -59,8 +65,7 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
     const data = await res.json();
 
     if (res.status !== 200) {
-      // TODO: handle error
-      console.error(data);
+      throw new Error(data.error);
     }
     return data as Channel;
   };
@@ -72,15 +77,19 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
     });
   }, []);
 
+  const navigationCss =
+    "flex px-2 py-1 space-x-2 items-center hover:bg-gray-100 hover:cursor-pointer hover:font-medium rounded-md";
+
   return (
     <Dialog
       open={createChannelDialogOpen}
       onOpenChange={setCreateChannelDialogOpen}
     >
       <div className="w-full flex flex-row">
-        <div className="w-[250px] border-r h-screen p-8">
+        <div className="w-[350px] border-r h-screen p-8">
+          <h1 className="text-sm font-mono">Project</h1>
           <Select defaultValue={projects[0].name}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full mt-2">
               <SelectValue
                 placeholder="Project"
                 defaultValue={currentProject.name}
@@ -94,16 +103,25 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               ))}
             </SelectContent>
           </Select>
-          <div className="mt-4">
-            <div className="flex space-x-2 items-center">
+          <div className="mt-4 space-y-2">
+            <h1 className="text-sm font-mono">Navigation</h1>
+            <div className={navigationCss}>
               <InboxIcon size={20} />
               <p>Feed</p>
             </div>
-            <div className="flex space-x-2 w-full justify-between mt-4">
-              <h1 className="font-mono">Channels</h1>
+            <div className={navigationCss}>
+              <SearchIcon size={20} />
+              <p>Search</p>
+            </div>
+            <div className={navigationCss}>
+              <Settings size={20} />
+              <p>Settings</p>
+            </div>
+            <div className="flex space-x-2 w-full items-center justify-between mt-4">
+              <h1 className="text-sm font-mono">Channels</h1>
               <DialogTrigger asChild>
                 <PlusIcon
-                  size={24}
+                  size={20}
                   className="hover:cursor-pointer hover:text-black/50"
                 />
               </DialogTrigger>
@@ -112,10 +130,10 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               {channels.map((channel) => (
                 <p
                   key={channel.id}
-                  className={`text-lg text-black/75 hover:text-black hover:font-normal hover:cursor-pointer ${
+                  className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
                     currentChannel!.id === channel.id
-                      ? "font-medium"
-                      : "font-light"
+                      ? "font-medium bg-gray-100 px-2 py-1 rounded-md text-black"
+                      : "font-light text-black/75 px-2 py-1 hover:bg-gray-100 rounded-md"
                   }`}
                   onClick={() => {
                     setCurrentChannel(channel);
@@ -158,6 +176,9 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
                 Add a new channel to {currentProject.name}
               </DialogDescription>
             </DialogHeader>
+            <p className="font-medium text-sm text-rose-500">
+              {channelCreateError}
+            </p>
             <Input
               id="channel-name"
               placeholder="dams"
@@ -172,9 +193,14 @@ export default function DashboardView({ projects }: { projects: Project[] }) {
               </DialogClose>
               <Button
                 onClick={async () => {
-                  const channel = await createChannel();
-                  setChannels([channel, ...channels]);
-                  setCreateChannelDialogOpen(false);
+                  try {
+                    const channel = await createChannel();
+                    setChannels([channel, ...channels]);
+                    setCreateChannelDialogOpen(false);
+                  } catch (err) {
+                    if (err instanceof Error)
+                      setChannelCreateError(err.message);
+                  }
                 }}
               >
                 Create

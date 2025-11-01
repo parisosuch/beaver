@@ -4,7 +4,7 @@ export async function initDB() {
   await db.run(`
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
+      name TEXT UNIQUE NOT NULL,
       api_key TEXT UNIQUE NOT NULL,
       created_at INTEGER NOT NULL
     )

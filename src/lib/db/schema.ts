@@ -5,7 +5,7 @@ import { relations, sql } from "drizzle-orm";
 // ---- PROJECTS ----
 export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
+  name: text("name").unique().notNull(),
   apiKey: text("api_key").unique().notNull(), // for external logging API
   createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
     sql`(unixepoch() * 1000)`
@@ -15,7 +15,7 @@ export const projects = sqliteTable("projects", {
 // ---- CHANNELS ----
 export const channels = sqliteTable("channels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
+  name: text("name").unique().notNull(),
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
