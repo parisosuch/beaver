@@ -1,6 +1,7 @@
 import { db } from "./db";
 
 export async function initDB() {
+  console.log("Creating database tables if they do not exist...");
   await db.run(`
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,6 +32,4 @@ export async function initDB() {
       created_at INTEGER NOT NULL
     )
   `);
-
-  console.log("Database initialized ✅");
 }
