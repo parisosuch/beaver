@@ -171,7 +171,7 @@ export default function SidePanel({
                     : "font-light text-black/75 px-2 py-1 hover:bg-gray-100 rounded-md"
                 }`}
                 onClick={() => {
-                  //   setCurrentChannel(channel);
+                  setCurrentChannel(channel);
                   //   window.location.replace(
                   //     `/dashboard/${currentProject.id}/channels/${channel.id}`
                   //   );
