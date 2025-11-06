@@ -5,7 +5,6 @@ import {
   PlusIcon,
   SearchIcon,
   Settings,
-  Settings2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";

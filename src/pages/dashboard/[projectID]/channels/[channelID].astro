@@ -1,0 +1,11 @@
+---
+import Layout from "@/layouts/layout.astro";
+
+const { projectID, channelID } = Astro.params;
+
+console.log(channelID);
+---
+
+<Layout projectID={projectID!} channelID={channelID}>
+  <p>This is the channel page! Channel ID: {channelID!}</p>
+</Layout>

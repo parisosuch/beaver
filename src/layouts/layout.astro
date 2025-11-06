@@ -1,0 +1,33 @@
+---
+import "@/styles/global.css";
+import SidePanel from "@/components/side-panel";
+import { getProject } from "@/lib/beaver/project";
+import { ClientRouter } from "astro:transitions";
+
+interface Props {
+  projectID: string;
+  channelID: string | undefined;
+}
+
+const { projectID } = Astro.props;
+
+const project = await getProject(parseInt(projectID));
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <ClientRouter />
+  </head>
+  <body>
+    <div class="flex flex-row">
+      <SidePanel
+        client:only="react"
+        currentProject={project}
+        transition:persist
+      />
+      <slot />
+    </div>
+  </body>
+</html>

@@ -1,6 +1,15 @@
 ---
 import "../styles/global.css";
 import OnboardingView from "../components/onboarding-view";
+import { getProjects } from "@/lib/beaver/project";
+
+// get projects and if there are no projects, do onboarding flow
+const projects = await getProjects();
+
+if (projects.length !== 0) {
+  console.log("Redirecting to dashboard...");
+  return Astro.redirect(`/dashboard/${projects[0].id}`);
+}
 ---
 
 <html lang="en">
