@@ -149,7 +149,7 @@ export default function SidePanel({
           </div>
           <div className={navigationCss}>
             <Settings size={20} />
-            <p>Settings</p>
+            <a href={`/dashboard/${currentProject.id}/settings`}>Settings</a>
           </div>
           <div className="flex space-x-2 w-full items-center justify-between mt-4">
             <h1 className="text-sm font-mono">Channels</h1>

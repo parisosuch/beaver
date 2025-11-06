@@ -2,9 +2,9 @@
 import "../../../styles/global.css";
 import Layout from "@/layouts/layout.astro";
 
-const { projectID, channelID } = Astro.params;
+const { projectID } = Astro.params;
 ---
 
-<Layout projectID={projectID!} channelID={channelID}>
+<Layout projectID={projectID!}>
   <div class="w-full bg-blue-100">Project ID: {projectID}</div>
 </Layout>
