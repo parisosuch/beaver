@@ -1,7 +1,8 @@
 ---
 import "@/styles/global.css";
 import SidePanel from "@/components/side-panel";
-import { getProject } from "@/lib/beaver/project";
+import { getProject, getProjects } from "@/lib/beaver/project";
+import { getChannels } from "@/lib/beaver/channel";
 import { ClientRouter } from "astro:transitions";
 
 interface Props {
@@ -11,6 +12,12 @@ interface Props {
 const { projectID } = Astro.props;
 
 const project = await getProject(parseInt(projectID));
+
+const projects = await getProjects();
+const channels = await getChannels(project.id);
+
+console.log(channels);
+console.log(projects);
 ---
 
 <html lang="en">
@@ -22,8 +29,10 @@ const project = await getProject(parseInt(projectID));
   <body>
     <div class="flex flex-row">
       <SidePanel
-        client:only="react"
+        client:load
         currentProject={project}
+        currentProjects={projects}
+        currentChannels={channels}
         transition:persist
       />
       <slot />

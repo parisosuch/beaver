@@ -1,45 +1,25 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
-import { InboxIcon, PlusIcon, SearchIcon, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 
-export default function SidePanel({
+function SidePanel({
   currentProject,
+  currentProjects,
+  currentChannels,
 }: {
   currentProject: Project;
+  currentProjects: Project[];
+  currentChannels: Channel[];
 }) {
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
+  const [project, setProject] = useState(currentProject);
 
-  const [newChannelName, setNewChannelName] = useState("");
-  const [channelCreateError, setChannelCreateError] = useState("");
-  const [createChannelDialogOpen, setCreateChannelDialogOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>(currentProjects);
+  const [channels, setChannels] = useState<Channel[]>(currentChannels);
 
   const getChannels = async () => {
-    const res = await fetch(`/api/channel?project_id=${currentProject.id}`, {
+    const res = await fetch(`/api/channel?project_id=${project.id}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
 
     const data = await res.json();
@@ -47,174 +27,30 @@ export default function SidePanel({
     return data as Channel[];
   };
 
-  const getProjects = async () => {
-    const res = await fetch(`/api/project`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const data = await res.json();
-
-    return data as Project[];
-  };
-
-  const createChannel = async () => {
-    const res = await fetch("/api/channel", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: newChannelName,
-        project_id: currentProject.id,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (res.status !== 200) {
-      throw new Error(data.error);
-    }
-    return data as Channel;
-  };
-
-  useEffect(() => {
-    getProjects().then((res) => {
-      setProjects(res);
-    });
-
-    getChannels().then((res) => {
-      setChannels(res);
-    });
-  }, []);
-
-  const navigationCss =
-    "flex px-2 py-1 space-x-2 items-center hover:bg-gray-100 hover:cursor-pointer hover:font-medium rounded-md ";
-
-  const activeCss =
-    navigationCss + "px-2 py-1 bg-gray-100 font-medium rounded-md";
-
-  console.log(window.location.pathname.includes("feed"));
-
-  if (projects.length === 0) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {}, []);
 
   return (
-    <Dialog
-      open={createChannelDialogOpen}
-      onOpenChange={setCreateChannelDialogOpen}
-    >
-      <div className="w-[350px] border-r h-screen p-8">
-        <h1 className="text-sm font-mono">Project</h1>
-        <Select defaultValue={projects[0].name}>
-          <SelectTrigger className="w-full mt-2">
-            <SelectValue
-              placeholder="Project"
-              defaultValue={currentProject!.name}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.name}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="mt-4 space-y-2">
-          <h1 className="text-sm font-mono">Navigation</h1>
-          <div
-            className={
-              window.location.pathname.includes("feed")
-                ? activeCss
-                : navigationCss
-            }
-          >
-            <InboxIcon size={20} />
-            <a href={`/dashboard/${currentProject.id}/feed`}>Feed</a>
-          </div>
-          <div className={navigationCss}>
-            <SearchIcon size={20} />
-            <p>Search</p>
-          </div>
-          <div className={navigationCss}>
-            <Settings size={20} />
-            <a href={`/dashboard/${currentProject.id}/settings`}>Settings</a>
-          </div>
-          <div className="flex space-x-2 w-full items-center justify-between mt-4">
-            <h1 className="text-sm font-mono">Channels</h1>
-            <DialogTrigger asChild>
-              <PlusIcon
-                size={20}
-                className="hover:cursor-pointer hover:text-black/50"
-              />
-            </DialogTrigger>
-          </div>
-          <div className="space-y-2 flex flex-col mt-4">
-            {channels.map((channel) => (
-              <a
-                key={channel.id}
-                href={`/dashboard/${currentProject!.id}/channels/${channel.id}`}
-                className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
-                  currentChannel
-                    ? currentChannel.id === channel.id
-                      ? "bg-gray-100 rounded-md px-2 py-1 font-medium text-black"
-                      : "px-2 py-1 hover:bg-gray-100 hover:rounded-md"
-                    : "px-2 py-1 hover:bg-gray-100 hover:rounded-md"
-                }`}
-                onClick={() => {
-                  setCurrentChannel(channel);
-                  //   window.location.replace(
-                  //     `/dashboard/${currentProject.id}/channels/${channel.id}`
-                  //   );
-                }}
-              >
-                # {channel.name}
-              </a>
-            ))}
-          </div>
-        </div>
+    <div className="w-[350px] bg-blue-100">
+      <div>
+        <h1 className="font-bold">Projects</h1>
+        {projects.map((p) => (
+          <p key={p.id}>{p.name}</p>
+        ))}
       </div>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create channel</DialogTitle>
-          <DialogDescription>
-            Add a new channel to {currentProject.name}
-          </DialogDescription>
-        </DialogHeader>
-        <p className="font-medium text-sm text-rose-500">
-          {channelCreateError}
-        </p>
-        <Input
-          id="channel-name"
-          placeholder="dams"
-          onChange={(e) => {
-            e.preventDefault();
-            setNewChannelName(e.target.value);
-          }}
-        />
-        <div className="flex space-x-8 w-full justify-end">
-          <DialogClose asChild>
-            <Button variant="secondary">Cancel</Button>
-          </DialogClose>
-          <Button
-            onClick={async () => {
-              try {
-                const channel = await createChannel();
-                setChannels([channel, ...channels]);
-                setCreateChannelDialogOpen(false);
-              } catch (err) {
-                if (err instanceof Error) setChannelCreateError(err.message);
-              }
-            }}
+      <div></div>
+      <div className="space-y-2 flex flex-col">
+        <h1 className="font-bold mb-2">Channels</h1>
+        {channels.map((channel) => (
+          <a
+            key={channel.id}
+            href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
           >
-            Create
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            {channel.name}
+          </a>
+        ))}
+      </div>
+    </div>
   );
 }
+
+export default SidePanel;
