@@ -14,7 +14,7 @@ if (projects.length === 0) {
   return Astro.redirect("/onboarding");
 } else {
   console.log("Redirecting to dashboard...");
-  return Astro.redirect(`/dashboard/${projects[0].id}`);
+  return Astro.redirect(`/dashboard/${projects[0].id}/feed`);
 }
 ---
 

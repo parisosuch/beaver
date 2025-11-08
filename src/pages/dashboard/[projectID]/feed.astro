@@ -1,10 +1,9 @@
 ---
-import "../../../styles/global.css";
 import Layout from "@/layouts/layout.astro";
 
 const { projectID } = Astro.params;
 ---
 
 <Layout projectID={projectID!}>
-  <div class="w-full bg-blue-100">Project ID: {projectID}</div>
+  <p>This is the feed.</p>
 </Layout>

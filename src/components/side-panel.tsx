@@ -2,7 +2,6 @@ import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
 import { InboxIcon, PlusIcon, SearchIcon, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
-import ChannelLogsView from "./channel-logs-view";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -82,34 +81,22 @@ export default function SidePanel({
   };
 
   useEffect(() => {
-    console.log("useEffect rendered again...");
-
     getProjects().then((res) => {
       setProjects(res);
     });
 
     getChannels().then((res) => {
       setChannels(res);
-
-      // only set the default channel if currentChannel is not set yet (this will cause an infinite redirect otherwise)
-      const urlParts = window.location.pathname.split("/");
-
-      const isCurrentChannelPath = urlParts[urlParts.length - 1];
-
-      const defaultChannel =
-        res.find((c) => c.id === parseInt(isCurrentChannelPath)) || res[0];
-      setCurrentChannel(defaultChannel);
-
-      if (!isCurrentChannelPath && defaultChannel) {
-        window.location.replace(
-          `/dashboard/${currentProject.id}/channels/${res[0].id}`
-        );
-      }
     });
   }, []);
 
   const navigationCss =
-    "flex px-2 py-1 space-x-2 items-center hover:bg-gray-100 hover:cursor-pointer hover:font-medium rounded-md";
+    "flex px-2 py-1 space-x-2 items-center hover:bg-gray-100 hover:cursor-pointer hover:font-medium rounded-md ";
+
+  const activeCss =
+    navigationCss + "px-2 py-1 bg-gray-100 font-medium rounded-md";
+
+  console.log(window.location.pathname.includes("feed"));
 
   if (projects.length === 0) {
     return <div>Loading...</div>;
@@ -139,9 +126,15 @@ export default function SidePanel({
         </Select>
         <div className="mt-4 space-y-2">
           <h1 className="text-sm font-mono">Navigation</h1>
-          <div className={navigationCss}>
+          <div
+            className={
+              window.location.pathname.includes("feed")
+                ? activeCss
+                : navigationCss
+            }
+          >
             <InboxIcon size={20} />
-            <p>Feed</p>
+            <a href={`/dashboard/${currentProject.id}/feed`}>Feed</a>
           </div>
           <div className={navigationCss}>
             <SearchIcon size={20} />
@@ -166,9 +159,11 @@ export default function SidePanel({
                 key={channel.id}
                 href={`/dashboard/${currentProject!.id}/channels/${channel.id}`}
                 className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
-                  currentChannel!.id === channel.id
-                    ? "font-medium bg-gray-100 px-2 py-1 rounded-md text-black"
-                    : "font-light text-black/75 px-2 py-1 hover:bg-gray-100 rounded-md"
+                  currentChannel
+                    ? currentChannel.id === channel.id
+                      ? "bg-gray-100 rounded-md px-2 py-1 font-medium text-black"
+                      : "px-2 py-1 hover:bg-gray-100 hover:rounded-md"
+                    : "px-2 py-1 hover:bg-gray-100 hover:rounded-md"
                 }`}
                 onClick={() => {
                   setCurrentChannel(channel);
