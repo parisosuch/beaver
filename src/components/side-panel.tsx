@@ -25,17 +25,17 @@ function SidePanel({
   currentProject,
   currentProjects,
   currentChannels,
+  currentPath,
 }: {
   currentProject: Project;
   currentProjects: Project[];
   currentChannels: Channel[];
+  currentPath: string;
 }) {
   const [project, setProject] = useState(currentProject);
   const [projects, setProjects] = useState<Project[]>(currentProjects);
   const [channels, setChannels] = useState<Channel[]>(currentChannels);
-  const [pathname, setPathname] = useState(
-    typeof window !== "undefined" ? window.location.pathname : ""
-  );
+  const [pathname, setPathname] = useState(currentPath);
 
   const [newChannelName, setNewChannelName] = useState("");
   const [channelCreateError, setChannelCreateError] = useState("");
@@ -56,12 +56,10 @@ function SidePanel({
   };
 
   useEffect(() => {
-    // Update pathname on navigation (for View Transitions)
     const handleNavigation = () => {
       setPathname(window.location.pathname);
     };
 
-    // Listen for both popstate (back/forward) and astro page loads
     window.addEventListener("popstate", handleNavigation);
     document.addEventListener("astro:page-load", handleNavigation);
 
