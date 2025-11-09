@@ -19,6 +19,12 @@ export async function getChannels(project_id: number) {
   return res;
 }
 
+export async function getChannel(channelID: number) {
+  const res = await db.select().from(channels).where(eq(channels.id, channelID));
+
+  return res[0];
+}
+
 export async function createChannel(channel_name: string, project_id: number) {
   if (channel_name.length > 16) {
     throw new Error("Channel name cannot be longer than 16 characters.");
