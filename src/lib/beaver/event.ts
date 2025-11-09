@@ -35,7 +35,7 @@ export async function getProjectEvents(project_id: number) {
   const eventRes = await db
     .select()
     .from(events)
-    .where(eq(projects.id, project_id));
+    .where(eq(events.projectID, project_id));
 
   return eventRes;
 }

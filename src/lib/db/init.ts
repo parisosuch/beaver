@@ -28,6 +28,7 @@ export async function initDB() {
       name TEXT NOT NULL,
       description TEXT,
       icon TEXT,
+      project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
       channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
       created_at INTEGER NOT NULL
     )

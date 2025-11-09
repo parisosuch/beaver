@@ -30,6 +30,9 @@ export const events = sqliteTable("events", {
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
   channelId: integer("channel_id")
     .notNull()
     .references(() => channels.id, { onDelete: "cascade" }),
