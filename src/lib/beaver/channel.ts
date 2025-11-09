@@ -6,7 +6,7 @@ export type Channel = {
   id: number;
   name: string;
   projectId: number;
-  createdAt: number;
+  createdAt: Date | null;
 };
 
 export async function getChannels(project_id: number) {
