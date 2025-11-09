@@ -35,7 +35,7 @@ export async function getProjectEvents(project_id: number) {
   const eventRes = await db
     .select()
     .from(events)
-    .where(eq(events.projectID, project_id));
+    .where(eq(events.projectId, project_id));
 
   return eventRes;
 }
@@ -67,6 +67,7 @@ export async function createEvent({
 
   // validate api key
   const project = await getProject(channelsRes[0].projectId);
+  const projectId = project.id;
 
   if (project.apiKey !== apiKey) {
     throw new Error("Invalid API key.");
@@ -74,7 +75,7 @@ export async function createEvent({
 
   const res = await db
     .insert(events)
-    .values({ name, description, icon, channelId })
+    .values({ name, description, icon, projectId, channelId })
     .returning();
 
   return res[0];

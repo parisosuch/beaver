@@ -1,9 +1,13 @@
 ---
 import Layout from "@/layouts/layout.astro";
+import { getProjectEvents } from "@/lib/beaver/event";
 
 const { projectID } = Astro.params;
+const events = await getProjectEvents(parseInt(projectID!));
 ---
 
 <Layout projectID={projectID!}>
-  <p>This is the feed.</p>
+  <div class="w-full p-8">
+    <h1 class="text-2xl font-semibold">Feed</h1>
+  </div>
 </Layout>
