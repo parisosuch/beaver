@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { events, channels } from "../db/schema";
+import { events, channels, projects } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getProject } from "./project";
 
@@ -29,6 +29,13 @@ export async function getChannelEvents(channel_id: number) {
     .where(eq(events.channelId, channel_id));
 
   return logsRes;
+}
+
+export async function getProjectEvents(project_id: number) {
+  const eventRes = await db
+    .select()
+    .from(events)
+    .where(eq(projects.id, project_id));
 }
 
 export async function createEvent({
