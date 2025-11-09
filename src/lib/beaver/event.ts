@@ -36,6 +36,8 @@ export async function getProjectEvents(project_id: number) {
     .select()
     .from(events)
     .where(eq(projects.id, project_id));
+
+  return eventRes;
 }
 
 export async function createEvent({
