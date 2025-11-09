@@ -5,9 +5,10 @@ import { getProject } from "./project";
 
 export type Event = {
   id: number;
-  event: string;
+  name: string;
   description?: string;
   icon?: string;
+  projectId: number;
   channelId: number;
   createdAt: Date;
 };
@@ -37,7 +38,7 @@ export async function getProjectEvents(project_id: number) {
     .from(events)
     .where(eq(events.projectId, project_id));
 
-  return eventRes;
+  return eventRes as Event[];
 }
 
 export async function createEvent({

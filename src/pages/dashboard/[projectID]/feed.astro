@@ -1,13 +1,19 @@
 ---
 import Layout from "@/layouts/layout.astro";
 import { getProjectEvents } from "@/lib/beaver/event";
+import EventCard from "@/components/event-card";
 
 const { projectID } = Astro.params;
 const events = await getProjectEvents(parseInt(projectID!));
 ---
 
 <Layout projectID={projectID!}>
-  <div class="w-full p-8">
-    <h1 class="text-2xl font-semibold">Feed</h1>
+  <div class="flex flex-col items-center w-full">
+    <div class="w-full p-8 border-b">
+      <h1 class="text-2xl font-semibold">Feed</h1>
+    </div>
+    <div class="p-8 w-1/2 space-y-4">
+      {events.map((event) => <EventCard event={event} />)}
+    </div>
   </div>
 </Layout>
