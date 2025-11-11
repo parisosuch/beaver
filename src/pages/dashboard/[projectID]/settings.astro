@@ -1,9 +1,42 @@
 ---
 import Layout from "@/layouts/layout.astro";
+import { getChannels } from "@/lib/beaver/channel";
+import { getProject } from "@/lib/beaver/project";
+import APIKey from "@/components/api-key";
 
 const { projectID } = Astro.params;
+
+const project = await getProject(parseInt(projectID!));
+
+const channels = await getChannels(parseInt(projectID!));
+
+const metaCss = "flex space-x-2 items-center";
+const metaH3Css = "font-medium";
 ---
 
 <Layout projectID={projectID!}>
-  <p>This is the settings page.</p>
+  <div>
+    <div class="p-8 border-b text-2xl font-semibold">
+      <h1>Project Settings</h1>
+    </div>
+    <div>
+      <h2 class="font-mono">Meta</h2>
+      <div class={metaCss}>
+        <h3 class={metaH3Css}>Project Name</h3>
+        <p>{project.name}</p>
+      </div>
+      <div class={metaCss}>
+        <h3 class={metaH3Css}>Created on</h3>
+        <p>{project.createdAt?.toLocaleDateString()}</p>
+      </div>
+      <div class={metaCss}>
+        <h3 class={metaH3Css}>API Key</h3>
+        <APIKey client:load project={project} />
+      </div>
+    </div>
+    <div class="w-full">
+      <h2>Channels</h2>
+      {channels.map((channel) => <div>{channel.name}</div>)}
+    </div>
+  </div>
 </Layout>
