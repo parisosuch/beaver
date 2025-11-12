@@ -15,6 +15,8 @@ export default function APIKey({ project }: { project: Project }) {
     }
   };
 
+  // TODO: add the ability to create a new api key
+
   return (
     <div className="border px-1 rounded flex items-center justify-center">
       <p className="font-mono tracking-wider">{project.apiKey}</p>
