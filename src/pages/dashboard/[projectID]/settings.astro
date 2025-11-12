@@ -37,7 +37,16 @@ const metaH3Css = "font-medium";
       </div>
       <div class="w-3/4 mt-8">
         <h2 class="font-mono mb-2">Channels</h2>
-        {channels.map((channel) => <div>{channel.name}</div>)}
+        <div class="space-y-2">
+          {
+            channels.map((channel) => (
+              <div class="rounded border p-2">
+                <h3 class="font-medium text-lg">{channel.name}</h3>
+                <p class="text-xs">{channel.createdAt?.toLocaleDateString()}</p>
+              </div>
+            ))
+          }
+        </div>
       </div>
     </div>
   </div>
