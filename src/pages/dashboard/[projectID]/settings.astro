@@ -10,33 +10,35 @@ const project = await getProject(parseInt(projectID!));
 
 const channels = await getChannels(parseInt(projectID!));
 
-const metaCss = "flex space-x-2 items-center";
+const metaCss = "flex space-x-2 items-center w-full justify-between";
 const metaH3Css = "font-medium";
 ---
 
 <Layout projectID={projectID!}>
-  <div>
+  <div class="w-full">
     <div class="p-8 border-b text-2xl font-semibold">
       <h1>Project Settings</h1>
     </div>
-    <div>
-      <h2 class="font-mono">Meta</h2>
-      <div class={metaCss}>
-        <h3 class={metaH3Css}>Project Name</h3>
-        <p>{project.name}</p>
+    <div class="w-full flex flex-col items-center mt-8">
+      <div class="w-3/4 flex flex-col">
+        <h2 class="font-mono mb-2">Meta</h2>
+        <div class={metaCss}>
+          <h3 class={metaH3Css}>Project Name</h3>
+          <p>{project.name}</p>
+        </div>
+        <div class={metaCss}>
+          <h3 class={metaH3Css}>Created</h3>
+          <p>{project.createdAt?.toLocaleDateString()}</p>
+        </div>
+        <div class={metaCss}>
+          <h3 class={metaH3Css}>API Key</h3>
+          <APIKey client:load project={project} />
+        </div>
       </div>
-      <div class={metaCss}>
-        <h3 class={metaH3Css}>Created on</h3>
-        <p>{project.createdAt?.toLocaleDateString()}</p>
+      <div class="w-3/4 mt-8">
+        <h2 class="font-mono mb-2">Channels</h2>
+        {channels.map((channel) => <div>{channel.name}</div>)}
       </div>
-      <div class={metaCss}>
-        <h3 class={metaH3Css}>API Key</h3>
-        <APIKey client:load project={project} />
-      </div>
-    </div>
-    <div class="w-full">
-      <h2>Channels</h2>
-      {channels.map((channel) => <div>{channel.name}</div>)}
     </div>
   </div>
 </Layout>
