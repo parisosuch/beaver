@@ -18,9 +18,7 @@ export async function GET({ params }: { params: { projectID: string } }) {
             const events = await getProjectEvents(parseInt(projectID));
 
             // Send each event to the client
-            for (const event of events) {
-              controller.enqueue(`data: ${JSON.stringify(event)}\n\n`);
-            }
+            controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
 
             // Wait for 10 seconds before polling for more events
             await new Promise((resolve) => setTimeout(resolve, 10000));

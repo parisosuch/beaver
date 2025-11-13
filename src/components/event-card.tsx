@@ -13,7 +13,7 @@ export default function EventCard({ event }: { event: EventWithChannelName }) {
           <h2 className="text-xl font-medium">{event.name}</h2>
           <div className="flex space-x-2 items-center text-sm text-black/75">
             <p># {event.channelName}</p>
-            <p>{getEventTime(event.createdAt)}</p>
+            <p>{getEventTime(new Date(event.createdAt))}</p>
           </div>
         </div>
       </div>

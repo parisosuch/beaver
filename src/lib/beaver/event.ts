@@ -21,7 +21,7 @@ export type EventWithChannelName = {
   projectId: number;
   channelName: string;
   createdAt: Date;
-}
+};
 
 export async function getChannelEvents(channel_id: number) {
   // check if channel exists first
@@ -42,7 +42,9 @@ export async function getChannelEvents(channel_id: number) {
   return logsRes;
 }
 
-export async function getProjectEvents(project_id: number): Promise<EventWithChannelName[]> {
+export async function getProjectEvents(
+  project_id: number
+): Promise<EventWithChannelName[]> {
   const eventRes = await db
     .select({
       id: events.id,
@@ -53,7 +55,14 @@ export async function getProjectEvents(project_id: number): Promise<EventWithCha
       createdAt: events.createdAt,
       channelName: channels.name,
     })
-    .from(events).leftJoin(channels, and(eq(events.channelId, channels.id), eq(events.projectId, channels.projectId)))
+    .from(events)
+    .leftJoin(
+      channels,
+      and(
+        eq(events.channelId, channels.id),
+        eq(events.projectId, channels.projectId)
+      )
+    )
     .where(eq(events.projectId, project_id));
 
   return eventRes as EventWithChannelName[];
