@@ -1,7 +1,7 @@
-import type { Event } from "@/lib/beaver/event";
+import type { Event, EventWithChannelName } from "@/lib/beaver/event";
 import { Card, CardDescription } from "./ui/card";
 
-export default function EventCard({ event }: { event: Event }) {
+export default function EventCard({ event }: { event: EventWithChannelName }) {
   return (
     <Card className="p-8">
       <div className="flex items-center space-x-4">
@@ -10,7 +10,7 @@ export default function EventCard({ event }: { event: Event }) {
         </div>
         <div>
           <h2 className="text-lg font-medium">{event.name}</h2>
-          <p className="text-sm font-light">#{event.channelId}</p>
+          <p className="text-sm font-light"># {event.name}</p>
         </div>
       </div>
       {event.description ? (

@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { events, channels, projects } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getProject } from "./project";
 
 export type Event = {
@@ -12,6 +12,16 @@ export type Event = {
   channelId: number;
   createdAt: Date;
 };
+
+export type EventWithChannelName = {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  projectId: number;
+  channelName: string;
+  createdAt: Date;
+}
 
 export async function getChannelEvents(channel_id: number) {
   // check if channel exists first
@@ -32,13 +42,21 @@ export async function getChannelEvents(channel_id: number) {
   return logsRes;
 }
 
-export async function getProjectEvents(project_id: number) {
+export async function getProjectEvents(project_id: number): Promise<EventWithChannelName[]> {
   const eventRes = await db
-    .select()
-    .from(events)
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      icon: events.icon,
+      projectId: events.projectId,
+      createdAt: events.createdAt,
+      channelName: channels.name,
+    })
+    .from(events).leftJoin(channels, and(eq(events.channelId, channels.id), eq(events.projectId, channels.projectId)))
     .where(eq(events.projectId, project_id));
 
-  return eventRes as Event[];
+  return eventRes as EventWithChannelName[];
 }
 
 export async function createEvent({
