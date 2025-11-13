@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { events, channels, projects } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { getProject } from "./project";
 
 export type Event = {
@@ -63,7 +63,8 @@ export async function getProjectEvents(
         eq(events.projectId, channels.projectId)
       )
     )
-    .where(eq(events.projectId, project_id));
+    .where(eq(events.projectId, project_id))
+    .orderBy(desc(events.createdAt));
 
   return eventRes as EventWithChannelName[];
 }
