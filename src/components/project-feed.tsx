@@ -1,6 +1,7 @@
 import type { EventWithChannelName } from "@/lib/beaver/event";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "./event-card";
+import { motion } from "framer-motion";
 
 export default function ProjectFeed({ projectID }: { projectID: number }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
@@ -45,8 +46,15 @@ export default function ProjectFeed({ projectID }: { projectID: number }) {
 
   return (
     <div className="p-8 w-1/2 space-y-4">
-      {events.map((event) => (
-        <EventCard key={event.id} event={event} />
+      {events.map((event, index) => (
+        <motion.div
+          key={event.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: index * 0.05 }}
+        >
+          <EventCard key={event.id} event={event} />
+        </motion.div>
       ))}
     </div>
   );
