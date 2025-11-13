@@ -4,10 +4,10 @@ export async function GET({ params }: { params: { projectID: string } }) {
   const { projectID } = params;
 
   const headers = {
-    "Content-Type": "text/event-stream", // Essential for SSE
+    "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
-    "Access-Control-Allow-Origin": "*", // Allows cross-origin requests, if needed
+    "Access-Control-Allow-Origin": "*",
   };
 
   const stream = new ReadableStream({
@@ -17,10 +17,8 @@ export async function GET({ params }: { params: { projectID: string } }) {
           while (true) {
             const events = await getProjectEvents(parseInt(projectID));
 
-            // Send each event to the client
             controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
 
-            // Wait for 10 seconds before polling for more events
             await new Promise((resolve) => setTimeout(resolve, 10000));
           }
         } catch (err) {
