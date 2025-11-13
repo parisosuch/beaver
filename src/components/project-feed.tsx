@@ -44,10 +44,10 @@ export default function ProjectFeed({ projectID }: { projectID: number }) {
   }, [projectID]);
 
   return (
-    <>
+    <div className="p-8 w-1/2 space-y-4">
       {events.map((event) => (
         <EventCard key={event.id} event={event} />
       ))}
-    </>
+    </div>
   );
 }
