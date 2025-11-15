@@ -39,11 +39,7 @@ const metaH3Css = "font-medium";
       <div class="w-3/4 mt-8">
         <h2 class="font-mono mb-2">Channels</h2>
         <div class="flex flex-col">
-          {
-            channels.map((channel) => (
-              <ChannelSettings client:load channel={channel} />
-            ))
-          }
+          <ChannelSettings client:load channels={channels} />
         </div>
       </div>
     </div>
