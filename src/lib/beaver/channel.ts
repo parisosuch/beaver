@@ -20,7 +20,10 @@ export async function getChannels(project_id: number) {
 }
 
 export async function getChannel(channelID: number) {
-  const res = await db.select().from(channels).where(eq(channels.id, channelID));
+  const res = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, channelID));
 
   return res[0];
 }
@@ -49,4 +52,13 @@ export async function createChannel(channel_name: string, project_id: number) {
     .returning();
 
   return res[0];
+}
+
+export async function deleteChannel(channelID: number) {
+  const channel = await db
+    .delete(channels)
+    .where(eq(channels.id, channelID))
+    .returning();
+
+  return channel;
 }
