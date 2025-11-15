@@ -41,10 +41,22 @@ export default function ChannelSettings({ channels }: { channels: Channel[] }) {
       setChannels((prev) => prev.filter((c) => c.id !== id));
     };
 
+    const handleChannelCreated = (e: CustomEvent<{ channel: Channel }>) => {
+      const { channel } = e.detail;
+
+      console.log(channel);
+      setChannels([...clientChannels, channel]);
+    };
+
     // add custom even for channel deletion
     window.addEventListener(
       "channel:deleted",
       handleChannelDeleted as EventListener
+    );
+
+    window.addEventListener(
+      "channel:created",
+      handleChannelCreated as EventListener
     );
 
     return () => {

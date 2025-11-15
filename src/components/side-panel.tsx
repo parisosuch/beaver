@@ -52,7 +52,16 @@ function SidePanel({
     });
     const data = await res.json();
     if (res.status !== 200) throw new Error(data.error);
-    return data as Channel;
+
+    // create channel object because createdAt is being returned as string and not date type
+    const channel = {
+      id: data.id,
+      name: data.name,
+      projectId: data.projectId,
+      createdAt: new Date(data.createdAt),
+    };
+
+    return channel as Channel;
   };
 
   useEffect(() => {
@@ -198,6 +207,14 @@ function SidePanel({
             onClick={async () => {
               try {
                 const channel = await createChannel();
+                window.dispatchEvent(
+                  new CustomEvent("channel:created", {
+                    detail: {
+                      channel: channel,
+                    },
+                  })
+                );
+
                 setChannels([channel, ...channels]);
                 setCreateChannelDialogOpen(false);
               } catch (err) {
