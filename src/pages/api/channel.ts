@@ -1,4 +1,8 @@
-import { createChannel, getChannels } from "@/lib/beaver/channel";
+import {
+  createChannel,
+  deleteChannel,
+  getChannels,
+} from "@/lib/beaver/channel";
 import type { APIContext, APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ request }: APIContext) => {
@@ -62,6 +66,41 @@ export const POST: APIRoute = async ({ request }) => {
       headers: {
         "Content-Type": "application/json",
       },
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.error(err);
+    return new Response(
+      JSON.stringify({ error: "An unkown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};
+
+export const DELETE: APIRoute = async ({ request }) => {
+  try {
+    const { channelID } = await request.json();
+
+    if (!channelID) {
+      return new Response(JSON.stringify({ error: "channelID is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const channel = await deleteChannel(parseInt(channelID));
+
+    return new Response(JSON.stringify({ channel }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     if (err instanceof Error) {
