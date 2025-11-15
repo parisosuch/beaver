@@ -46,16 +46,22 @@ export default function ProjectFeed({ projectID }: { projectID: number }) {
 
   return (
     <div className="p-8 w-1/2 space-y-4">
-      {events.map((event, index) => (
-        <motion.div
-          key={event.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.05 }}
-        >
-          <EventCard key={event.id} event={event} />
-        </motion.div>
-      ))}
+      {events.length === 0 ? (
+        <div className="w-full text-center">
+          <h2 className="text-2xl">Looks like this project has no events!</h2>
+        </div>
+      ) : (
+        events.map((event, index) => (
+          <motion.div
+            key={event.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.05 }}
+          >
+            <EventCard key={event.id} event={event} />
+          </motion.div>
+        ))
+      )}
     </div>
   );
 }
