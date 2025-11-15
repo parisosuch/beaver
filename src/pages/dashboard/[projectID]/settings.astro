@@ -11,7 +11,7 @@ const project = await getProject(parseInt(projectID!));
 
 const channels = await getChannels(parseInt(projectID!));
 
-const metaCss = "flex space-x-2 items-center w-full justify-between";
+const metaCss = "flex items-center w-full justify-between";
 const metaH3Css = "font-medium";
 ---
 
@@ -21,7 +21,7 @@ const metaH3Css = "font-medium";
       <h1>Project Settings</h1>
     </div>
     <div class="w-full flex flex-col items-center mt-8">
-      <div class="w-3/4 flex flex-col">
+      <div class="w-3/4 flex flex-col space-y-4">
         <h2 class="font-mono mb-2">Meta</h2>
         <div class={metaCss}>
           <h3 class={metaH3Css}>Project Name</h3>
@@ -37,7 +37,7 @@ const metaH3Css = "font-medium";
         </div>
       </div>
       <div class="w-3/4 mt-8">
-        <h2 class="font-mono mb-2">Channels</h2>
+        <h2 class="font-mono">Channels</h2>
         <div class="flex flex-col">
           <ChannelSettings client:load channels={channels} />
         </div>
