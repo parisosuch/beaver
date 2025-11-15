@@ -3,6 +3,7 @@ import Layout from "@/layouts/layout.astro";
 import { getChannels } from "@/lib/beaver/channel";
 import { getProject } from "@/lib/beaver/project";
 import APIKey from "@/components/api-key";
+import ChannelSettings from "@/components/channel-settings";
 
 const { projectID } = Astro.params;
 
@@ -37,13 +38,10 @@ const metaH3Css = "font-medium";
       </div>
       <div class="w-3/4 mt-8">
         <h2 class="font-mono mb-2">Channels</h2>
-        <div class="space-y-2">
+        <div class="flex flex-col">
           {
             channels.map((channel) => (
-              <div class="rounded border p-2">
-                <h3 class="font-medium text-lg">{channel.name}</h3>
-                <p class="text-xs">{channel.createdAt?.toLocaleDateString()}</p>
-              </div>
+              <ChannelSettings client:load channel={channel} />
             ))
           }
         </div>
