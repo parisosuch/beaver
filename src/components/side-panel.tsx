@@ -60,12 +60,28 @@ function SidePanel({
       setPathname(window.location.pathname);
     };
 
+    const handleChannelDeleted = (e: CustomEvent<{ id: number }>) => {
+      const { id } = e.detail;
+
+      setChannels((prev) => prev.filter((c) => c.id !== id));
+    };
+
     window.addEventListener("popstate", handleNavigation);
     document.addEventListener("astro:page-load", handleNavigation);
+
+    // add custom even for channel deletion
+    window.addEventListener(
+      "channel:deleted",
+      handleChannelDeleted as EventListener
+    );
 
     return () => {
       window.removeEventListener("popstate", handleNavigation);
       document.removeEventListener("astro:page-load", handleNavigation);
+      window.removeEventListener(
+        "channel:deleted",
+        handleChannelDeleted as EventListener
+      );
     };
   }, []);
 

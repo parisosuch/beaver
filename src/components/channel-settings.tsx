@@ -17,6 +17,7 @@ import { Label } from "./ui/label";
 export default function ChannelSettings({ channel }: { channel: Channel }) {
   const [channelName, setChannelName] = useState("");
   const [channelDeleteError, setChannelDeleteError] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const deleteChannel = async () => {
     const res = await fetch("/api/channel", {
@@ -33,7 +34,7 @@ export default function ChannelSettings({ channel }: { channel: Channel }) {
   };
 
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <div className="rounded border p-2 mt-4 flex justify-between items-center">
         <div>
           <h3 className="font-medium text-lg">{channel.name}</h3>
@@ -71,6 +72,11 @@ export default function ChannelSettings({ channel }: { channel: Channel }) {
             disabled={channelName !== channel.name}
             onClick={async () => {
               deleteChannel();
+              const id = channel.id;
+              window.dispatchEvent(
+                new CustomEvent("channel:deleted", { detail: { id } })
+              );
+              setDialogOpen(false);
             }}
           >
             Delete
