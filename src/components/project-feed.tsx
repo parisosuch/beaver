@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 export default function ProjectFeed({ projectID }: { projectID: number }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
   const eventIdsRef = useRef<Set<number>>(new Set()); // Track event IDs with useRef
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Connect to the SSE endpoint
@@ -24,12 +25,12 @@ export default function ProjectFeed({ projectID }: { projectID: number }) {
         // Update state with new unique events (add them to the beginning)
         setEvents((prevEvents) => [...newUniqueEvents, ...prevEvents]);
 
+        setLoading(false);
+
         // Update the eventIdsRef to track the IDs of new events
         newUniqueEvents.forEach((event) => {
           eventIdsRef.current.add(event.id);
         });
-
-        console.log(eventIdsRef.current);
       }
     });
 
@@ -43,6 +44,14 @@ export default function ProjectFeed({ projectID }: { projectID: number }) {
       eventSource.close();
     };
   }, [projectID]);
+
+  if (loading) {
+    return (
+      <div className="p-8 w-1/2">
+        <p className="text-center">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 w-1/2 space-y-4">
