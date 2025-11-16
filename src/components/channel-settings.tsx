@@ -44,7 +44,6 @@ export default function ChannelSettings({ channels }: { channels: Channel[] }) {
     const handleChannelCreated = (e: CustomEvent<{ channel: Channel }>) => {
       const { channel } = e.detail;
 
-      console.log(channel);
       setChannels([...clientChannels, channel]);
     };
 

@@ -40,8 +40,6 @@ export async function createChannel(channel_name: string, project_id: number) {
       and(eq(channels.projectId, project_id), eq(channels.name, channel_name))
     );
 
-  console.log(projectChannels);
-
   if (projectChannels.length > 0) {
     throw new Error("Channel with name already exists for this project.");
   }

@@ -10,10 +10,8 @@ await initDB();
 const projects = await getProjects();
 
 if (projects.length === 0) {
-  console.log("Redirecting to onboarding...");
   return Astro.redirect("/onboarding");
 } else {
-  console.log("Redirecting to dashboard...");
   return Astro.redirect(`/dashboard/${projects[0].id}/feed`);
 }
 ---

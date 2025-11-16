@@ -22,7 +22,6 @@ export default function ChannelLogsView({ channel }: { channel: Channel }) {
   };
 
   useEffect(() => {
-    console.log("Getting logs for channel: ", channel.id);
     getLogs().then((res) => {
       setLogs(res);
     });
