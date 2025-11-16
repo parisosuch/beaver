@@ -1,5 +1,5 @@
-import type { Event, EventWithChannelName } from "@/lib/beaver/event";
-import { Card, CardDescription } from "./ui/card";
+import type { EventWithChannelName } from "@/lib/beaver/event";
+import { Card } from "./ui/card";
 import { getEventTime } from "@/lib/utils";
 
 export default function EventCard({ event }: { event: EventWithChannelName }) {

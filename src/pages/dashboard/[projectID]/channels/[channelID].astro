@@ -1,11 +1,15 @@
 ---
 import Layout from "@/layouts/layout.astro";
+import EventFeed from "@/components/event-feed";
 
 const { projectID, channelID } = Astro.params;
-
-console.log(channelID);
 ---
 
 <Layout projectID={projectID!}>
-  <p>This is the channel page! Channel ID: {channelID!}</p>
+  <div class="flex flex-col items-center w-full">
+    <div class="w-full p-8 border-b">
+      <h1 class="text-2xl font-semibold">Feed</h1>
+    </div>
+    <EventFeed client:load channelID={parseInt(channelID!)} />
+  </div>
 </Layout>

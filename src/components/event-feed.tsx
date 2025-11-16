@@ -27,6 +27,8 @@ export default function EventFeed({
     eventSource.addEventListener("message", (event) => {
       const newEvents: EventWithChannelName[] = JSON.parse(event.data);
 
+      console.log(newEvents);
+
       // Filter out events that are already in the eventIds set (useRef)
       const newUniqueEvents = newEvents.filter(
         (newEvent) => !eventIdsRef.current.has(newEvent.id)
