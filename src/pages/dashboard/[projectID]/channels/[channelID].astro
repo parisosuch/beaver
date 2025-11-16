@@ -1,14 +1,17 @@
 ---
 import Layout from "@/layouts/layout.astro";
 import EventFeed from "@/components/event-feed";
+import { getChannel } from "@/lib/beaver/channel";
 
 const { projectID, channelID } = Astro.params;
+
+const channel = await getChannel(parseInt(channelID!));
 ---
 
 <Layout projectID={projectID!}>
   <div class="flex flex-col items-center w-full">
     <div class="w-full p-8 border-b">
-      <h1 class="text-2xl font-semibold">Feed</h1>
+      <h1 class="text-2xl font-semibold"># {channel.name}</h1>
     </div>
     <EventFeed client:load channelID={parseInt(channelID!)} />
   </div>
