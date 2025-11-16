@@ -3,14 +3,25 @@ import { useEffect, useRef, useState } from "react";
 import EventCard from "./event-card";
 import { motion } from "framer-motion";
 
-export default function ProjectFeed({ projectID }: { projectID: number }) {
+export default function EventFeed({
+  projectID,
+  channelID,
+}: {
+  projectID?: number;
+  channelID?: number;
+}) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
   const eventIdsRef = useRef<Set<number>>(new Set()); // Track event IDs with useRef
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Connect to the SSE endpoint
-    const eventSource = new EventSource(`/api/events/project/${projectID}`);
+    var eventSource: EventSource;
+    if (channelID) {
+      eventSource = new EventSource(`/api/events/channel/${channelID}`);
+    } else {
+      eventSource = new EventSource(`/api/events/project/${projectID}`);
+    }
 
     // Event listener for incoming events
     eventSource.addEventListener("message", (event) => {
@@ -57,7 +68,9 @@ export default function ProjectFeed({ projectID }: { projectID: number }) {
     <div className="p-8 w-1/2 space-y-4">
       {events.length === 0 ? (
         <div className="w-full text-center">
-          <h2 className="text-2xl">Looks like this project has no events!</h2>
+          <h2 className="text-2xl">
+            Looks like this {projectID ? "project" : "channel"} has no events!
+          </h2>
         </div>
       ) : (
         events.map((event, index) => (

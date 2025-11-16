@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/layout.astro";
-import ProjectFeed from "@/components/project-feed";
+import EventFeed from "@/components/event-feed";
 
 const { projectID } = Astro.params;
 ---
@@ -10,6 +10,6 @@ const { projectID } = Astro.params;
     <div class="w-full p-8 border-b">
       <h1 class="text-2xl font-semibold">Feed</h1>
     </div>
-    <ProjectFeed client:load projectID={parseInt(projectID!)} />
+    <EventFeed client:load projectID={parseInt(projectID!)} />
   </div>
 </Layout>
