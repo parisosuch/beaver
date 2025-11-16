@@ -36,13 +36,12 @@ export default function EventFeed({
         // Update state with new unique events (add them to the beginning)
         setEvents((prevEvents) => [...newUniqueEvents, ...prevEvents]);
 
-        setLoading(false);
-
         // Update the eventIdsRef to track the IDs of new events
         newUniqueEvents.forEach((event) => {
           eventIdsRef.current.add(event.id);
         });
       }
+      setLoading(false);
     });
 
     // Handle SSE errors
