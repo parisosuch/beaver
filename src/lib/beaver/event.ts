@@ -34,12 +34,22 @@ export async function getChannelEvents(channel_id: number) {
     throw new Error(`Channel with id ${channel_id} does not exist.`);
   }
 
-  const logsRes = await db
-    .select()
+  const eventRes = await db
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      icon: events.icon,
+      projectId: events.projectId,
+      createdAt: events.createdAt,
+      channelName: channels.name,
+    })
     .from(events)
-    .where(eq(events.channelId, channel_id));
+    .leftJoin(channels, eq(events.channelId, channels.id))
+    .where(eq(events.channelId, channel_id))
+    .orderBy(desc(events.createdAt));
 
-  return logsRes;
+  return eventRes as EventWithChannelName[];
 }
 
 export async function getProjectEvents(
