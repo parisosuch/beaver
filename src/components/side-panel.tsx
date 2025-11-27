@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { InboxIcon, PlusIcon, SearchIcon, Settings } from "lucide-react";
+import { InboxIcon, PlusIcon, Settings } from "lucide-react";
 
 function SidePanel({
   currentProject,
@@ -137,13 +137,6 @@ function SidePanel({
           >
             <InboxIcon size={20} />
             <p>Feed</p>
-          </a>
-          <a
-            className={isSearchActive() ? activeCss : navigationCss}
-            href={`/dashboard/${project.id}/search`}
-          >
-            <SearchIcon size={20} />
-            <p>Search</p>
           </a>
           <a
             className={isSettingsActive() ? activeCss : navigationCss}
