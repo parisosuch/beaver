@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { events, channels, projects } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, like } from "drizzle-orm";
 import { getProject } from "./project";
 
 export type Event = {
@@ -53,8 +53,37 @@ export async function getChannelEvents(channel_id: number) {
 }
 
 export async function getProjectEvents(
-  project_id: number
+  project_id: number,
+  options: { search: string | null }
 ): Promise<EventWithChannelName[]> {
+  if (options.search) {
+    const searchTerm = `%${options.search}%`;
+    const eventRes = await db
+      .select({
+        id: events.id,
+        name: events.name,
+        description: events.description,
+        icon: events.icon,
+        projectId: events.projectId,
+        createdAt: events.createdAt,
+        channelName: channels.name,
+      })
+      .from(events)
+      .leftJoin(
+        channels,
+        and(
+          eq(events.channelId, channels.id),
+          eq(events.projectId, channels.projectId)
+        )
+      )
+      .where(
+        and(eq(events.projectId, project_id), like(events.name, searchTerm))
+      )
+      .orderBy(desc(events.createdAt));
+
+    return eventRes as EventWithChannelName[];
+  }
+
   const eventRes = await db
     .select({
       id: events.id,

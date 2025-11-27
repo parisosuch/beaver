@@ -31,12 +31,19 @@ export default function EventFeed({
 
   useEffect(() => {
     // Connect to the SSE endpoint
-    var eventSource: EventSource;
+    var endpoint = "/api/events";
+
     if (channelID) {
-      eventSource = new EventSource(`/api/events/channel/${channelID}`);
+      endpoint += `/channel/${channelID}`;
     } else {
-      eventSource = new EventSource(`/api/events/project/${projectID}`);
+      endpoint += `/project/${projectID}`;
     }
+
+    if (search) {
+      endpoint += `?search=${encodeURI(search)}`;
+    }
+
+    const eventSource = new EventSource(endpoint);
 
     // Event listener for incoming events
     eventSource.addEventListener("message", (event) => {

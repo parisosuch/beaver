@@ -1,7 +1,14 @@
 import { getProjectEvents } from "@/lib/beaver/event";
 
-export async function GET({ params }: { params: { projectID: string } }) {
+export async function GET({
+  params,
+  url,
+}: {
+  params: { projectID: string };
+  url: URL;
+}) {
   const { projectID } = params;
+  const search = url.searchParams.get("search");
 
   const headers = {
     "Content-Type": "text/event-stream",
@@ -15,7 +22,9 @@ export async function GET({ params }: { params: { projectID: string } }) {
       async function sendEvents() {
         try {
           while (true) {
-            const events = await getProjectEvents(parseInt(projectID));
+            const events = await getProjectEvents(parseInt(projectID), {
+              search,
+            });
 
             controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
 
