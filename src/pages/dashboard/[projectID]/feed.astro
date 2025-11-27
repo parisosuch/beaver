@@ -6,10 +6,5 @@ const { projectID } = Astro.params;
 ---
 
 <Layout projectID={projectID!}>
-  <div class="flex flex-col items-center w-full">
-    <div class="w-full p-8 border-b">
-      <h1 class="text-2xl font-semibold">Feed</h1>
-    </div>
-    <EventFeed client:load projectID={parseInt(projectID!)} />
-  </div>
+  <EventFeed client:load projectID={parseInt(projectID!)} />
 </Layout>
