@@ -2,17 +2,32 @@ import type { EventWithChannelName } from "@/lib/beaver/event";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "./event-card";
 import { motion } from "framer-motion";
+import { Input } from "./ui/input";
+import { SearchIcon } from "lucide-react";
+import { Button } from "./ui/button";
+import { navigate } from "astro:transitions/client";
 
 export default function EventFeed({
   projectID,
   channelID,
+  search,
 }: {
   projectID?: number;
   channelID?: number;
+  search?: string;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
   const eventIdsRef = useRef<Set<number>>(new Set()); // Track event IDs with useRef
   const [loading, setLoading] = useState(true);
+
+  const [searchInput, setSearchInput] = useState("");
+
+  const handleSearch = () => {
+    if (!searchInput) return;
+    navigate(
+      `/dashboard/${projectID}/feed?search=${encodeURIComponent(searchInput)}`
+    );
+  };
 
   useEffect(() => {
     // Connect to the SSE endpoint
@@ -65,8 +80,32 @@ export default function EventFeed({
 
   return (
     <div className="w-full">
-      <div className="w-full p-8 border-b">
+      <div className="w-full flex items-center justify-between p-8 border-b">
         <h1 className="text-2xl font-semibold">Feed</h1>
+        {/* Search Section*/}
+        <div className="flex space-x-2 items-center">
+          <Input
+            placeholder="Search..."
+            type="text"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
+            onChange={(e) => {
+              e.preventDefault();
+
+              setSearchInput(e.target.value);
+            }}
+          />
+          <Button
+            variant="secondary"
+            className="hover:cursor-pointer"
+            onClick={handleSearch}
+          >
+            <SearchIcon />
+          </Button>
+        </div>
       </div>
       <div className="w-full flex justify-center">
         <div className="p-8 w-1/2 space-y-4">

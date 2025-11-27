@@ -3,6 +3,10 @@ import Layout from "@/layouts/layout.astro";
 import EventFeed from "@/components/event-feed";
 
 const { projectID } = Astro.params;
+
+const url = new URL(Astro.request.url);
+
+console.log(url);
 ---
 
 <Layout projectID={projectID!}>
