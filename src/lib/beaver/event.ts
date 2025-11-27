@@ -57,7 +57,9 @@ export async function getProjectEvents(
   options: { search: string | null }
 ): Promise<EventWithChannelName[]> {
   if (options.search) {
-    const searchTerm = `%${options.search}%`;
+    const searchWords = options.search.split(" ");
+    const searchTerms = searchWords.map((word) => `%${word}%`);
+
     const eventRes = await db
       .select({
         id: events.id,
@@ -77,7 +79,10 @@ export async function getProjectEvents(
         )
       )
       .where(
-        and(eq(events.projectId, project_id), like(events.name, searchTerm))
+        and(
+          eq(events.projectId, project_id),
+          ...searchTerms.map((term) => like(events.name, term))
+        )
       )
       .orderBy(desc(events.createdAt));
 
