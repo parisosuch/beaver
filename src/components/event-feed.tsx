@@ -20,7 +20,7 @@ export default function EventFeed({
   const eventIdsRef = useRef<Set<number>>(new Set()); // Track event IDs with useRef
   const [loading, setLoading] = useState(true);
 
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState(search);
 
   const handleSearch = () => {
     if (!searchInput) return;
@@ -87,6 +87,7 @@ export default function EventFeed({
           <Input
             placeholder="Search..."
             type="text"
+            value={searchInput ? searchInput : ""}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSearch();
