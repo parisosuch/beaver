@@ -14,7 +14,7 @@ export default function EventFeed({
 }: {
   projectID?: number;
   channelID?: number;
-  search?: string;
+  search?: string | null;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
   const eventIdsRef = useRef<Set<number>>(new Set()); // Track event IDs with useRef

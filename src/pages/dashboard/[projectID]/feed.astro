@@ -5,10 +5,11 @@ import EventFeed from "@/components/event-feed";
 const { projectID } = Astro.params;
 
 const url = new URL(Astro.request.url);
+const searchParams = url.searchParams;
 
-console.log(url);
+const search = searchParams.get("search");
 ---
 
 <Layout projectID={projectID!}>
-  <EventFeed client:load projectID={parseInt(projectID!)} />
+  <EventFeed client:load projectID={parseInt(projectID!)} search={search} />
 </Layout>
