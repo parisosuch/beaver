@@ -23,10 +23,15 @@ export default function EventFeed({
   const [searchInput, setSearchInput] = useState(search);
 
   const handleSearch = () => {
-    if (!searchInput) return;
-    navigate(
-      `/dashboard/${projectID}/feed?search=${encodeURIComponent(searchInput)}`
-    );
+    if (search && !searchInput) {
+      navigate(`/dashboard/${projectID}/feed`);
+    } else if (!searchInput) {
+      return;
+    } else {
+      navigate(
+        `/dashboard/${projectID}/feed?search=${encodeURIComponent(searchInput)}`
+      );
+    }
   };
 
   useEffect(() => {
