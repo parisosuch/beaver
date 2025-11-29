@@ -1,5 +1,10 @@
 // src/db/schema.ts
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 // ---- PROJECTS ----
@@ -15,7 +20,7 @@ export const projects = sqliteTable("projects", {
 // ---- CHANNELS ----
 export const channels = sqliteTable("channels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").unique().notNull(),
+  name: text("name").notNull(),
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
