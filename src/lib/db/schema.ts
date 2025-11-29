@@ -59,7 +59,7 @@ export const channelRelations = relations(channels, ({ one, many }) => ({
   events: many(events),
 }));
 
-export const logRelations = relations(events, ({ one }) => ({
+export const eventRelations = relations(events, ({ one }) => ({
   channel: one(channels, {
     fields: [events.channelId],
     references: [channels.id],
