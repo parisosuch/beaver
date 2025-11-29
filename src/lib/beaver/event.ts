@@ -1,7 +1,18 @@
 import { db } from "../db/db";
-import { events, channels, projects } from "../db/schema";
+import { events, channels, projects, eventTags } from "../db/schema";
 import { eq, and, desc, like } from "drizzle-orm";
 import { getProject } from "./project";
+
+export type Tag = {
+  id: number;
+  eventId: number;
+  key: string;
+  value: string;
+  type: "string" | "number" | "boolean";
+};
+
+// TODO: this name sucks but IDK what else to use.
+export type TagPrimitive = Record<string, number | string | boolean>;
 
 export type Event = {
   id: number;
@@ -13,6 +24,7 @@ export type Event = {
   createdAt: Date;
 };
 
+// TODO: this name sucks too
 export type EventWithChannelName = {
   id: number;
   name: string;
@@ -21,6 +33,7 @@ export type EventWithChannelName = {
   projectId: number;
   channelName: string;
   createdAt: Date;
+  tags?: TagPrimitive;
 };
 
 export async function getChannelEvents(channel_id: number) {
@@ -119,13 +132,15 @@ export async function createEvent({
   icon,
   channel,
   apiKey,
+  tags,
 }: {
   name: string;
   description?: string;
   icon?: string;
   channel: string;
   apiKey: string;
-}) {
+  tags?: Record<string, string | number | boolean>;
+}): Promise<EventWithChannelName> {
   // check if channel exists first
   const channelsRes = await db
     .select()
@@ -151,5 +166,39 @@ export async function createEvent({
     .values({ name, description, icon, projectId, channelId })
     .returning();
 
-  return res[0];
+  const event = res[0];
+
+  const tagPrim: TagPrimitive = {};
+
+  if (tags) {
+    const tagEntries = Object.entries(tags).map(([key, value]) => ({
+      eventId: event.id,
+      key, // <-- the object key, e.g. "quantity"
+      value: String(value), // stored as TEXT
+      type: typeof value as "string" | "number" | "boolean",
+    }));
+
+    const tagsRes = await db.insert(eventTags).values(tagEntries).returning();
+
+    for (const row of tagsRes) {
+      if (row.type === "number") {
+        tagPrim[row.key] = Number(row.value);
+      } else if (row.type === "boolean") {
+        tagPrim[row.key] = row.value === "true";
+      } else {
+        tagPrim[row.key] = row.value;
+      }
+    }
+  }
+
+  return {
+    id: event.id,
+    name: event.name,
+    icon: event.icon ?? undefined,
+    description: event.description ?? undefined,
+    tags: tagPrim,
+    projectId: project.id,
+    channelName: channelsRes[0].name,
+    createdAt: event.createdAt,
+  };
 }
