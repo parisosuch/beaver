@@ -46,6 +46,23 @@ export const events = sqliteTable("events", {
   ),
 });
 
+// --- EVENT TAGS ---
+export const eventTags = sqliteTable("event_tags", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+
+  key: text("key").notNull(),
+
+  value: text("value").notNull(),
+
+  type: text("type", {
+    enum: ["string", "number", "boolean"],
+  }).notNull(),
+});
+
 // ---- RELATIONS ----
 export const projectRelations = relations(projects, ({ many }) => ({
   channels: many(channels),
@@ -63,5 +80,12 @@ export const eventRelations = relations(events, ({ one }) => ({
   channel: one(channels, {
     fields: [events.channelId],
     references: [channels.id],
+  }),
+}));
+
+export const eventTagRelations = relations(eventTags, ({ one }) => ({
+  event: one(events, {
+    fields: [eventTags.eventId],
+    references: [events.id],
   }),
 }));
