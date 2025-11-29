@@ -43,7 +43,7 @@ await db.run(`
       REFERENCES events(id) ON DELETE CASCADE,
     key TEXT NOT NULL,
     value TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'boolean', 'array')),
+    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'boolean')),
     UNIQUE(event_id, key)
   )
 `);
