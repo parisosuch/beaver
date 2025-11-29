@@ -6,14 +6,15 @@ import { Input } from "./ui/input";
 import { SearchIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
+import type { Channel } from "@/lib/beaver/channel";
 
 export default function EventFeed({
   projectID,
-  channelID,
+  channel,
   search,
 }: {
   projectID?: number;
-  channelID?: number;
+  channel?: Channel;
   search?: string | null;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
@@ -38,8 +39,8 @@ export default function EventFeed({
     // Connect to the SSE endpoint
     var endpoint = "/api/events";
 
-    if (channelID) {
-      endpoint += `/channel/${channelID}`;
+    if (channel) {
+      endpoint += `/channel/${channel.id}`;
     } else {
       endpoint += `/project/${projectID}`;
     }
@@ -90,10 +91,25 @@ export default function EventFeed({
     );
   }
 
+  if (!projectID && !channel) {
+    return (
+      <div className="w-full">
+        <div className="w-full flex items-center justify-between p-8 border-b">
+          <h1 className="text-2xl font-semibold"># undefined</h1>
+        </div>
+        <div className="w-full flex justify-center pt-8">
+          <h2 className="text-2xl">Channel does not exist.</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <div className="w-full flex items-center justify-between p-8 border-b">
-        <h1 className="text-2xl font-semibold">Feed</h1>
+        <h1 className="text-2xl font-semibold">
+          {projectID ? "Feed" : `# ${channel?.name}`}
+        </h1>
         {/* Search Section*/}
         <div className="flex space-x-2 items-center">
           <Input
