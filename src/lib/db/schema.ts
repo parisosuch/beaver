@@ -12,9 +12,9 @@ export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").unique().notNull(),
   apiKey: text("api_key").unique().notNull(), // for external logging API
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`(unixepoch() * 1000)`
-  ),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
 });
 
 // ---- CHANNELS ----
@@ -24,9 +24,9 @@ export const channels = sqliteTable("channels", {
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`(unixepoch() * 1000)`
-  ),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
 });
 
 // ---- EVENTS ----
@@ -41,9 +41,9 @@ export const events = sqliteTable("events", {
   channelId: integer("channel_id")
     .notNull()
     .references(() => channels.id, { onDelete: "cascade" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`(unixepoch() * 1000)`
-  ),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
 });
 
 // --- EVENT TAGS ---
