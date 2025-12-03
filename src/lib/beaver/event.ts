@@ -36,6 +36,28 @@ export type EventWithChannelName = {
   tags?: TagPrimitive;
 };
 
+// helper function to get tag primitive object from event tags
+const getEventTags = async (id: number): Promise<TagPrimitive> => {
+  const tags = await db
+    .select()
+    .from(eventTags)
+    .where(eq(eventTags.eventId, id));
+
+  const tagPrim: TagPrimitive = {};
+
+  for (const row of tags) {
+    if (row.type === "number") {
+      tagPrim[row.key] = Number(row.value);
+    } else if (row.type === "boolean") {
+      tagPrim[row.key] = row.value === "true";
+    } else {
+      tagPrim[row.key] = row.value;
+    }
+  }
+
+  return tagPrim;
+};
+
 export async function getChannelEvents(channel_id: number) {
   // check if channel exists first
   const channelsRes = await db
@@ -168,8 +190,6 @@ export async function createEvent({
 
   const event = res[0];
 
-  const tagPrim: TagPrimitive = {};
-
   if (tags) {
     const tagEntries = Object.entries(tags).map(([key, value]) => ({
       eventId: event.id,
@@ -178,17 +198,20 @@ export async function createEvent({
       type: typeof value as "string" | "number" | "boolean",
     }));
 
-    const tagsRes = await db.insert(eventTags).values(tagEntries).returning();
+    await db.insert(eventTags).values(tagEntries);
 
-    for (const row of tagsRes) {
-      if (row.type === "number") {
-        tagPrim[row.key] = Number(row.value);
-      } else if (row.type === "boolean") {
-        tagPrim[row.key] = row.value === "true";
-      } else {
-        tagPrim[row.key] = row.value;
-      }
-    }
+    const tagPrim = await getEventTags(event.id);
+
+    return {
+      id: event.id,
+      name: event.name,
+      icon: event.icon ?? undefined,
+      description: event.description ?? undefined,
+      tags: tagPrim,
+      projectId: project.id,
+      channelName: channelsRes[0].name,
+      createdAt: event.createdAt,
+    };
   }
 
   return {
@@ -196,7 +219,7 @@ export async function createEvent({
     name: event.name,
     icon: event.icon ?? undefined,
     description: event.description ?? undefined,
-    tags: tagPrim,
+    tags: {},
     projectId: project.id,
     channelName: channelsRes[0].name,
     createdAt: event.createdAt,
