@@ -95,7 +95,7 @@ export async function getProjectEvents(
     const searchWords = options.search.split(" ");
     const searchTerms = searchWords.map((word) => `%${word}%`);
 
-    const eventRes = await db
+    var eventData = await db
       .select({
         id: events.id,
         name: events.name,
@@ -120,32 +120,41 @@ export async function getProjectEvents(
         )
       )
       .orderBy(desc(events.createdAt));
-
-    return eventRes as EventWithChannelName[];
+  } else {
+    var eventData = await db
+      .select({
+        id: events.id,
+        name: events.name,
+        description: events.description,
+        icon: events.icon,
+        projectId: events.projectId,
+        createdAt: events.createdAt,
+        channelName: channels.name,
+      })
+      .from(events)
+      .leftJoin(
+        channels,
+        and(
+          eq(events.channelId, channels.id),
+          eq(events.projectId, channels.projectId)
+        )
+      )
+      .where(eq(events.projectId, project_id))
+      .orderBy(desc(events.createdAt));
   }
 
-  const eventRes = await db
-    .select({
-      id: events.id,
-      name: events.name,
-      description: events.description,
-      icon: events.icon,
-      projectId: events.projectId,
-      createdAt: events.createdAt,
-      channelName: channels.name,
-    })
-    .from(events)
-    .leftJoin(
-      channels,
-      and(
-        eq(events.channelId, channels.id),
-        eq(events.projectId, channels.projectId)
-      )
-    )
-    .where(eq(events.projectId, project_id))
-    .orderBy(desc(events.createdAt));
+  var eventsRes = [];
 
-  return eventRes as EventWithChannelName[];
+  for (let event of eventData) {
+    const tags = await getEventTags(event.id);
+
+    eventsRes.push({
+      tags,
+      ...event,
+    });
+  }
+
+  return eventsRes as EventWithChannelName[];
 }
 
 export async function createEvent({
