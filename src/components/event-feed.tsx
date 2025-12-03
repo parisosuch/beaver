@@ -9,10 +9,12 @@ import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
 
 export default function EventFeed({
+  type,
   projectID,
   channel,
   search,
 }: {
+  type: "channel" | "project";
   projectID?: number;
   channel?: Channel;
   search?: string | null;
@@ -108,7 +110,7 @@ export default function EventFeed({
     <div className="w-full">
       <div className="w-full flex items-center justify-between p-8 border-b">
         <h1 className="text-2xl font-semibold">
-          {projectID ? "Feed" : `# ${channel?.name}`}
+          {type === "project" ? "Feed" : `# ${channel?.name}`}
         </h1>
         {/* Search Section*/}
         <div className="flex space-x-2 items-center">
@@ -141,8 +143,8 @@ export default function EventFeed({
           {events.length === 0 ? (
             <div className="w-full text-center">
               <h2 className="text-2xl">
-                Looks like this {projectID ? "project" : "channel"} has no
-                events!
+                Looks like this {type === "project" ? "project" : "channel"} has
+                no events!
               </h2>
             </div>
           ) : (

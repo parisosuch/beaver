@@ -34,3 +34,16 @@ export async function initDB() {
     )
   `);
 }
+
+// Event tags table
+await db.run(`
+  CREATE TABLE IF NOT EXISTS event_tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL
+      REFERENCES events(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'boolean')),
+    UNIQUE(event_id, key)
+  )
+`);

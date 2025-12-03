@@ -1,5 +1,10 @@
 // src/db/schema.ts
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 // ---- PROJECTS ----
@@ -7,21 +12,21 @@ export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").unique().notNull(),
   apiKey: text("api_key").unique().notNull(), // for external logging API
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`(unixepoch() * 1000)`
-  ),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
 });
 
 // ---- CHANNELS ----
 export const channels = sqliteTable("channels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").unique().notNull(),
+  name: text("name").notNull(),
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`(unixepoch() * 1000)`
-  ),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
 });
 
 // ---- EVENTS ----
@@ -36,9 +41,26 @@ export const events = sqliteTable("events", {
   channelId: integer("channel_id")
     .notNull()
     .references(() => channels.id, { onDelete: "cascade" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`(unixepoch() * 1000)`
-  ),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
+// --- EVENT TAGS ---
+export const eventTags = sqliteTable("event_tags", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+
+  key: text("key").notNull(),
+
+  value: text("value").notNull(),
+
+  type: text("type", {
+    enum: ["string", "number", "boolean"],
+  }).notNull(),
 });
 
 // ---- RELATIONS ----
@@ -54,9 +76,16 @@ export const channelRelations = relations(channels, ({ one, many }) => ({
   events: many(events),
 }));
 
-export const logRelations = relations(events, ({ one }) => ({
+export const eventRelations = relations(events, ({ one }) => ({
   channel: one(channels, {
     fields: [events.channelId],
     references: [channels.id],
+  }),
+}));
+
+export const eventTagRelations = relations(eventTags, ({ one }) => ({
+  event: one(events, {
+    fields: [eventTags.eventId],
+    references: [events.id],
   }),
 }));

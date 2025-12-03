@@ -11,5 +11,10 @@ const search = searchParams.get("search");
 ---
 
 <Layout projectID={projectID!}>
-  <EventFeed client:load projectID={parseInt(projectID!)} search={search} />
+  <EventFeed
+    client:load
+    type="project"
+    projectID={parseInt(projectID!)}
+    search={search}
+  />
 </Layout>

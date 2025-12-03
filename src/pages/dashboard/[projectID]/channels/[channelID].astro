@@ -9,5 +9,10 @@ const channel = await getChannel(parseInt(channelID!));
 ---
 
 <Layout projectID={projectID!}>
-  <EventFeed client:load channel={channel} />
+  <EventFeed
+    client:load
+    type="channel"
+    projectID={parseInt(projectID!)}
+    channel={channel}
+  />
 </Layout>
