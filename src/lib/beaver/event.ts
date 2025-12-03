@@ -69,7 +69,7 @@ export async function getChannelEvents(channel_id: number) {
     throw new Error(`Channel with id ${channel_id} does not exist.`);
   }
 
-  const eventRes = await db
+  const eventData = await db
     .select({
       id: events.id,
       name: events.name,
@@ -84,7 +84,15 @@ export async function getChannelEvents(channel_id: number) {
     .where(eq(events.channelId, channel_id))
     .orderBy(desc(events.createdAt));
 
-  return eventRes as EventWithChannelName[];
+  const eventsRes = [];
+
+  for (let event of eventData) {
+    const tags = await getEventTags(event.id);
+
+    eventsRes.push({ tags, ...event });
+  }
+
+  return eventsRes as EventWithChannelName[];
 }
 
 export async function getProjectEvents(
