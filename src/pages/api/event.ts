@@ -41,7 +41,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
 export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
     // extract body and verify contents
-    const { name, description, icon, channel, apiKey } = await request.json();
+    const { name, description, icon, channel, apiKey, tags } =
+      await request.json();
 
     if (!name) {
       return new Response(
@@ -83,6 +84,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       icon,
       channel,
       apiKey,
+      tags,
     });
 
     return new Response(JSON.stringify(event), {

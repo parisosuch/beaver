@@ -210,8 +210,8 @@ export async function createEvent({
   if (tags) {
     const tagEntries = Object.entries(tags).map(([key, value]) => ({
       eventId: event.id,
-      key, // <-- the object key, e.g. "quantity"
-      value: String(value), // stored as TEXT
+      key,
+      value: String(value),
       type: typeof value as "string" | "number" | "boolean",
     }));
 
