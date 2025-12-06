@@ -78,13 +78,22 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       );
     }
 
-    try {
-      var tagObj = JSON.parse(tags);
-    } catch (error) {
-      return new Response(
-        JSON.stringify({ error: "tags object is not a valid JSON object." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+    // TODO: there is a better way to do this but this will work for now
+    let tagObj;
+
+    if (tags) {
+      try {
+        if (typeof tags === "string") {
+          tagObj = JSON.parse(tags);
+        } else {
+          tagObj = tags;
+        }
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ error: "tags object is not valid JSON." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const event = await createEvent({
