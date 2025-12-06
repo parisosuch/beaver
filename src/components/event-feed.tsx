@@ -107,7 +107,7 @@ export default function EventFeed({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-h-screen">
       <div className="w-full flex items-center justify-between p-8 border-b">
         <h1 className="text-2xl font-semibold">
           {type === "project" ? "Feed" : `# ${channel?.name}`}
@@ -138,7 +138,7 @@ export default function EventFeed({
           </Button>
         </div>
       </div>
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center max-h-screen overflow-y-auto no-scrollbar">
         <div className="p-8 w-1/2 space-y-4">
           {events.length === 0 ? (
             <div className="w-full text-center">
