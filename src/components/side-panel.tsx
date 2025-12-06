@@ -110,7 +110,7 @@ function SidePanel({
       open={createChannelDialogOpen}
       onOpenChange={setCreateChannelDialogOpen}
     >
-      <div className="w-[350px] border-r h-screen p-8">
+      <div className="w-[350px] border-r min-h-screen p-8">
         {/* Project selector */}
         <h1 className="text-sm font-mono">Project</h1>
         <Select defaultValue={currentProject.name}>
