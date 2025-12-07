@@ -37,7 +37,7 @@ export type EventWithChannelName = {
 };
 
 type QueryOptions = {
-  search?: string;
+  search: string | null;
 };
 
 // helper function to get tag primitive object from event tags
@@ -70,7 +70,7 @@ const getEventTags = async (
 
 export async function getChannelEvents(
   channelId: number,
-  options: { search: string | null }
+  options: QueryOptions
 ): Promise<EventWithChannelName[]> {
   // check if channel exists first
   const channelsRes = await db
@@ -111,7 +111,7 @@ export async function getChannelEvents(
 
 export async function getProjectEvents(
   projectId: number,
-  options: { search: string | null }
+  options: QueryOptions
 ): Promise<EventWithChannelName[]> {
   // initial where clause
   const conditions: any[] = [eq(events.projectId, projectId)];
