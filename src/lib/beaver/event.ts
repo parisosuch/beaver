@@ -1,6 +1,6 @@
 import { db } from "../db/db";
-import { events, channels, projects, eventTags } from "../db/schema";
-import { eq, and, desc, like } from "drizzle-orm";
+import { events, channels, eventTags } from "../db/schema";
+import { eq, and, desc, like, inArray, gt } from "drizzle-orm";
 import { getProject } from "./project";
 
 export type Tag = {
@@ -28,45 +28,62 @@ export type Event = {
 export type EventWithChannelName = {
   id: number;
   name: string;
-  description?: string;
-  icon?: string;
+  description: string | null;
+  icon: string | null;
   projectId: number;
   channelName: string;
   createdAt: Date;
-  tags?: TagPrimitive;
+  tags: TagPrimitive;
+};
+
+type QueryOptions = {
+  search: string | null;
+  lastId?: number;
 };
 
 // helper function to get tag primitive object from event tags
-const getEventTags = async (id: number): Promise<TagPrimitive> => {
-  const tags = await db
+const getEventTags = async (
+  ids: number[]
+): Promise<Record<number, TagPrimitive>> => {
+  // batch fetch all tags for these events
+  const allTags = await db
     .select()
     .from(eventTags)
-    .where(eq(eventTags.eventId, id));
+    .where(inArray(eventTags.eventId, ids));
 
-  const tagPrim: TagPrimitive = {};
+  // group tags by eventId and convert to TagPrimitive
+  const tagsByEventId: Record<number, TagPrimitive> = {};
 
-  for (const row of tags) {
-    if (row.type === "number") {
-      tagPrim[row.key] = Number(row.value);
-    } else if (row.type === "boolean") {
-      tagPrim[row.key] = row.value === "true";
+  for (const tag of allTags) {
+    if (!tagsByEventId[tag.eventId]) tagsByEventId[tag.eventId] = {};
+
+    if (tag.type === "number") {
+      tagsByEventId[tag.eventId][tag.key] = Number(tag.value);
+    } else if (tag.type === "boolean") {
+      tagsByEventId[tag.eventId][tag.key] = tag.value === "true";
     } else {
-      tagPrim[row.key] = row.value;
+      tagsByEventId[tag.eventId][tag.key] = tag.value;
     }
   }
 
-  return tagPrim;
+  return tagsByEventId;
 };
 
-export async function getChannelEvents(channel_id: number) {
-  // check if channel exists first
-  const channelsRes = await db
-    .select()
-    .from(channels)
-    .where(eq(channels.id, channel_id));
+export async function getChannelEvents(
+  channelId: number,
+  options: QueryOptions
+): Promise<EventWithChannelName[]> {
+  // initial where clause
+  const conditions: any[] = [eq(events.channelId, channelId)];
 
-  if (channelsRes.length === 0) {
-    throw new Error(`Channel with id ${channel_id} does not exist.`);
+  if (options.search) {
+    const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
+
+    conditions.push(...searchTerms.map((term) => like(events.name, term)));
+  }
+
+  if (options.lastId) {
+    conditions.push(gt(events.id, options.lastId));
   }
 
   const eventData = await db
@@ -80,87 +97,68 @@ export async function getChannelEvents(channel_id: number) {
       channelName: channels.name,
     })
     .from(events)
-    .leftJoin(channels, eq(events.channelId, channels.id))
-    .where(eq(events.channelId, channel_id))
-    .orderBy(desc(events.createdAt));
+    .innerJoin(channels, eq(events.channelId, channels.id))
+    .where(and(...conditions))
+    .orderBy(desc(events.id));
 
-  const eventsRes = [];
+  const eventIds = eventData.map((event) => event.id);
 
-  for (let event of eventData) {
-    const tags = await getEventTags(event.id);
+  const eventTags = await getEventTags(eventIds);
 
-    eventsRes.push({ tags, ...event });
-  }
+  const eventsRes = eventData.map((event) => ({
+    ...event,
+    tags: eventTags[event.id] || {},
+  }));
 
-  return eventsRes as EventWithChannelName[];
+  return eventsRes;
 }
 
 export async function getProjectEvents(
-  project_id: number,
-  options: { search: string | null }
+  projectId: number,
+  options: QueryOptions
 ): Promise<EventWithChannelName[]> {
+  // initial where clause
+  const conditions: any[] = [eq(events.projectId, projectId)];
+
   if (options.search) {
-    const searchWords = options.search.split(" ");
-    const searchTerms = searchWords.map((word) => `%${word}%`);
+    const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
-    var eventData = await db
-      .select({
-        id: events.id,
-        name: events.name,
-        description: events.description,
-        icon: events.icon,
-        projectId: events.projectId,
-        createdAt: events.createdAt,
-        channelName: channels.name,
-      })
-      .from(events)
-      .leftJoin(
-        channels,
-        and(
-          eq(events.channelId, channels.id),
-          eq(events.projectId, channels.projectId)
-        )
-      )
-      .where(
-        and(
-          eq(events.projectId, project_id),
-          ...searchTerms.map((term) => like(events.name, term))
-        )
-      )
-      .orderBy(desc(events.createdAt));
-  } else {
-    var eventData = await db
-      .select({
-        id: events.id,
-        name: events.name,
-        description: events.description,
-        icon: events.icon,
-        projectId: events.projectId,
-        createdAt: events.createdAt,
-        channelName: channels.name,
-      })
-      .from(events)
-      .leftJoin(
-        channels,
-        and(
-          eq(events.channelId, channels.id),
-          eq(events.projectId, channels.projectId)
-        )
-      )
-      .where(eq(events.projectId, project_id))
-      .orderBy(desc(events.createdAt));
+    conditions.push(...searchTerms.map((term) => like(events.name, term)));
   }
 
-  var eventsRes = [];
-
-  for (let event of eventData) {
-    const tags = await getEventTags(event.id);
-
-    eventsRes.push({
-      tags,
-      ...event,
-    });
+  if (options.lastId) {
+    conditions.push(gt(events.id, options.lastId));
   }
+
+  const eventData = await db
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      icon: events.icon,
+      projectId: events.projectId,
+      createdAt: events.createdAt,
+      channelName: channels.name,
+    })
+    .from(events)
+    .leftJoin(
+      channels,
+      and(
+        eq(events.channelId, channels.id),
+        eq(events.projectId, channels.projectId)
+      )
+    )
+    .where(and(...conditions))
+    .orderBy(desc(events.id));
+
+  const eventIds = eventData.map((event) => event.id);
+
+  const eventTags = await getEventTags(eventIds);
+
+  const eventsRes = eventData.map((event) => ({
+    ...event,
+    tags: eventTags[event.id] || {},
+  }));
 
   return eventsRes as EventWithChannelName[];
 }
@@ -217,14 +215,12 @@ export async function createEvent({
 
     await db.insert(eventTags).values(tagEntries);
 
-    const tagPrim = await getEventTags(event.id);
-
     return {
       id: event.id,
       name: event.name,
-      icon: event.icon ?? undefined,
-      description: event.description ?? undefined,
-      tags: tagPrim,
+      icon: event.icon,
+      description: event.description,
+      tags: tags,
       projectId: project.id,
       channelName: channelsRes[0].name,
       createdAt: event.createdAt,
@@ -234,8 +230,8 @@ export async function createEvent({
   return {
     id: event.id,
     name: event.name,
-    icon: event.icon ?? undefined,
-    description: event.description ?? undefined,
+    icon: event.icon,
+    description: event.description,
     tags: {},
     projectId: project.id,
     channelName: channelsRes[0].name,

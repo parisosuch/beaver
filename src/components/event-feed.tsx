@@ -32,7 +32,13 @@ export default function EventFeed({
       return;
     } else {
       navigate(
-        `/dashboard/${projectID}/feed?search=${encodeURIComponent(searchInput)}`
+        projectID
+          ? `/dashboard/${projectID}/feed?search=${encodeURIComponent(
+              searchInput
+            )}`
+          : `/dashboard/${projectID}/channels/${
+              channel!.id
+            }search=${encodeURIComponent(searchInput)}`
       );
     }
   };
@@ -87,7 +93,7 @@ export default function EventFeed({
 
   if (loading) {
     return (
-      <div className="p-8 w-1/2">
+      <div className="p-8 w-full min-h-screen flex justify-center items-center">
         <p className="text-center">Loading...</p>
       </div>
     );
