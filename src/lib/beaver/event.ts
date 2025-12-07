@@ -72,14 +72,13 @@ export async function getChannelEvents(
   channelId: number,
   options: QueryOptions
 ): Promise<EventWithChannelName[]> {
-  // check if channel exists first
-  const channelsRes = await db
-    .select()
-    .from(channels)
-    .where(eq(channels.id, channelId));
+  // initial where clause
+  const conditions: any[] = [eq(events.channelId, channelId)];
 
-  if (channelsRes.length === 0) {
-    throw new Error(`Channel with id ${channelId} does not exist.`);
+  if (options.search) {
+    const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
+
+    conditions.push(...searchTerms.map((term) => like(events.name, term)));
   }
 
   const eventData = await db
@@ -94,7 +93,7 @@ export async function getChannelEvents(
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
-    .where(eq(events.channelId, channelId))
+    .where(and(...conditions))
     .orderBy(desc(events.createdAt));
 
   const eventIds = eventData.map((event) => event.id);
