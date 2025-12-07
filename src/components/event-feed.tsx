@@ -32,7 +32,13 @@ export default function EventFeed({
       return;
     } else {
       navigate(
-        `/dashboard/${projectID}/feed?search=${encodeURIComponent(searchInput)}`
+        projectID
+          ? `/dashboard/${projectID}/feed?search=${encodeURIComponent(
+              searchInput
+            )}`
+          : `/dashboard/${projectID}/channels/${
+              channel!.id
+            }search=${encodeURIComponent(searchInput)}`
       );
     }
   };
