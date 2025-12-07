@@ -1,7 +1,14 @@
 import { getChannelEvents } from "@/lib/beaver/event";
 
-export async function GET({ params }: { params: { channelID: string } }) {
+export async function GET({
+  params,
+  url,
+}: {
+  params: { channelID: string };
+  url: URL;
+}) {
   const { channelID } = params;
+  const search = url.searchParams.get("search");
 
   const headers = {
     "Content-Type": "text/event-stream",
@@ -15,7 +22,9 @@ export async function GET({ params }: { params: { channelID: string } }) {
       async function sendEvents() {
         try {
           while (true) {
-            const events = await getChannelEvents(parseInt(channelID));
+            const events = await getChannelEvents(parseInt(channelID), {
+              search,
+            });
 
             controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
 
