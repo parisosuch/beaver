@@ -79,7 +79,7 @@ export default function EventFeed({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && !loadingMore) {
+        if (entry.isIntersecting && !loadingMore && !(events.length === 0)) {
           setLoadingMore(true);
           loadEvents().finally(() => setLoadingMore(false));
         }
@@ -140,7 +140,7 @@ export default function EventFeed({
       {/* Scrollable events */}
       <div
         ref={scrollContainerRef}
-        className="w-full flex justify-center max-h-screen overflow-y-auto no-scrollbar"
+        className="w-full flex justify-center max-h-screen overflow-y-auto"
       >
         <div className="p-8 w-1/2 space-y-4">
           {events.length === 0 ? (
