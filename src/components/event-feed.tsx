@@ -120,7 +120,7 @@ export default function EventFeed({
     };
 
     getEvents().then((res) => {
-      setEvents(res);
+      setEvents((prev) => [...prev, ...res]);
       setLoading(false);
       establishStream(res);
     });
