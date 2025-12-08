@@ -209,6 +209,7 @@ export default function EventFeed({
             </div>
           ) : (
             events.map((event, index) => {
+              // TODO: fix this animation, it is shit
               return (
                 <motion.div
                   key={event.id}
