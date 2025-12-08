@@ -24,6 +24,7 @@ export default function EventFeed({
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState(search);
 
+  const eventIdsRef = useRef<Set<number>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +46,7 @@ export default function EventFeed({
     }
   };
 
-  const loadEvents = async () => {
+  const getEvents = async (): Promise<EventWithChannelName[]> => {
     const cursor = events.at(-1)?.id ?? null;
     let endpoint = "/api/events";
 
@@ -61,16 +62,69 @@ export default function EventFeed({
     try {
       const res = await fetch(endpoint);
       const batch = await res.json();
-      setEvents((prev) => [...prev, ...batch]);
+
+      return batch as EventWithChannelName[];
     } catch (err) {
       console.error(err);
+      return [];
     }
   };
 
   // Initial load use effect
   useEffect(() => {
-    loadEvents().finally(() => setLoading(false));
-  }, [projectID]);
+    // Establish SSE connection
+    const establishStream = async (initialEvents: EventWithChannelName[]) => {
+      let endpoint = "/api/events";
+
+      if (initialEvents.length === 0) {
+        return;
+      }
+
+      const cursor = initialEvents.at(0)!.id;
+
+      if (channel) {
+        endpoint += `/channel/${channel.id}`;
+      } else {
+        endpoint += `/project/${projectID}/event-stream?afterId=${cursor}`;
+      }
+
+      if (search) {
+        endpoint += `&search=${encodeURIComponent(search)}`;
+      }
+
+      const eventSource = new EventSource(endpoint);
+
+      eventSource.addEventListener("message", (event) => {
+        const newEvents: EventWithChannelName[] = JSON.parse(event.data);
+
+        const newUniqueEvents = newEvents.filter(
+          (newEvent) => !eventIdsRef.current.has(newEvent.id)
+        );
+
+        if (newUniqueEvents.length > 0) {
+          setEvents((prevEvents) => [...newUniqueEvents, ...prevEvents]);
+
+          newUniqueEvents.forEach((event) => {
+            eventIdsRef.current.add(event.id);
+          });
+        }
+      });
+
+      eventSource.onerror = (error) => {
+        console.error("Error in SSE stream:", error);
+      };
+
+      return () => {
+        eventSource.close();
+      };
+    };
+
+    getEvents().then((res) => {
+      setEvents(res);
+      setLoading(false);
+      establishStream(res);
+    });
+  }, [projectID, channel]);
 
   // Infinite scroll effect
   useEffect(() => {
@@ -81,7 +135,10 @@ export default function EventFeed({
         const entry = entries[0];
         if (entry.isIntersecting && !loadingMore && !(events.length === 0)) {
           setLoadingMore(true);
-          loadEvents().finally(() => setLoadingMore(false));
+          getEvents().then((res) => {
+            setEvents([...events, ...res]);
+            setLoadingMore(false);
+          });
         }
       },
       {
