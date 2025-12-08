@@ -197,7 +197,7 @@ export default function EventFeed({
       {/* Scrollable events */}
       <div
         ref={scrollContainerRef}
-        className="w-full flex justify-center max-h-screen overflow-y-auto"
+        className="w-full flex justify-center max-h-screen overflow-y-auto scroll-smooth"
       >
         <div className="p-8 w-1/2 space-y-4">
           {events.length === 0 ? (
@@ -208,22 +208,18 @@ export default function EventFeed({
               </h2>
             </div>
           ) : (
-            events.map((event, index) => {
-              // TODO: fix this animation, it is shit
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: events.length === 20 ? 20 : 0 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    delay: events.length === 20 ? index * 0.05 : 0,
-                  }}
-                >
-                  <EventCard event={event} />
-                </motion.div>
-              );
-            })
+            events.map((event) => (
+              <motion.div
+                key={event.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <EventCard event={event} />
+              </motion.div>
+            ))
           )}
           <div ref={bottomRef} style={{ height: "1px" }} />
         </div>
