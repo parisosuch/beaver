@@ -50,7 +50,7 @@ export default function EventFeed({
     if (channel) {
       endpoint += `/channel/${channel.id}`;
     } else {
-      endpoint += `/project/${projectID}`;
+      endpoint += `/project/${projectID}/event-stream`;
     }
 
     if (search) {
