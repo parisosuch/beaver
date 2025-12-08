@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { events, channels, eventTags } from "../db/schema";
-import { eq, and, desc, like, inArray, gt } from "drizzle-orm";
+import { eq, and, desc, like, inArray, gt, lt } from "drizzle-orm";
 import { getProject } from "./project";
 
 export type Tag = {
@@ -38,7 +38,9 @@ export type EventWithChannelName = {
 
 type QueryOptions = {
   search: string | null;
-  lastId?: number;
+  afterId?: number;
+  beforeId?: number;
+  limit?: number;
 };
 
 // helper function to get tag primitive object from event tags
@@ -82,8 +84,8 @@ export async function getChannelEvents(
     conditions.push(...searchTerms.map((term) => like(events.name, term)));
   }
 
-  if (options.lastId) {
-    conditions.push(gt(events.id, options.lastId));
+  if (options.afterId) {
+    conditions.push(gt(events.id, options.afterId));
   }
 
   const eventData = await db
@@ -126,8 +128,12 @@ export async function getProjectEvents(
     conditions.push(...searchTerms.map((term) => like(events.name, term)));
   }
 
-  if (options.lastId) {
-    conditions.push(gt(events.id, options.lastId));
+  if (options.afterId) {
+    conditions.push(gt(events.id, options.afterId));
+  }
+
+  if (options.beforeId) {
+    conditions.push(lt(events.id, options.beforeId));
   }
 
   const eventData = await db
@@ -149,7 +155,8 @@ export async function getProjectEvents(
       )
     )
     .where(and(...conditions))
-    .orderBy(desc(events.id));
+    .orderBy(desc(events.id))
+    .limit(options.limit ?? 100);
 
   const eventIds = eventData.map((event) => event.id);
 

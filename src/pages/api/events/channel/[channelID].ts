@@ -21,15 +21,15 @@ export async function GET({
     start(controller) {
       async function sendEvents() {
         try {
-          var lastId;
+          var afterId;
           while (true) {
             const events = await getChannelEvents(parseInt(channelID), {
               search,
-              lastId,
+              afterId,
             });
 
             if (events.length > 0) {
-              lastId = events.at(0)!.id;
+              afterId = events.at(0)!.id;
               controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
             } else {
               controller.enqueue(`data: ${JSON.stringify([])}\n\n`);
