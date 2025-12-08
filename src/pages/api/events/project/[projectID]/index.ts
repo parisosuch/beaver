@@ -18,8 +18,8 @@ export async function GET({
     if (url.searchParams.get("limit")) {
       limit = parseInt(url.searchParams.get("limit")!);
     }
-    if (url.searchParams.get("cursor")) {
-      beforeId = parseInt(url.searchParams.get("cursor")!);
+    if (url.searchParams.get("beforeId")) {
+      beforeId = parseInt(url.searchParams.get("beforeId")!);
     }
 
     // TODO: validate parameter datatypes

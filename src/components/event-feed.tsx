@@ -19,11 +19,13 @@ export default function EventFeed({
   channel?: Channel;
   search?: string | null;
 }) {
-  const [events, setEvents] = useState<EventWithChannelName[]>([]); // Store events in state
-  const eventIdsRef = useRef<Set<number>>(new Set()); // Track event IDs with useRef
+  const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState(search);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = () => {
     if (search && !searchInput) {
@@ -43,58 +45,60 @@ export default function EventFeed({
     }
   };
 
-  useEffect(() => {
-    // Connect to the SSE endpoint
-    var endpoint = "/api/events";
+  const loadEvents = async () => {
+    const cursor = events.at(-1)?.id ?? null;
+    let endpoint = "/api/events";
 
     if (channel) {
       endpoint += `/channel/${channel.id}`;
     } else {
-      endpoint += `/project/${projectID}/event-stream`;
+      endpoint += `/project/${projectID}?beforeId=${cursor}&limit=20`;
     }
-
     if (search) {
-      endpoint += `?search=${encodeURI(search)}`;
+      endpoint += `&search=${encodeURIComponent(search)}`;
     }
 
-    const eventSource = new EventSource(endpoint);
+    try {
+      const res = await fetch(endpoint);
+      const batch = await res.json();
+      setEvents((prev) => [...prev, ...batch]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    // Event listener for incoming events
-    eventSource.addEventListener("message", (event) => {
-      const newEvents: EventWithChannelName[] = JSON.parse(event.data);
-
-      // Filter out events that are already in the eventIds set (useRef)
-      const newUniqueEvents = newEvents.filter(
-        (newEvent) => !eventIdsRef.current.has(newEvent.id)
-      );
-
-      if (newUniqueEvents.length > 0) {
-        // Update state with new unique events (add them to the beginning)
-        setEvents((prevEvents) => [...newUniqueEvents, ...prevEvents]);
-
-        // Update the eventIdsRef to track the IDs of new events
-        newUniqueEvents.forEach((event) => {
-          eventIdsRef.current.add(event.id);
-        });
-      }
-      setLoading(false);
-    });
-
-    // Handle SSE errors
-    eventSource.onerror = (error) => {
-      console.error("Error in SSE stream:", error);
-    };
-
-    // Cleanup on unmount
-    return () => {
-      eventSource.close();
-    };
+  // Initial load use effect
+  useEffect(() => {
+    loadEvents().finally(() => setLoading(false));
   }, [projectID]);
+
+  // Infinite scroll effect
+  useEffect(() => {
+    if (!bottomRef.current || !scrollContainerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !loadingMore) {
+          setLoadingMore(true);
+          loadEvents().finally(() => setLoadingMore(false));
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        rootMargin: "1000px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(bottomRef.current);
+    return () => observer.disconnect();
+  }, [events]);
 
   if (loading) {
     return (
       <div className="p-8 w-full min-h-screen flex justify-center items-center">
-        <p className="text-center">Loading...</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -113,38 +117,31 @@ export default function EventFeed({
   }
 
   return (
-    <div className="w-full max-h-screen">
+    <div className="w-full max-h-screen flex flex-col">
+      {/* Header */}
       <div className="w-full flex items-center justify-between p-8 border-b">
         <h1 className="text-2xl font-semibold">
           {type === "project" ? "Feed" : `# ${channel?.name}`}
         </h1>
-        {/* Search Section*/}
         <div className="flex space-x-2 items-center">
           <Input
             placeholder="Search..."
             type="text"
-            value={searchInput ? searchInput : ""}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSearch();
-              }
-            }}
-            onChange={(e) => {
-              e.preventDefault();
-
-              setSearchInput(e.target.value);
-            }}
+            value={searchInput || ""}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
-          <Button
-            variant="secondary"
-            className="hover:cursor-pointer"
-            onClick={handleSearch}
-          >
+          <Button variant="secondary" onClick={handleSearch}>
             <SearchIcon />
           </Button>
         </div>
       </div>
-      <div className="w-full flex justify-center max-h-screen overflow-y-auto no-scrollbar">
+
+      {/* Scrollable events */}
+      <div
+        ref={scrollContainerRef}
+        className="w-full flex justify-center max-h-screen overflow-y-auto no-scrollbar"
+      >
         <div className="p-8 w-1/2 space-y-4">
           {events.length === 0 ? (
             <div className="w-full text-center">
@@ -154,17 +151,23 @@ export default function EventFeed({
               </h2>
             </div>
           ) : (
-            events.map((event, index) => (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-              >
-                <EventCard key={event.id} event={event} />
-              </motion.div>
-            ))
+            events.map((event, index) => {
+              return (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, y: events.length === 20 ? 20 : 0 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: events.length === 20 ? index * 0.05 : 0,
+                  }}
+                >
+                  <EventCard event={event} />
+                </motion.div>
+              );
+            })
           )}
+          <div ref={bottomRef} style={{ height: "1px" }} />
         </div>
       </div>
     </div>
