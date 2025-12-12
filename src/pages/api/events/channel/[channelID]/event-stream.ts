@@ -1,13 +1,13 @@
-import { getProjectEvents } from "@/lib/beaver/event";
+import { getChannelEvents } from "@/lib/beaver/event";
 
 export async function GET({
   params,
   url,
 }: {
-  params: { projectID: string };
+  params: { channelID: string };
   url: URL;
 }) {
-  const { projectID } = params;
+  const { channelID } = params;
   const search = url.searchParams.get("search");
 
   const headers = {
@@ -17,19 +17,24 @@ export async function GET({
     "Access-Control-Allow-Origin": "*",
   };
 
+  // TODO: handle limits which in this case shouldn't have a limit.
   const stream = new ReadableStream({
     start(controller) {
       async function sendEvents() {
         try {
-          var lastId;
+          var afterId;
+          if (url.searchParams.get("afterId")) {
+            afterId = parseInt(url.searchParams.get("afterId")!);
+          }
+
           while (true) {
-            const events = await getProjectEvents(parseInt(projectID), {
+            const events = await getChannelEvents(parseInt(channelID), {
               search,
-              lastId,
+              afterId,
             });
 
             if (events.length > 0) {
-              lastId = events.at(0)!.id;
+              afterId = events.at(0)!.id;
               controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
             } else {
               controller.enqueue(`data: ${JSON.stringify([])}\n\n`);
