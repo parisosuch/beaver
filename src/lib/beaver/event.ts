@@ -88,6 +88,10 @@ export async function getChannelEvents(
     conditions.push(gt(events.id, options.afterId));
   }
 
+  if (options.beforeId) {
+    conditions.push(lt(events.id, options.beforeId));
+  }
+
   const eventData = await db
     .select({
       id: events.id,
@@ -101,8 +105,8 @@ export async function getChannelEvents(
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
-    .orderBy(desc(events.id));
-
+    .orderBy(desc(events.id))
+    .limit(options.limit ?? 100);
   const eventIds = eventData.map((event) => event.id);
 
   const eventTags = await getEventTags(eventIds);

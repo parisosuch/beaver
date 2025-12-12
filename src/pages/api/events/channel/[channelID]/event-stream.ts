@@ -17,11 +17,16 @@ export async function GET({
     "Access-Control-Allow-Origin": "*",
   };
 
+  // TODO: handle limits which in this case shouldn't have a limit.
   const stream = new ReadableStream({
     start(controller) {
       async function sendEvents() {
         try {
           var afterId;
+          if (url.searchParams.get("afterId")) {
+            afterId = parseInt(url.searchParams.get("afterId")!);
+          }
+
           while (true) {
             const events = await getChannelEvents(parseInt(channelID), {
               search,

@@ -51,13 +51,15 @@ export default function EventFeed({
     let endpoint = "/api/events";
 
     if (channel) {
-      endpoint += `/channel/${channel.id}`;
+      endpoint += `/channel/${channel.id}?beforeId=${cursor}&limit=20`;
     } else {
       endpoint += `/project/${projectID}?beforeId=${cursor}&limit=20`;
     }
     if (search) {
       endpoint += `&search=${encodeURIComponent(search)}`;
     }
+
+    console.log(endpoint);
 
     try {
       const res = await fetch(endpoint);
