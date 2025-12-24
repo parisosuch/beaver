@@ -1,6 +1,5 @@
 import { db } from "../db/db";
 import { users } from "../db/schema";
-import { eq } from "drizzle-orm";
 
 export type DatabaseUser = {
   id: number;
