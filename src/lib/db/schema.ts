@@ -63,7 +63,7 @@ export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
 
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
-  userName: text("user_name").notNull(),
+  userName: text("username").notNull(),
   password: text("password").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
