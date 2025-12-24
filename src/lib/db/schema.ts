@@ -1,10 +1,5 @@
 // src/db/schema.ts
-import {
-  sqliteTable,
-  text,
-  integer,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 // ---- PROJECTS ----
@@ -61,6 +56,18 @@ export const eventTags = sqliteTable("event_tags", {
   type: text("type", {
     enum: ["string", "number", "boolean"],
   }).notNull(),
+});
+
+// --- USER ----
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  isAdmin: integer("event_id", { mode: "boolean" }).notNull().default(false),
+  userName: text("user_name").notNull(),
+  password: text("password").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
 });
 
 // ---- RELATIONS ----
