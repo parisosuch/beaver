@@ -3,7 +3,7 @@ import { createUser, getAdminUsers } from "@/lib/beaver/user";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { userName, password } = await request.json();
+    const { username, password } = await request.json();
 
     // check if an admin user already exists
     const adminUsers = await getAdminUsers();
@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const user = await createUser(userName, password, true);
+    const user = await createUser(username, password, true);
 
     return new Response(JSON.stringify(user), {
       status: 200,
