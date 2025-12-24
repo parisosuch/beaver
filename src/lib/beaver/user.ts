@@ -1,5 +1,6 @@
 import { db } from "../db/db";
 import { users } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 export type DatabaseUser = {
   id: number;
@@ -15,6 +16,20 @@ export type User = {
   isAdmin: boolean;
   createdAt: Date | null;
 };
+
+export async function getAdminUsers(): Promise<User[]> {
+  const adminUsers = await db
+    .select({
+      id: users.id,
+      userName: users.userName,
+      isAdmin: users.isAdmin,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.isAdmin, true));
+
+  return adminUsers;
+}
 
 export async function createUser(
   userName: string,
