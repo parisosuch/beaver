@@ -52,6 +52,7 @@ await db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
+    is_admin INTEGER NOT NULL DEFAULT 0,
     password TEXT NOT NULL,
     created_at INTEGER NOT NULL
   )

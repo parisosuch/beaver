@@ -62,7 +62,7 @@ export const eventTags = sqliteTable("event_tags", {
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
 
-  isAdmin: integer("event_id", { mode: "boolean" }).notNull().default(false),
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   userName: text("user_name").notNull(),
   password: text("password").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
