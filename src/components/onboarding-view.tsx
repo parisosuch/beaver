@@ -6,8 +6,132 @@ import { Label } from "./ui/label";
 import { Card, CardTitle } from "./ui/card";
 import { useEffect, useState } from "react";
 
+interface AdminAccountProps {
+  username: string;
+  setUsername: (value: string) => void;
+  password: string;
+  confirmPassword: string;
+  error: string;
+  setPassword: (value: string) => void;
+  setConfirmPassword: (value: string) => void;
+  onNext: () => void;
+}
+
+const CreateAdminAccount = ({
+  username,
+  setUsername,
+  password,
+  confirmPassword,
+  error,
+  setPassword,
+  setConfirmPassword,
+  onNext,
+}: AdminAccountProps) => (
+  <Card className="w-1/2 h-[400px] flex flex-col justify-between p-4">
+    <div className="flex flex-1 flex-col h-full justify-center">
+      <CardTitle className="text-3xl">Create admin account</CardTitle>
+      <div className="mt-4 space-y-2">
+        <Label htmlFor="admin-username">Username</Label>
+        <Input
+          id="admin-username"
+          type="text"
+          placeholder="admin"
+          className="w-full"
+          value={username}
+          onChange={(e) => {
+            setUsername(e.target.value);
+          }}
+        />
+      </div>
+      <div className="mt-4 space-y-2">
+        <Label htmlFor="admin-password">Password</Label>
+        <div>
+          <p className="text-sm text-gray-500">
+            8 characters long, 1 upper case, 1 lowercase, 1 number, and 1
+            special character.
+          </p>
+        </div>
+        <Input
+          id="admin-password"
+          type="password"
+          placeholder="password"
+          className="w-full"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+          }}
+        />
+        <Input
+          id="admin-confirm-password"
+          type="password"
+          placeholder="confirm password"
+          className="w-full"
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+          }}
+        />
+      </div>
+      {password !== "" &&
+        confirmPassword !== "" &&
+        password !== confirmPassword && (
+          <p className="mt-2 text-sm text-red-600">Passwords do not match.</p>
+        )}
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+    </div>
+    <div className="mt-4 w-full flex justify-end">
+      <Button onClick={onNext} disabled={username === "" || password === ""}>
+        Next
+      </Button>
+    </div>
+  </Card>
+);
+
+interface ProjectProps {
+  projectName: string;
+  setProjectName: (value: string) => void;
+  onBack: () => void;
+  onCreate: () => void;
+}
+
+const CreateProject = ({
+  projectName,
+  setProjectName,
+  onBack,
+  onCreate,
+}: ProjectProps) => (
+  <Card className="w-1/2 h-[400px] flex flex-col justify-between p-4">
+    <div>
+      <CardTitle className="text-3xl">Create your first project</CardTitle>
+      <div className="mt-4 space-y-2">
+        <Label htmlFor="project-name">Project name</Label>
+        <Input
+          id="project-name"
+          type="text"
+          placeholder="beaver"
+          className="w-full"
+          value={projectName}
+          onChange={(e) => {
+            setProjectName(e.target.value);
+          }}
+        />
+      </div>
+    </div>
+    <div className="mt-4 w-full flex justify-end space-x-4">
+      <Button onClick={onBack} variant="outline">
+        Back
+      </Button>
+      <Button onClick={onCreate}>Let's start logging</Button>
+    </div>
+  </Card>
+);
+
 function OnboardingView() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [projectName, setProjectName] = useState("");
+  const [onboardingPart, setOnboardingPart] = useState(0);
   const [error, setError] = useState("");
 
   const handleCreateProject = async () => {
@@ -42,6 +166,36 @@ function OnboardingView() {
     }
   };
 
+  const handleCreateAdminAccount = async () => {
+    setError("");
+
+    const res = await fetch("/api/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, isAdmin: true }),
+    });
+
+    const data = await res.json();
+    if (res.status !== 200) {
+      throw new Error(data.error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setError("");
+
+    try {
+      await handleCreateAdminAccount();
+      await handleCreateProject();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError("An unknown error occurred.");
+      }
+    }
+  };
+
   useEffect(() => {
     getProjects();
   }, []);
@@ -54,39 +208,57 @@ function OnboardingView() {
         <h1 className="text-7xl font-bold">Beaver!</h1>
       </div>
       <div className="w-1/2 flex justify-center items-center h-screen">
-        <Card className="w-1/2 p-4">
-          <CardTitle className="text-3xl">Create your first project</CardTitle>
-          <div className="mt-4 space-y-2">
-            <Label htmlFor="project-name">Project name</Label>
-            <Input
-              id="project-name"
-              type="text"
-              placeholder="beaver"
-              className="w-full"
-              onChange={(e) => {
-                e.preventDefault();
-                setProjectName(e.target.value);
-              }}
-            />
-          </div>
-          <div className="mt-4 w-full flex justify-end">
-            <Button
-              onClick={async () => {
-                try {
-                  await handleCreateProject();
-                } catch (e: unknown) {
-                  if (e instanceof Error) {
-                    setError(e.message);
-                  } else {
-                    setError("An unknown error occurred.");
-                  }
-                }
-              }}
-            >
-              Let's start logging
-            </Button>
-          </div>
-        </Card>
+        {onboardingPart === 0 && (
+          <CreateAdminAccount
+            username={username}
+            setUsername={setUsername}
+            password={password}
+            confirmPassword={confirmPassword}
+            error={error}
+            setConfirmPassword={setConfirmPassword}
+            setPassword={setPassword}
+            onNext={() => {
+              // verify password meets strength criteria
+              if (password.length < 8) {
+                setError("Password must be at least 8 characters long.");
+                return;
+              }
+              if (!/[A-Z]/.test(password)) {
+                setError(
+                  "Password must contain at least one uppercase letter."
+                );
+                return;
+              }
+              if (!/[a-z]/.test(password)) {
+                setError(
+                  "Password must contain at least one lowercase letter."
+                );
+                return;
+              }
+              if (!/[0-9]/.test(password)) {
+                setError("Password must contain at least one number.");
+                return;
+              }
+              if (!/[^A-Za-z0-9]/.test(password)) {
+                setError(
+                  "Password must contain at least one special character."
+                );
+                return;
+              }
+              setOnboardingPart(1);
+            }}
+          />
+        )}
+        {onboardingPart === 1 && (
+          <CreateProject
+            projectName={projectName}
+            setProjectName={setProjectName}
+            onBack={() => setOnboardingPart(0)}
+            onCreate={async () => {
+              await handleSubmit();
+            }}
+          />
+        )}
       </div>
     </div>
   );
