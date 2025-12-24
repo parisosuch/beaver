@@ -169,10 +169,10 @@ function OnboardingView() {
   const handleCreateAdminAccount = async () => {
     setError("");
 
-    const res = await fetch("/api/user", {
+    const res = await fetch("/api/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, isAdmin: true }),
+      body: JSON.stringify({ username, password }),
     });
 
     const data = await res.json();
