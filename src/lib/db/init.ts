@@ -7,7 +7,8 @@ export async function initDB() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
       api_key TEXT UNIQUE NOT NULL,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
