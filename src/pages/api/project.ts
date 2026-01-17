@@ -29,9 +29,9 @@ export const GET: APIRoute = async () => {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { name } = await request.json();
+    const { name, ownerId } = await request.json();
 
-    const project = await createProject(name, crypto.randomUUID());
+    const project = await createProject(name, crypto.randomUUID(), ownerId);
 
     return new Response(JSON.stringify(project), {
       status: 200,

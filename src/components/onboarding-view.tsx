@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardTitle } from "./ui/card";
 import { useEffect, useState } from "react";
+import type { User } from "@/lib/beaver/user";
 
 interface AdminAccountProps {
   username: string;
@@ -134,12 +135,12 @@ function OnboardingView() {
   const [onboardingPart, setOnboardingPart] = useState(0);
   const [error, setError] = useState("");
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (ownerId: number) => {
     setError("");
     const res = await fetch("/api/project", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: projectName }),
+      body: JSON.stringify({ name: projectName, ownerId }),
     });
 
     const data = await res.json();
@@ -179,14 +180,16 @@ function OnboardingView() {
     if (res.status !== 200) {
       throw new Error(data.error);
     }
+
+    return data as User;
   };
 
   const handleSubmit = async () => {
     setError("");
 
     try {
-      await handleCreateAdminAccount();
-      await handleCreateProject();
+      const user = await handleCreateAdminAccount();
+      await handleCreateProject(user.id);
     } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
