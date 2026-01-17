@@ -10,6 +10,9 @@ export const projects = sqliteTable("projects", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
+  ownerId: integer("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }), // TODO: should a delete on user delete the owner?
 });
 
 // ---- CHANNELS ----
@@ -95,4 +98,9 @@ export const eventTagRelations = relations(eventTags, ({ one }) => ({
     fields: [eventTags.eventId],
     references: [events.id],
   }),
+}));
+
+// A user can own many projects
+export const userRelations = relations(users, ({ many }) => ({
+  projects: many(projects),
 }));
