@@ -73,6 +73,19 @@ export const users = sqliteTable("users", {
     .notNull(),
 });
 
+// --- SESSIONS ----
+export const sessions = sqliteTable("sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").unique().notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
 // ---- RELATIONS ----
 export const projectRelations = relations(projects, ({ many }) => ({
   channels: many(channels),
@@ -100,7 +113,15 @@ export const eventTagRelations = relations(eventTags, ({ one }) => ({
   }),
 }));
 
-// A user can own many projects
+// A user can own many projects and have many sessions
 export const userRelations = relations(users, ({ many }) => ({
   projects: many(projects),
+  sessions: many(sessions),
+}));
+
+export const sessionRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
 }));

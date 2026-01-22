@@ -31,6 +31,25 @@ export async function getAdminUsers(): Promise<User[]> {
   return adminUsers;
 }
 
+export async function getUserByUsername(
+  userName: string
+): Promise<DatabaseUser | null> {
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.userName, userName))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+export async function verifyPassword(
+  password: string,
+  hashedPassword: string
+): Promise<boolean> {
+  return await Bun.password.verify(password, hashedPassword);
+}
+
 export async function createUser(
   userName: string,
   password: string,

@@ -7,6 +7,25 @@ import { Card, CardTitle } from "./ui/card";
 import { useEffect, useState } from "react";
 import type { User } from "@/lib/beaver/user";
 
+const TOKEN_STORAGE_KEY = "beaver_tokens";
+
+interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+}
+
+function storeTokens(data: AuthResponse): void {
+  localStorage.setItem(
+    TOKEN_STORAGE_KEY,
+    JSON.stringify({
+      user: data.user,
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    })
+  );
+}
+
 interface AdminAccountProps {
   username: string;
   setUsername: (value: string) => void;
@@ -181,7 +200,10 @@ function OnboardingView() {
       throw new Error(data.error);
     }
 
-    return data as User;
+    // Store tokens for auto sign-in
+    storeTokens(data as AuthResponse);
+
+    return data.user as User;
   };
 
   const handleSubmit = async () => {
