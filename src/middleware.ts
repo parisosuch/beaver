@@ -76,5 +76,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     isAdmin: payload.isAdmin,
   };
 
-  return next();
+  const response = await next();
+
+  // Prevent caching of protected pages to ensure auth is checked on every request
+  // This is important when using View Transitions/prefetching
+  response.headers.set("Cache-Control", "no-store, must-revalidate");
+
+  return response;
 });
