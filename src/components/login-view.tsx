@@ -97,14 +97,13 @@ function LoginView() {
           </div>
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         </div>
-        <div className="mt-4 w-full flex justify-end">
-          <Button
-            type="submit"
-            disabled={username === "" || password === "" || isLoading}
-          >
-            {isLoading ? "Signing in..." : "Sign in"}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          className="w-full mt-4"
+          disabled={username === "" || password === "" || isLoading}
+        >
+          {isLoading ? "Signing in..." : "Sign in"}
+        </Button>
       </form>
     </div>
   );
