@@ -3,13 +3,16 @@ import "../styles/global.css";
 import { initDB } from "../lib/db/init";
 import { getProjects } from "../lib/beaver/project";
 
-// init databse at startup
+// init database at startup
 await initDB();
 
-// get projects and if there are no projects, do onboarding flow
+// Middleware handles auth check - if we reach here, user is authenticated
+// Get projects for the authenticated user and redirect to dashboard
 const projects = await getProjects();
 
 if (projects.length === 0) {
+  // User is authenticated but has no projects - this shouldn't happen in normal flow
+  // but redirect to create a project (you may want to add a project creation page)
   return Astro.redirect("/onboarding");
 } else {
   return Astro.redirect(`/dashboard/${projects[0].id}/feed`);
@@ -22,7 +25,7 @@ if (projects.length === 0) {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro</title>
+    <title>Beaver</title>
   </head>
   <body>
     <p>Hold on while we take you to the right place...</p>

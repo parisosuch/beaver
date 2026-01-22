@@ -19,9 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { InboxIcon, PlusIcon, Settings } from "lucide-react";
+import { InboxIcon, LogOutIcon, PlusIcon, Settings } from "lucide-react";
+import { useAuth, UserProvider } from "../context/user-context";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
-function SidePanel({
+function SidePanelContent({
   currentProject,
   currentProjects,
   currentChannels,
@@ -40,6 +42,8 @@ function SidePanel({
   const [newChannelName, setNewChannelName] = useState("");
   const [channelCreateError, setChannelCreateError] = useState("");
   const [createChannelDialogOpen, setCreateChannelDialogOpen] = useState(false);
+
+  const { user, signOut } = useAuth();
 
   const createChannel = async () => {
     const res = await fetch("/api/channel", {
@@ -81,7 +85,7 @@ function SidePanel({
     // add custom even for channel deletion
     window.addEventListener(
       "channel:deleted",
-      handleChannelDeleted as EventListener
+      handleChannelDeleted as EventListener,
     );
 
     return () => {
@@ -89,10 +93,15 @@ function SidePanel({
       document.removeEventListener("astro:page-load", handleNavigation);
       window.removeEventListener(
         "channel:deleted",
-        handleChannelDeleted as EventListener
+        handleChannelDeleted as EventListener,
       );
     };
   }, []);
+
+  const handleSignout = async () => {
+    await signOut();
+    window.location.replace("/login");
+  };
 
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
   const isSettingsActive = () =>
@@ -110,116 +119,144 @@ function SidePanel({
       open={createChannelDialogOpen}
       onOpenChange={setCreateChannelDialogOpen}
     >
-      <div className="w-[350px] border-r min-h-screen p-8">
-        {/* Project selector */}
-        <h1 className="text-sm font-mono">Project</h1>
-        <Select defaultValue={currentProject.name}>
-          <SelectTrigger className="w-full mt-2">
-            <SelectValue
-              placeholder="Project"
-              defaultValue={currentProject.name}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.name}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <Popover>
+        <div className="w-[350px] border-r min-h-screen p-8">
+          <div className="mt-4 space-y-2">
+            <h1 className="text-sm font-mono">User</h1>
+            <PopoverTrigger asChild>
+              <p className="font-semibold hover:underline hover:cursor-pointer">
+                @{user?.userName}
+              </p>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Button
+                className="w-full hover:cursor-pointer"
+                variant="secondary"
+                onClick={handleSignout}
+              >
+                <LogOutIcon />
+                Sign out
+              </Button>
+            </PopoverContent>
+          </div>
+          <h1 className="mt-4 text-sm font-mono">Project</h1>
+          {/* Project selector */}
+          <Select defaultValue={currentProject.name}>
+            <SelectTrigger className="w-full mt-2">
+              <SelectValue
+                placeholder="Project"
+                defaultValue={currentProject.name}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.name}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <div className="mt-4 space-y-2">
-          <h1 className="text-sm font-mono">Navigation</h1>
-          <a
-            className={isFeedActive() ? activeCss : navigationCss}
-            href={`/dashboard/${project.id}/feed`}
-          >
-            <InboxIcon size={20} />
-            <p>Feed</p>
-          </a>
-          <a
-            className={isSettingsActive() ? activeCss : navigationCss}
-            href={`/dashboard/${project.id}/settings`}
-          >
-            <Settings size={20} />
-            <p>Settings</p>
-          </a>
-        </div>
-
-        {/* Channels header */}
-        <div className="flex space-x-2 w-full items-center justify-between mt-4">
-          <h1 className="text-sm font-mono">Channels</h1>
-          <DialogTrigger asChild>
-            <PlusIcon
-              size={20}
-              className="hover:cursor-pointer hover:text-black/50"
-            />
-          </DialogTrigger>
-        </div>
-
-        {/* Channels list */}
-        <div className="space-y-2 flex flex-col mt-4">
-          {channels.map((channel) => (
+          <div className="mt-4 space-y-2">
+            <h1 className="text-sm font-mono">Navigation</h1>
             <a
-              key={channel.id}
-              href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
-              className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
-                isChannelActive(channel.id)
-                  ? "bg-gray-100 rounded px-3 py-2 font-medium text-black"
-                  : "px-3 py-2 hover:bg-gray-100 hover:rounded"
-              }`}
+              className={isFeedActive() ? activeCss : navigationCss}
+              href={`/dashboard/${project.id}/feed`}
             >
-              # {channel.name}
+              <InboxIcon size={20} />
+              <p>Feed</p>
             </a>
-          ))}
-        </div>
-      </div>
+            <a
+              className={isSettingsActive() ? activeCss : navigationCss}
+              href={`/dashboard/${project.id}/settings`}
+            >
+              <Settings size={20} />
+              <p>Settings</p>
+            </a>
+          </div>
 
-      {/* Create channel dialog */}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create channel</DialogTitle>
-          <DialogDescription>
-            Add a new channel to {currentProject.name}
-          </DialogDescription>
-        </DialogHeader>
-        <p className="font-medium text-sm text-rose-500">
-          {channelCreateError}
-        </p>
-        <Input
-          id="channel-name"
-          placeholder="Channel name"
-          onChange={(e) => setNewChannelName(e.target.value)}
-        />
-        <div className="flex space-x-8 w-full justify-end mt-4">
-          <DialogClose asChild>
-            <Button variant="secondary">Cancel</Button>
-          </DialogClose>
-          <Button
-            onClick={async () => {
-              try {
-                const channel = await createChannel();
-                window.dispatchEvent(
-                  new CustomEvent("channel:created", {
-                    detail: {
-                      channel: channel,
-                    },
-                  })
-                );
+          {/* Channels header */}
+          <div className="flex space-x-2 w-full items-center justify-between mt-4">
+            <h1 className="text-sm font-mono">Channels</h1>
+            <DialogTrigger asChild>
+              <PlusIcon
+                size={20}
+                className="hover:cursor-pointer hover:text-black/50"
+              />
+            </DialogTrigger>
+          </div>
 
-                setChannels([channel, ...channels]);
-                setCreateChannelDialogOpen(false);
-              } catch (err) {
-                if (err instanceof Error) setChannelCreateError(err.message);
-              }
-            }}
-          >
-            Create
-          </Button>
+          {/* Channels list */}
+          <div className="space-y-2 flex flex-col mt-4">
+            {channels.map((channel) => (
+              <a
+                key={channel.id}
+                href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
+                className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
+                  isChannelActive(channel.id)
+                    ? "bg-gray-100 rounded px-3 py-2 font-medium text-black"
+                    : "px-3 py-2 hover:bg-gray-100 hover:rounded"
+                }`}
+              >
+                # {channel.name}
+              </a>
+            ))}
+          </div>
         </div>
-      </DialogContent>
+
+        {/* Create channel dialog */}
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create channel</DialogTitle>
+            <DialogDescription>
+              Add a new channel to {currentProject.name}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="font-medium text-sm text-rose-500">
+            {channelCreateError}
+          </p>
+          <Input
+            id="channel-name"
+            placeholder="Channel name"
+            onChange={(e) => setNewChannelName(e.target.value)}
+          />
+          <div className="flex space-x-8 w-full justify-end mt-4">
+            <DialogClose asChild>
+              <Button variant="secondary">Cancel</Button>
+            </DialogClose>
+            <Button
+              onClick={async () => {
+                try {
+                  const channel = await createChannel();
+                  window.dispatchEvent(
+                    new CustomEvent("channel:created", {
+                      detail: {
+                        channel: channel,
+                      },
+                    }),
+                  );
+
+                  setChannels([channel, ...channels]);
+                  setCreateChannelDialogOpen(false);
+                } catch (err) {
+                  if (err instanceof Error) setChannelCreateError(err.message);
+                }
+              }}
+            >
+              Create
+            </Button>
+          </div>
+        </DialogContent>
+      </Popover>
     </Dialog>
+  );
+}
+
+function SidePanel(props: Parameters<typeof SidePanelContent>[0]) {
+  return (
+    <UserProvider>
+      <SidePanelContent {...props} />
+    </UserProvider>
   );
 }
 

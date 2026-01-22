@@ -1,0 +1,25 @@
+---
+import "../styles/global.css";
+import LoginView from "../components/login-view";
+import { getAdminUsers } from "@/lib/beaver/user";
+
+// If no admin user exists, redirect to onboarding
+const adminUsers = await getAdminUsers();
+
+if (adminUsers.length === 0) {
+  return Astro.redirect("/onboarding");
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Beaver - Sign In</title>
+  </head>
+  <body>
+    <LoginView client:only="react" />
+  </body>
+</html>

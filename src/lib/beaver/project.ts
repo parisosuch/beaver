@@ -15,8 +15,15 @@ export async function getProjects() {
   return res;
 }
 
-export async function createProject(name: string, apiKey: string) {
-  const res = await db.insert(projects).values({ name, apiKey }).returning();
+export async function createProject(
+  name: string,
+  apiKey: string,
+  ownerId: number
+) {
+  const res = await db
+    .insert(projects)
+    .values({ name, apiKey, ownerId })
+    .returning();
 
   return res[0];
 }
