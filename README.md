@@ -29,7 +29,7 @@ This creates sample users, projects, channels, and events:
 Start the local development server:
 
 ```sh
-bun run dev
+bunx --bun astro dev
 ```
 
 The app will be available at `http://localhost:4321`.
@@ -39,15 +39,13 @@ The app will be available at `http://localhost:4321`.
 ### Build
 
 ```sh
-bun run build
+bunx --bun astro build
 ```
-
-This outputs a standalone Node.js server to `./dist/`.
 
 ### Run
 
 ```sh
-node ./dist/server/entry.mjs
+bun ./dist/server/entry.mjs
 ```
 
 ### Environment Variables
