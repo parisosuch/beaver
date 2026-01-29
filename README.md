@@ -66,6 +66,90 @@ JWT_SECRET="your-secure-secret-key" node ./dist/server/entry.mjs
 
 Beaver uses SQLite with Drizzle ORM. The database file (`beaver.sqlite`) is created automatically in the project root.
 
+## API Usage
+
+### Posting Events
+
+Send a `POST` request to `/api/event` to log events from your application.
+
+**Endpoint:** `POST /api/event`
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| :---- | :--- | :------- | :---------- |
+| `name` | string | Yes | Event name (e.g., "User Signup") |
+| `channel` | string | Yes | Channel name to post to |
+| `apiKey` | string | Yes | Your project's API key |
+| `description` | string | No | Additional details about the event |
+| `icon` | string | No | Emoji icon for the event |
+| `tags` | object | No | Key-value metadata (string, number, or boolean values) |
+
+**Example with curl:**
+
+```sh
+curl -X POST http://localhost:4321/api/event \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Sale",
+    "channel": "sales",
+    "apiKey": "your-project-api-key",
+    "description": "Customer completed a purchase",
+    "icon": "💰",
+    "tags": {
+      "amount": 99.99,
+      "currency": "USD",
+      "customer_id": "cust_123"
+    }
+  }'
+```
+
+**Example with JavaScript:**
+
+```js
+await fetch("http://localhost:4321/api/event", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    name: "User Signup",
+    channel: "signups",
+    apiKey: "your-project-api-key",
+    description: "New user registered",
+    icon: "👤",
+    tags: {
+      method: "google",
+      referrer: "organic",
+    },
+  }),
+});
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "name": "New Sale",
+  "description": "Customer completed a purchase",
+  "icon": "💰",
+  "projectId": 1,
+  "channelName": "sales",
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "tags": {
+    "amount": 99.99,
+    "currency": "USD",
+    "customer_id": "cust_123"
+  }
+}
+```
+
+You can find your project's API key in the project settings page.
+
 ## Commands
 
 | Command | Action |
