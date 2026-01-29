@@ -139,19 +139,35 @@ function SidePanelContent({
               </Button>
             </PopoverContent>
           </div>
-          <h1 className="mt-4 text-sm font-mono">Project</h1>
-          {/* Project selector */}
-          <Select defaultValue={currentProject.name}>
-            <SelectTrigger className="w-full mt-2">
-              <SelectValue
-                placeholder="Project"
-                defaultValue={currentProject.name}
+          {/* Channels header */}
+          <div className="flex space-x-2 w-full items-center justify-between mt-4">
+            <h1 className="text-sm font-mono">Project</h1>
+            <DialogTrigger asChild>
+              <PlusIcon
+                size={20}
+                className="hover:cursor-pointer hover:text-black/50"
               />
+            </DialogTrigger>
+          </div>
+          {/* Project selector */}
+          <Select
+            defaultValue={String(currentProject.id)}
+            onValueChange={(value) => {
+              const selectedProject = projects.find(
+                (p) => String(p.id) === value,
+              );
+              if (selectedProject) {
+                window.location.href = `/dashboard/${selectedProject.id}/feed`;
+              }
+            }}
+          >
+            <SelectTrigger className="w-full mt-2">
+              <SelectValue placeholder="Project" />
             </SelectTrigger>
             <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.name}>
-                  {project.name}
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={String(p.id)}>
+                  {p.name}
                 </SelectItem>
               ))}
             </SelectContent>
