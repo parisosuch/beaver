@@ -1,43 +1,80 @@
-# Astro Starter Kit: Minimal
+# Beaver
+
+An event tracking and logging dashboard built with Astro, React, and SQLite.
+
+## Prerequisites
+
+- [Bun](https://bun.sh/) (v1.0 or later)
+
+## Installation
+
+1. Clone the repository and install dependencies:
 
 ```sh
-bun create astro@latest -- --template minimal
+bun install
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+2. Initialize the database with seed data (optional):
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```sh
+bun run seed
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+This creates sample users, projects, channels, and events:
+- Admin user: `admin` / `admin123`
+- Demo user: `demo` / `demo123`
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Development
 
-Any static assets, like images, can be placed in the `public/` directory.
+Start the local development server:
 
-## 🧞 Commands
+```sh
+bun run dev
+```
 
-All commands are run from the root of the project, from a terminal:
+The app will be available at `http://localhost:4321`.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
+## Production
 
-## 👀 Want to learn more?
+### Build
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```sh
+bun run build
+```
+
+This outputs a standalone Node.js server to `./dist/`.
+
+### Run
+
+```sh
+node ./dist/server/entry.mjs
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+| :------- | :---------- | :------ |
+| `JWT_SECRET` | Secret key for signing JWT tokens | `beaver-default-secret-change-in-production` |
+| `PORT` | Server port | `4321` |
+| `HOST` | Server host | `localhost` |
+
+For production, set a secure `JWT_SECRET`:
+
+```sh
+JWT_SECRET="your-secure-secret-key" node ./dist/server/entry.mjs
+```
+
+## Database
+
+Beaver uses SQLite with Drizzle ORM. The database file (`beaver.sqlite`) is created automatically in the project root.
+
+## Commands
+
+| Command | Action |
+| :------ | :----- |
+| `bun install` | Install dependencies |
+| `bun run dev` | Start dev server at `localhost:4321` |
+| `bun run build` | Build for production to `./dist/` |
+| `bun run preview` | Preview production build locally |
+| `bun run seed` | Seed database with sample data |
+| `bun run format` | Format code with Prettier |
