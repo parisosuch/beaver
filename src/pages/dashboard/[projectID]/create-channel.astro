@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/layout.astro";
+import CreateChannelView from "@/components/create-channel-view";
+
+const { projectID } = Astro.params;
+---
+
+<Layout projectID={projectID!}>
+  <CreateChannelView client:load projectId={parseInt(projectID!)} />
+</Layout>
