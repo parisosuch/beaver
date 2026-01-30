@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { InboxIcon, LogOutIcon, PlusIcon, Settings } from "lucide-react";
+import { BookOpenIcon, InboxIcon, LogOutIcon, PlusIcon, Settings } from "lucide-react";
 import { useAuth, UserProvider } from "../context/user-context";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
@@ -69,6 +69,8 @@ function SidePanelContent({
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
   const isSettingsActive = () =>
     pathname === `/dashboard/${project.id}/settings`;
+  const isApiDocsActive = () =>
+    pathname === `/dashboard/${project.id}/api-docs`;
   const isChannelActive = (channelId: number) =>
     pathname === `/dashboard/${project.id}/channels/${channelId}`;
 
@@ -78,7 +80,7 @@ function SidePanelContent({
 
   return (
     <Popover>
-      <div className="w-[350px] border-r min-h-screen p-8">
+      <div className="w-[350px] border-r h-screen sticky top-0 overflow-y-auto p-8">
         <div className="mt-4 space-y-2">
           <h1 className="text-sm font-mono">User</h1>
           <PopoverTrigger asChild>
@@ -146,6 +148,13 @@ function SidePanelContent({
           >
             <Settings size={20} />
             <p>Settings</p>
+          </a>
+          <a
+            className={isApiDocsActive() ? activeCss : navigationCss}
+            href={`/dashboard/${project.id}/api-docs`}
+          >
+            <BookOpenIcon size={20} />
+            <p>API Docs</p>
           </a>
         </div>
 

@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/layout.astro";
+import { getProject } from "@/lib/beaver/project";
+import ApiDocsView from "@/components/api-docs-view";
+
+const { projectID } = Astro.params;
+
+const project = await getProject(parseInt(projectID!));
+---
+
+<Layout projectID={projectID!}>
+  <ApiDocsView client:load apiKey={project.apiKey} />
+</Layout>
