@@ -139,6 +139,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
       id: "create-event",
       title: "Create Event",
       children: [
+        { id: "request-headers", title: "Request Headers" },
         { id: "request-body", title: "Request Body" },
         { id: "example-request", title: "Example Request" },
         { id: "success-response", title: "Success Response" },
@@ -226,8 +227,11 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Authentication
             </h2>
             <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-              All event submissions require an API key. You can find your
-              project's API key in the{" "}
+              All API requests require authentication via the{" "}
+              <code className="bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                X-API-Key
+              </code>{" "}
+              header. You can find your project's API key in the{" "}
               <a
                 href="settings"
                 className="text-blue-600 hover:text-blue-800 underline underline-offset-2"
@@ -236,7 +240,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               </a>{" "}
               page.
             </p>
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6 mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-amber-700 font-semibold">
                   Your API Key
@@ -245,6 +249,11 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               </div>
               <code className="block font-mono text-amber-900 bg-white/60 px-4 py-3 rounded-lg text-sm break-all">
                 {apiKey}
+              </code>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-4">
+              <code className="text-gray-100 font-mono text-sm">
+                X-API-Key: {apiKey}
               </code>
             </div>
           </section>
@@ -265,6 +274,59 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               <code className="text-gray-100 font-mono text-lg">
                 /api/event
               </code>
+            </div>
+
+            {/* Request Headers */}
+            <h3
+              id="request-headers"
+              className="text-lg font-semibold text-gray-900 mb-4"
+            >
+              Request Headers
+            </h3>
+            <div className="overflow-hidden rounded-xl border border-gray-200 mb-8">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                      Header
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                      Required
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                        X-API-Key
+                      </code>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      Your project's API key for authentication
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                        Content-Type
+                      </code>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      Must be <code className="bg-gray-100 px-1 rounded">application/json</code>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {/* Request Body */}
@@ -319,20 +381,6 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       The channel name to send the event to
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
-                        apiKey
-                      </code>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">string</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="success">Yes</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      Your project's API key
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
@@ -394,10 +442,10 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 language="bash"
                 code={`curl -X POST ${baseUrl}/api/event \\
   -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${apiKey}" \\
   -d '{
     "name": "User Signed Up",
     "channel": "signups",
-    "apiKey": "${apiKey}",
     "description": "New user registration",
     "icon": "🎉",
     "tags": {
@@ -442,6 +490,13 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Error Responses
             </h3>
             <div className="space-y-4">
+              <CodeBlock
+                title="401 Unauthorized - Missing API key"
+                language="json"
+                code={`{
+  "error": "X-API-Key header is required."
+}`}
+              />
               <CodeBlock
                 title="400 Bad Request - Missing required field"
                 language="json"
@@ -488,16 +543,18 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 <CodeBlock
                   title="sendEvent.js"
                   language="javascript"
-                  code={`async function sendEvent(eventData) {
+                  code={`const API_KEY = '${apiKey}';
+
+async function sendEvent(eventData) {
   const response = await fetch('${baseUrl}/api/event', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-API-Key': API_KEY,
     },
     body: JSON.stringify({
       name: eventData.name,
       channel: eventData.channel,
-      apiKey: '${apiKey}',
       description: eventData.description,
       icon: eventData.icon,
       tags: eventData.tags,
@@ -530,13 +587,15 @@ await sendEvent({
                   language="python"
                   code={`import requests
 
+API_KEY = '${apiKey}'
+
 def send_event(name, channel, description=None, icon=None, tags=None):
     response = requests.post(
         '${baseUrl}/api/event',
+        headers={'X-API-Key': API_KEY},
         json={
             'name': name,
             'channel': channel,
-            'apiKey': '${apiKey}',
             'description': description,
             'icon': icon,
             'tags': tags,
@@ -573,28 +632,32 @@ import (
     "net/http"
 )
 
+const apiKey = "${apiKey}"
+
 type Event struct {
     Name        string            \`json:"name"\`
     Channel     string            \`json:"channel"\`
-    ApiKey      string            \`json:"apiKey"\`
     Description string            \`json:"description,omitempty"\`
     Icon        string            \`json:"icon,omitempty"\`
     Tags        map[string]string \`json:"tags,omitempty"\`
 }
 
 func sendEvent(event Event) error {
-    event.ApiKey = "${apiKey}"
-
     data, err := json.Marshal(event)
     if err != nil {
         return err
     }
 
-    resp, err := http.Post(
-        "${baseUrl}/api/event",
-        "application/json",
-        bytes.NewBuffer(data),
-    )
+    req, err := http.NewRequest("POST", "${baseUrl}/api/event", bytes.NewBuffer(data))
+    if err != nil {
+        return err
+    }
+
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("X-API-Key", apiKey)
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
     if err != nil {
         return err
     }

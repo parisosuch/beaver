@@ -3,9 +3,23 @@ import type { APIContext, APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
+    // extract API key from header
+    const apiKey = request.headers.get("X-API-Key");
+
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "X-API-Key header is required." }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
     // extract body and verify contents
-    const { name, description, icon, channel, apiKey, tags } =
-      await request.json();
+    const { name, description, icon, channel, tags } = await request.json();
 
     if (!name) {
       return new Response(
@@ -21,17 +35,6 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
     if (!channel) {
       return new Response(
         JSON.stringify({ error: "channel is a required field." }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "apiKey is a required field." }),
         {
           status: 400,
           headers: {
