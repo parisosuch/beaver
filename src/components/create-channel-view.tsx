@@ -3,6 +3,7 @@
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import { useState } from "react";
 
 interface CreateChannelViewProps {
@@ -11,6 +12,7 @@ interface CreateChannelViewProps {
 
 function CreateChannelView({ projectId }: CreateChannelViewProps) {
   const [channelName, setChannelName] = useState("");
+  const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,7 +25,11 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
       const res = await fetch("/api/channel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: channelName, project_id: projectId }),
+        body: JSON.stringify({
+          name: channelName,
+          project_id: projectId,
+          description: description || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -61,6 +67,17 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
             disabled={isLoading}
           />
           <p className="text-xs text-black/50">Maximum 16 characters.</p>
+        </div>
+        <div className="mt-4 space-y-2">
+          <Label htmlFor="channel-description">Description (optional)</Label>
+          <Textarea
+            id="channel-description"
+            placeholder="What is this channel for?"
+            className="w-full"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={isLoading}
+          />
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <div className="flex space-x-4 mt-4">

@@ -19,6 +19,7 @@ export const projects = sqliteTable("projects", {
 export const channels = sqliteTable("channels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  description: text("description"),
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),

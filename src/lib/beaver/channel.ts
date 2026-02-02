@@ -5,6 +5,7 @@ import { eq, and, asc } from "drizzle-orm";
 export type Channel = {
   id: number;
   name: string;
+  description: string | null;
   projectId: number;
   createdAt: Date | null;
 };
@@ -28,7 +29,11 @@ export async function getChannel(channelID: number) {
   return res[0];
 }
 
-export async function createChannel(channel_name: string, project_id: number) {
+export async function createChannel(
+  channel_name: string,
+  project_id: number,
+  description?: string
+) {
   if (channel_name.length > 16) {
     throw new Error("Channel name cannot be longer than 16 characters.");
   }
@@ -46,7 +51,11 @@ export async function createChannel(channel_name: string, project_id: number) {
 
   const res = await db
     .insert(channels)
-    .values({ name: channel_name, projectId: project_id })
+    .values({
+      name: channel_name,
+      projectId: project_id,
+      description: description ?? null,
+    })
     .returning();
 
   return res[0];

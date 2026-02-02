@@ -60,17 +60,37 @@ async function seed() {
 
   // Create channels for each project
   const channelsData = [
-    { name: "sales", projectId: projects[0].id },
-    { name: "errors", projectId: projects[0].id },
-    { name: "signups", projectId: projects[0].id },
-    { name: "purchases", projectId: projects[1].id },
-    { name: "crashes", projectId: projects[1].id },
+    {
+      name: "sales",
+      projectId: projects[0].id,
+      description: "Track all sales and revenue events",
+    },
+    {
+      name: "errors",
+      projectId: projects[0].id,
+      description: "Monitor application errors and failures",
+    },
+    {
+      name: "signups",
+      projectId: projects[0].id,
+      description: "New user registrations and onboarding events",
+    },
+    {
+      name: "purchases",
+      projectId: projects[1].id,
+      description: "In-app purchases and transactions",
+    },
+    {
+      name: "crashes",
+      projectId: projects[1].id,
+      description: "Application crash reports and diagnostics",
+    },
   ];
 
   const createdChannels: Record<string, { id: number; projectId: number }> = {};
   for (const c of channelsData) {
     try {
-      const channel = await createChannel(c.name, c.projectId);
+      const channel = await createChannel(c.name, c.projectId, c.description);
       console.log(`Created channel: ${channel.name}`);
       createdChannels[`${c.projectId}-${c.name}`] = channel;
     } catch (e) {

@@ -44,7 +44,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { name, project_id } = await request.json();
+    const { name, project_id, description } = await request.json();
 
     if (!name) {
       return new Response(
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const splitName = name.replace(" ", "-");
 
-    const channel = await createChannel(splitName, project_id);
+    const channel = await createChannel(splitName, project_id, description);
 
     return new Response(JSON.stringify(channel), {
       status: 200,

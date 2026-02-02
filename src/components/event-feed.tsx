@@ -201,9 +201,14 @@ export default function EventFeed({
     <div className="w-full max-h-screen flex flex-col">
       {/* Header */}
       <div className="w-full flex items-center justify-between p-8 border-b">
-        <h1 className="text-2xl font-semibold">
-          {type === "project" ? "Feed" : `# ${channel?.name}`}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-semibold">
+            {type === "project" ? "Feed" : `# ${channel?.name}`}
+          </h1>
+          {type === "channel" && channel?.description && (
+            <p className="text-sm text-black/50 mt-1">{channel.description}</p>
+          )}
+        </div>
         <div className="flex space-x-2 items-center">
           <Input
             placeholder="Search..."
