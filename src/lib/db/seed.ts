@@ -79,7 +79,14 @@ async function seed() {
   }
 
   // Create sample events
-  const eventsData = [
+  const eventsData: {
+    name: string;
+    description: string;
+    icon: string;
+    channel: string;
+    apiKey: string;
+    tags: Record<string, string | number | boolean>;
+  }[] = [
     {
       name: "New Sale",
       description: "A customer completed a purchase",
