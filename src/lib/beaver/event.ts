@@ -174,6 +174,37 @@ export async function getProjectEvents(
   return eventsRes as EventWithChannelName[];
 }
 
+export async function getEvent(
+  eventId: number
+): Promise<EventWithChannelName | null> {
+  const eventData = await db
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      icon: events.icon,
+      projectId: events.projectId,
+      createdAt: events.createdAt,
+      channelName: channels.name,
+    })
+    .from(events)
+    .innerJoin(channels, eq(events.channelId, channels.id))
+    .where(eq(events.id, eventId))
+    .limit(1);
+
+  if (eventData.length === 0) {
+    return null;
+  }
+
+  const event = eventData[0];
+  const tags = await getEventTags([event.id]);
+
+  return {
+    ...event,
+    tags: tags[event.id] || {},
+  };
+}
+
 export async function createEvent({
   name,
   description,

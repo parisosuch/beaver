@@ -1,0 +1,17 @@
+---
+import Layout from "@/layouts/layout.astro";
+import EventDetail from "@/components/event-detail";
+import { getEvent } from "@/lib/beaver/event";
+
+const { projectID, eventID } = Astro.params;
+
+const event = await getEvent(parseInt(eventID!));
+
+if (!event) {
+  return Astro.redirect(`/dashboard/${projectID}/feed`);
+}
+---
+
+<Layout projectID={projectID!}>
+  <EventDetail client:load event={event} />
+</Layout>
