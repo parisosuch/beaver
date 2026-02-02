@@ -1,6 +1,6 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import {
   Select,
@@ -28,8 +28,19 @@ function SidePanelContent({
   const [projects] = useState<Project[]>(currentProjects);
   const [channels, setChannels] = useState<Channel[]>(currentChannels);
   const [pathname, setPathname] = useState(currentPath);
+  const prefetchedChannels = useRef<Set<number>>(new Set());
 
   const { user, signOut } = useAuth();
+
+  const handleChannelMouseEnter = (channelId: number) => {
+    if (prefetchedChannels.current.has(channelId)) return;
+    prefetchedChannels.current.add(channelId);
+
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = `/dashboard/${currentProject.id}/channels/${channelId}`;
+    document.head.appendChild(link);
+  };
 
   useEffect(() => {
     const handleNavigation = () => {
@@ -175,6 +186,7 @@ function SidePanelContent({
             <a
               key={channel.id}
               href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
+              onMouseEnter={() => handleChannelMouseEnter(channel.id)}
               className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
                 isChannelActive(channel.id)
                   ? "bg-gray-100 rounded px-3 py-2 font-medium text-black"
