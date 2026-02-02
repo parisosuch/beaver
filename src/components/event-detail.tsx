@@ -9,6 +9,7 @@ import {
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
 import { ArrowLeftIcon } from "lucide-react";
+import { useRef } from "react";
 
 function TagBadge({
   tagKey,
@@ -35,11 +36,23 @@ export default function EventDetail({
   event: EventWithChannelName;
 }) {
   const tags = Object.entries(event.tags);
+  const feedUrl = `/dashboard/${event.projectId}/feed`;
+  const prefetched = useRef(false);
+
+  const handleMouseEnter = () => {
+    if (prefetched.current) return;
+    prefetched.current = true;
+
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = feedUrl;
+    document.head.appendChild(link);
+  };
 
   return (
     <div className="flex-1 p-8">
       <div className="max-w-3xl mx-auto space-y-6">
-        <a href={`/dashboard/${event.projectId}/feed`}>
+        <a href={feedUrl} onMouseEnter={handleMouseEnter}>
           <Button variant="ghost" size="sm">
             <ArrowLeftIcon className="w-4 h-4 mr-2" />
             Back to feed
