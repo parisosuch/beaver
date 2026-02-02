@@ -25,8 +25,14 @@ export default function EventFeed({
   const [searchInput, setSearchInput] = useState(search);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
+  const eventsRef = useRef<EventWithChannelName[]>([]);
+  const loadingMoreRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Keep refs in sync with state
+  eventsRef.current = events;
+  loadingMoreRef.current = loadingMore;
 
   const handleSearch = () => {
     if (search && !searchInput) {
@@ -47,7 +53,7 @@ export default function EventFeed({
   };
 
   const getEvents = async (): Promise<EventWithChannelName[]> => {
-    const cursor = events.at(-1)?.id ?? null;
+    const cursor = eventsRef.current.at(-1)?.id ?? null;
     let endpoint = "/api/events";
 
     if (channel) {
@@ -58,8 +64,6 @@ export default function EventFeed({
     if (search) {
       endpoint += `&search=${encodeURIComponent(search)}`;
     }
-
-    console.log(endpoint);
 
     try {
       const res = await fetch(endpoint);
@@ -74,18 +78,24 @@ export default function EventFeed({
 
   // Initial load use effect
   useEffect(() => {
-    // Establish SSE connection
-    const establishStream = async (initialEvents: EventWithChannelName[]) => {
-      let endpoint = "/api/events";
+    let eventSource: EventSource | null = null;
 
+    // Reset state when dependencies change
+    setEvents([]);
+    setLoading(true);
+    eventIdsRef.current.clear();
+
+    // Establish SSE connection
+    const establishStream = (initialEvents: EventWithChannelName[]) => {
       if (initialEvents.length === 0) {
         return;
       }
 
+      let endpoint = "/api/events";
       const cursor = initialEvents.at(0)!.id;
 
       if (channel) {
-        endpoint += `/channel/${channel.id}`;
+        endpoint += `/channel/${channel.id}/event-stream?afterId=${cursor}`;
       } else {
         endpoint += `/project/${projectID}/event-stream?afterId=${cursor}`;
       }
@@ -94,7 +104,7 @@ export default function EventFeed({
         endpoint += `&search=${encodeURIComponent(search)}`;
       }
 
-      const eventSource = new EventSource(endpoint);
+      eventSource = new EventSource(endpoint);
 
       eventSource.addEventListener("message", (event) => {
         const newEvents: EventWithChannelName[] = JSON.parse(event.data);
@@ -115,18 +125,23 @@ export default function EventFeed({
       eventSource.onerror = (error) => {
         console.error("Error in SSE stream:", error);
       };
-
-      return () => {
-        eventSource.close();
-      };
     };
 
     getEvents().then((res) => {
-      setEvents((prev) => [...prev, ...res]);
+      // Add initial events to the ref to prevent duplicates
+      res.forEach((event) => eventIdsRef.current.add(event.id));
+      setEvents(res);
       setLoading(false);
       establishStream(res);
     });
-  }, [projectID, channel]);
+
+    // Cleanup: close EventSource when dependencies change or component unmounts
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [projectID, channel, search]);
 
   // Infinite scroll effect
   useEffect(() => {
@@ -135,24 +150,31 @@ export default function EventFeed({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && !loadingMore && !(events.length === 0)) {
+        // Use refs to avoid stale closures and prevent infinite loops
+        if (
+          entry.isIntersecting &&
+          !loadingMoreRef.current &&
+          eventsRef.current.length > 0
+        ) {
           setLoadingMore(true);
           getEvents().then((res) => {
-            setEvents([...events, ...res]);
+            if (res.length > 0) {
+              setEvents((prev) => [...prev, ...res]);
+            }
             setLoadingMore(false);
           });
         }
       },
       {
         root: scrollContainerRef.current,
-        rootMargin: "1000px",
+        rootMargin: "200px",
         threshold: 0.1,
       }
     );
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
-  }, [events]);
+  }, [projectID, channel, search]);
 
   if (loading) {
     return (
