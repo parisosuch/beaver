@@ -1,28 +1,35 @@
-import type { EventWithChannelName } from "@/lib/beaver/event";
+import type { EventWithChannelName, TagFilter } from "@/lib/beaver/event";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "./event-card";
 import { motion } from "framer-motion";
 import { Input } from "./ui/input";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, XIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
+import EventFilterDialog from "./event-filter-dialog";
 
 export default function EventFeed({
   type,
   projectID,
   channel,
   search,
+  startDate,
+  endDate,
+  tags,
 }: {
   type: "channel" | "project";
   projectID?: number;
   channel?: Channel;
   search?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  tags?: string | null;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [searchInput, setSearchInput] = useState(search);
+  const [searchInput, setSearchInput] = useState(search ?? "");
 
   const eventIdsRef = useRef<Set<number>>(new Set());
   const eventsRef = useRef<EventWithChannelName[]>([]);
@@ -30,26 +37,64 @@ export default function EventFeed({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Parse tags from URL param
+  const parsedTags: TagFilter[] = tags ? JSON.parse(tags) : [];
+
   // Keep refs in sync with state
   eventsRef.current = events;
   loadingMoreRef.current = loadingMore;
 
-  const handleSearch = () => {
-    if (search && !searchInput) {
-      navigate(`/dashboard/${projectID}/feed`);
-    } else if (!searchInput) {
-      return;
-    } else {
-      navigate(
-        projectID
-          ? `/dashboard/${projectID}/feed?search=${encodeURIComponent(
-              searchInput
-            )}`
-          : `/dashboard/${projectID}/channels/${
-              channel!.id
-            }search=${encodeURIComponent(searchInput)}`
-      );
+  // Build the base path for navigation
+  const getBasePath = () => {
+    if (channel) {
+      return `/dashboard/${projectID}/channels/${channel.id}`;
     }
+    return `/dashboard/${projectID}/feed`;
+  };
+
+  // Build URL with current filters
+  const buildFilterUrl = (overrides: {
+    search?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    tags?: TagFilter[] | null;
+  }) => {
+    const params = new URLSearchParams();
+
+    const newSearch = overrides.search !== undefined ? overrides.search : search;
+    const newStartDate = overrides.startDate !== undefined ? overrides.startDate : startDate;
+    const newEndDate = overrides.endDate !== undefined ? overrides.endDate : endDate;
+    const newTags = overrides.tags !== undefined ? overrides.tags : parsedTags;
+
+    if (newSearch) params.set("search", newSearch);
+    if (newStartDate) params.set("startDate", newStartDate);
+    if (newEndDate) params.set("endDate", newEndDate);
+    if (newTags && newTags.length > 0) params.set("tags", JSON.stringify(newTags));
+
+    const queryString = params.toString();
+    return queryString ? `${getBasePath()}?${queryString}` : getBasePath();
+  };
+
+  const handleSearch = () => {
+    if (!searchInput && !search) return;
+    navigate(buildFilterUrl({ search: searchInput || null }));
+  };
+
+  // Build filter query params for API calls
+  const buildApiFilterParams = (): string => {
+    const params: string[] = [];
+
+    if (startDate) {
+      params.push(`startDate=${encodeURIComponent(startDate)}`);
+    }
+    if (endDate) {
+      params.push(`endDate=${encodeURIComponent(endDate)}`);
+    }
+    if (tags) {
+      params.push(`tags=${encodeURIComponent(tags)}`);
+    }
+
+    return params.length > 0 ? `&${params.join("&")}` : "";
   };
 
   const getEvents = async (): Promise<EventWithChannelName[]> => {
@@ -65,6 +110,9 @@ export default function EventFeed({
       endpoint += `&search=${encodeURIComponent(search)}`;
     }
 
+    // Add filter params
+    endpoint += buildApiFilterParams();
+
     try {
       const res = await fetch(endpoint);
       const batch = await res.json();
@@ -74,6 +122,26 @@ export default function EventFeed({
       console.error(err);
       return [];
     }
+  };
+
+  // Handle filter changes - navigate to new URL
+  const handleApplyFilters = (newStartDate: string | null, newEndDate: string | null, newTags: TagFilter[]) => {
+    navigate(buildFilterUrl({
+      startDate: newStartDate,
+      endDate: newEndDate,
+      tags: newTags.length > 0 ? newTags : null,
+    }));
+  };
+
+  // Remove a specific tag filter
+  const handleRemoveTag = (index: number) => {
+    const newTags = parsedTags.filter((_, i) => i !== index);
+    navigate(buildFilterUrl({ tags: newTags.length > 0 ? newTags : null }));
+  };
+
+  // Remove time filter
+  const handleRemoveTimeFilter = () => {
+    navigate(buildFilterUrl({ startDate: null, endDate: null }));
   };
 
   // Initial load use effect
@@ -103,6 +171,9 @@ export default function EventFeed({
       if (search) {
         endpoint += `&search=${encodeURIComponent(search)}`;
       }
+
+      // Add filter params
+      endpoint += buildApiFilterParams();
 
       eventSource = new EventSource(endpoint);
 
@@ -141,7 +212,7 @@ export default function EventFeed({
         eventSource.close();
       }
     };
-  }, [projectID, channel, search]);
+  }, [projectID, channel, search, startDate, endDate, tags]);
 
   // Infinite scroll effect
   useEffect(() => {
@@ -174,7 +245,17 @@ export default function EventFeed({
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
-  }, [projectID, channel, search]);
+  }, [projectID, channel, search, startDate, endDate, tags]);
+
+  // Format time filter for display
+  const formatTimeFilter = () => {
+    if (!startDate && !endDate) return null;
+    const start = startDate ? new Date(startDate).toLocaleDateString() : "?";
+    const end = endDate ? new Date(endDate).toLocaleDateString() : "?";
+    return `${start} - ${end}`;
+  };
+
+  const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
 
   if (loading) {
     return (
@@ -210,10 +291,19 @@ export default function EventFeed({
           )}
         </div>
         <div className="flex space-x-2 items-center">
+          <EventFilterDialog
+            type={type}
+            projectID={projectID}
+            channelID={channel?.id}
+            currentStartDate={startDate ?? null}
+            currentEndDate={endDate ?? null}
+            currentTags={parsedTags}
+            onApplyFilters={handleApplyFilters}
+          />
           <Input
             placeholder="Search..."
             type="text"
-            value={searchInput || ""}
+            value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
@@ -222,6 +312,40 @@ export default function EventFeed({
           </Button>
         </div>
       </div>
+
+      {/* Active filters display */}
+      {hasActiveFilters && (
+        <div className="px-8 py-3 border-b bg-gray-50 flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-600">Active filters:</span>
+          {(startDate || endDate) && (
+            <div className="flex items-center gap-1 rounded-md bg-white border px-2.5 py-1 text-sm">
+              {formatTimeFilter()}
+              <button
+                onClick={handleRemoveTimeFilter}
+                className="ml-1 rounded hover:bg-gray-100 p-0.5"
+              >
+                <XIcon className="size-3" />
+              </button>
+            </div>
+          )}
+          {parsedTags.map((tag, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-1 rounded-md bg-white border px-2.5 py-1 text-sm"
+            >
+              <span className="font-medium">{tag.key}</span>
+              <span className="text-gray-400">=</span>
+              <span>{tag.value}</span>
+              <button
+                onClick={() => handleRemoveTag(i)}
+                className="ml-1 rounded hover:bg-gray-100 p-0.5"
+              >
+                <XIcon className="size-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Scrollable events */}
       <div

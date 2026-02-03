@@ -8,6 +8,9 @@ const url = new URL(Astro.request.url);
 const searchParams = url.searchParams;
 
 const search = searchParams.get("search");
+const startDate = searchParams.get("startDate");
+const endDate = searchParams.get("endDate");
+const tags = searchParams.get("tags");
 ---
 
 <Layout projectID={projectID!}>
@@ -16,5 +19,8 @@ const search = searchParams.get("search");
     type="project"
     projectID={parseInt(projectID!)}
     search={search}
+    startDate={startDate}
+    endDate={endDate}
+    tags={tags}
   />
 </Layout>

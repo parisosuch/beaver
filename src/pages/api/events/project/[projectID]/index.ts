@@ -1,4 +1,4 @@
-import { getProjectEvents } from "@/lib/beaver/event";
+import { getProjectEvents, type TagFilter } from "@/lib/beaver/event";
 
 // Paginated endpoint
 export async function GET({
@@ -22,12 +22,33 @@ export async function GET({
       beforeId = parseInt(url.searchParams.get("beforeId")!);
     }
 
-    // TODO: validate parameter datatypes
+    // Date range params
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    if (url.searchParams.get("startDate")) {
+      startDate = new Date(url.searchParams.get("startDate")!);
+    }
+    if (url.searchParams.get("endDate")) {
+      endDate = new Date(url.searchParams.get("endDate")!);
+    }
+
+    // Tag filter params
+    let tags: TagFilter[] = [];
+    if (url.searchParams.get("tags")) {
+      try {
+        tags = JSON.parse(url.searchParams.get("tags")!);
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
+    }
 
     const events = await getProjectEvents(parseInt(projectID), {
       search,
       limit,
       beforeId,
+      startDate,
+      endDate,
+      tags,
     });
 
     return new Response(JSON.stringify(events), {

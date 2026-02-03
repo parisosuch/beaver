@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { events, channels, eventTags } from "../db/schema";
-import { eq, and, desc, like, inArray, gt, lt } from "drizzle-orm";
+import { eq, and, desc, like, inArray, gt, lt, gte, lte, exists } from "drizzle-orm";
 import { getProject } from "./project";
 
 export type Tag = {
@@ -36,11 +36,19 @@ export type EventWithChannelName = {
   tags: TagPrimitive;
 };
 
+export type TagFilter = {
+  key: string;
+  value: string;
+};
+
 type QueryOptions = {
   search: string | null;
   afterId?: number;
   beforeId?: number;
   limit?: number;
+  startDate?: Date;
+  endDate?: Date;
+  tags?: TagFilter[];
 };
 
 // helper function to get tag primitive object from event tags
@@ -92,6 +100,33 @@ export async function getChannelEvents(
     conditions.push(lt(events.id, options.beforeId));
   }
 
+  // Date range filtering
+  if (options.startDate) {
+    conditions.push(gte(events.createdAt, options.startDate));
+  }
+
+  if (options.endDate) {
+    conditions.push(lte(events.createdAt, options.endDate));
+  }
+
+  // Tag filtering using EXISTS subquery
+  if (options.tags && options.tags.length > 0) {
+    for (const tagFilter of options.tags) {
+      const tagSubquery = db
+        .select({ eventId: eventTags.eventId })
+        .from(eventTags)
+        .where(
+          and(
+            eq(eventTags.eventId, events.id),
+            eq(eventTags.key, tagFilter.key),
+            eq(eventTags.value, tagFilter.value)
+          )
+        );
+
+      conditions.push(exists(tagSubquery));
+    }
+  }
+
   const eventData = await db
     .select({
       id: events.id,
@@ -109,11 +144,11 @@ export async function getChannelEvents(
     .limit(options.limit ?? 100);
   const eventIds = eventData.map((event) => event.id);
 
-  const eventTags = await getEventTags(eventIds);
+  const fetchedTags = await getEventTags(eventIds);
 
   const eventsRes = eventData.map((event) => ({
     ...event,
-    tags: eventTags[event.id] || {},
+    tags: fetchedTags[event.id] || {},
   }));
 
   return eventsRes;
@@ -140,6 +175,33 @@ export async function getProjectEvents(
     conditions.push(lt(events.id, options.beforeId));
   }
 
+  // Date range filtering
+  if (options.startDate) {
+    conditions.push(gte(events.createdAt, options.startDate));
+  }
+
+  if (options.endDate) {
+    conditions.push(lte(events.createdAt, options.endDate));
+  }
+
+  // Tag filtering using EXISTS subquery
+  if (options.tags && options.tags.length > 0) {
+    for (const tagFilter of options.tags) {
+      const tagSubquery = db
+        .select({ eventId: eventTags.eventId })
+        .from(eventTags)
+        .where(
+          and(
+            eq(eventTags.eventId, events.id),
+            eq(eventTags.key, tagFilter.key),
+            eq(eventTags.value, tagFilter.value)
+          )
+        );
+
+      conditions.push(exists(tagSubquery));
+    }
+  }
+
   const eventData = await db
     .select({
       id: events.id,
@@ -164,11 +226,11 @@ export async function getProjectEvents(
 
   const eventIds = eventData.map((event) => event.id);
 
-  const eventTags = await getEventTags(eventIds);
+  const fetchedTags = await getEventTags(eventIds);
 
   const eventsRes = eventData.map((event) => ({
     ...event,
-    tags: eventTags[event.id] || {},
+    tags: fetchedTags[event.id] || {},
   }));
 
   return eventsRes as EventWithChannelName[];

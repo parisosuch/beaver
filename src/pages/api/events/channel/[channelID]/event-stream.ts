@@ -1,4 +1,4 @@
-import { getChannelEvents } from "@/lib/beaver/event";
+import { getChannelEvents, type TagFilter } from "@/lib/beaver/event";
 
 export async function GET({
   params,
@@ -9,6 +9,26 @@ export async function GET({
 }) {
   const { channelID } = params;
   const search = url.searchParams.get("search");
+
+  // Date range params
+  let startDate: Date | undefined;
+  let endDate: Date | undefined;
+  if (url.searchParams.get("startDate")) {
+    startDate = new Date(url.searchParams.get("startDate")!);
+  }
+  if (url.searchParams.get("endDate")) {
+    endDate = new Date(url.searchParams.get("endDate")!);
+  }
+
+  // Tag filter params
+  let tags: TagFilter[] = [];
+  if (url.searchParams.get("tags")) {
+    try {
+      tags = JSON.parse(url.searchParams.get("tags")!);
+    } catch (e) {
+      // Invalid JSON, ignore
+    }
+  }
 
   const headers = {
     "Content-Type": "text/event-stream",
@@ -31,6 +51,9 @@ export async function GET({
             const events = await getChannelEvents(parseInt(channelID), {
               search,
               afterId,
+              startDate,
+              endDate,
+              tags,
             });
 
             if (events.length > 0) {

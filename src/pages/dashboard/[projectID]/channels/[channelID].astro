@@ -5,6 +5,14 @@ import { getChannel } from "@/lib/beaver/channel";
 
 const { projectID, channelID } = Astro.params;
 
+const url = new URL(Astro.request.url);
+const searchParams = url.searchParams;
+
+const search = searchParams.get("search");
+const startDate = searchParams.get("startDate");
+const endDate = searchParams.get("endDate");
+const tags = searchParams.get("tags");
+
 const channel = await getChannel(parseInt(channelID!));
 ---
 
@@ -14,5 +22,9 @@ const channel = await getChannel(parseInt(channelID!));
     type="channel"
     projectID={parseInt(projectID!)}
     channel={channel}
+    search={search}
+    startDate={startDate}
+    endDate={endDate}
+    tags={tags}
   />
 </Layout>
