@@ -47,6 +47,29 @@ bunx --bun astro build
 bun ./dist/server/entry.mjs
 ```
 
+### Docker
+
+1. Copy the example environment file and set a secure JWT secret:
+
+```sh
+cp .env.example .env
+```
+
+Generate a secret and add it to `.env`:
+
+```sh
+openssl rand -base64 32
+```
+
+2. Build and run:
+
+```sh
+docker build -t beaver .
+docker run -p 4321:4321 --env-file .env -v beaver-data:/app beaver
+```
+
+The volume mount persists the SQLite database across container restarts.
+
 ### Environment Variables
 
 | Variable | Description | Default |
@@ -58,7 +81,7 @@ bun ./dist/server/entry.mjs
 For production, set a secure `JWT_SECRET`:
 
 ```sh
-JWT_SECRET="your-secure-secret-key" node ./dist/server/entry.mjs
+JWT_SECRET="your-secure-secret-key" bun ./dist/server/entry.mjs
 ```
 
 ## Database
