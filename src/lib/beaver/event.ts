@@ -155,7 +155,7 @@ export async function getChannelEvents(
       channelName: channels.name,
     })
     .from(events)
-    .innerJoin(channels, eq(events.channelId, channels.id))
+    .leftJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
@@ -285,7 +285,7 @@ export async function getEvent(
       channelName: channels.name,
     })
     .from(events)
-    .innerJoin(channels, eq(events.channelId, channels.id))
+    .leftJoin(channels, eq(events.channelId, channels.id))
     .where(eq(events.id, eventId))
     .limit(1);
 

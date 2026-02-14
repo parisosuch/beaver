@@ -3,6 +3,8 @@ import { db } from "./db";
 export async function initDB() {
   console.log("Creating database tables if they do not exist...");
 
+
+
   await db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

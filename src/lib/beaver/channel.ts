@@ -1,6 +1,6 @@
 import { db } from "../db/db";
-import { channels } from "../db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { channels, events, eventTags } from "../db/schema";
+import { eq, and, asc, inArray } from "drizzle-orm";
 
 export type Channel = {
   id: number;
@@ -62,6 +62,18 @@ export async function createChannel(
 }
 
 export async function deleteChannel(channelID: number) {
+  // Delete event tags for all events in this channel
+  const channelEvents = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(eq(events.channelId, channelID));
+
+  if (channelEvents.length > 0) {
+    const eventIds = channelEvents.map((e) => e.id);
+    await db.delete(eventTags).where(inArray(eventTags.eventId, eventIds));
+    await db.delete(events).where(eq(events.channelId, channelID));
+  }
+
   const channel = await db
     .delete(channels)
     .where(eq(channels.id, channelID))
