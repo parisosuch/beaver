@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { events, channels, eventTags } from "../db/schema";
-import { eq, and, asc, desc, like, inArray, gt, lt, gte, lte, exists, max } from "drizzle-orm";
+import { eq, and, or, asc, desc, like, inArray, gt, lt, gte, lte, exists, max } from "drizzle-orm";
 import { getProject } from "./project";
 
 export async function getMaxEventId(): Promise<number> {
@@ -100,7 +100,9 @@ export async function getChannelEvents(
   if (options.search) {
     const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
-    conditions.push(...searchTerms.map((term) => like(events.name, term)));
+    conditions.push(...searchTerms.map((term) =>
+      or(like(events.name, term), like(events.description, term))
+    ));
   }
 
   if (options.afterId) {
@@ -185,7 +187,9 @@ export async function getProjectEvents(
   if (options.search) {
     const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
-    conditions.push(...searchTerms.map((term) => like(events.name, term)));
+    conditions.push(...searchTerms.map((term) =>
+      or(like(events.name, term), like(events.description, term))
+    ));
   }
 
   if (options.afterId) {
