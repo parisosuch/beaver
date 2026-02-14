@@ -38,6 +38,8 @@ export async function GET({
     "Access-Control-Allow-Origin": "*",
   };
 
+  const encoder = new TextEncoder();
+
   // TODO: handle limits which in this case shouldn't have a limit.
   const stream = new ReadableStream({
     start(controller) {
@@ -59,9 +61,9 @@ export async function GET({
 
             if (events.length > 0) {
               afterId = events.at(0)!.id;
-              controller.enqueue(`data: ${JSON.stringify(events)}\n\n`);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(events)}\n\n`));
             } else {
-              controller.enqueue(`data: ${JSON.stringify([])}\n\n`);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify([])}\n\n`));
             }
 
             await new Promise((resolve) => setTimeout(resolve, 10000));
