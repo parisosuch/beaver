@@ -50,18 +50,18 @@ export default function ChannelSettings({ channels }: { channels: Channel[] }) {
     // add custom even for channel deletion
     window.addEventListener(
       "channel:deleted",
-      handleChannelDeleted as EventListener
+      handleChannelDeleted as EventListener,
     );
 
     window.addEventListener(
       "channel:created",
-      handleChannelCreated as EventListener
+      handleChannelCreated as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "channel:deleted",
-        handleChannelDeleted as EventListener
+        handleChannelDeleted as EventListener,
       );
     };
   }, []);
@@ -72,10 +72,13 @@ export default function ChannelSettings({ channels }: { channels: Channel[] }) {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen} key={channel.id}>
           <div className="rounded border p-2 mt-4 flex justify-between items-center">
             <div>
-              <h3 className="font-medium text-lg">{channel.name}</h3>
-              <p className="text-xs">
-                {channel.createdAt?.toLocaleDateString()}
-              </p>
+              <div className="flex flex-row space-x-4 items-center">
+                <h3 className="font-medium text-lg"># {channel.name}</h3>
+                <p className="text-xs">
+                  {channel.createdAt?.toLocaleDateString()}
+                </p>
+              </div>
+              <p className="font-light text-xs">{channel.description}</p>
             </div>
             <div>
               <DialogTrigger asChild>
@@ -111,7 +114,7 @@ export default function ChannelSettings({ channels }: { channels: Channel[] }) {
                   deleteChannel(channel);
                   const id = channel.id;
                   window.dispatchEvent(
-                    new CustomEvent("channel:deleted", { detail: { id } })
+                    new CustomEvent("channel:deleted", { detail: { id } }),
                   );
                   setDialogOpen(false);
                 }}
