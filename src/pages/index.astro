@@ -1,10 +1,6 @@
 ---
 import "../styles/global.css";
-import { initDB } from "../lib/db/init";
 import { getProjects } from "../lib/beaver/project";
-
-// init database at startup
-await initDB();
 
 // Middleware handles auth check - if we reach here, user is authenticated
 // Get projects for the authenticated user and redirect to dashboard

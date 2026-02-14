@@ -2,12 +2,15 @@ import { defineMiddleware } from "astro:middleware";
 import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
+import { initDB } from "./lib/db/init";
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ["/login", "/onboarding"];
 
 // API routes that don't require authentication
 const PUBLIC_API_ROUTES = ["/api/auth/", "/api/event", "/api/admin"];
+
+let dbInitialized = false;
 
 function isPublicRoute(pathname: string): boolean {
   // Check exact public routes
@@ -26,6 +29,10 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  if (!dbInitialized) {
+    await initDB();
+    dbInitialized = true;
+  }
   const { pathname } = context.url;
 
   // Allow public routes
