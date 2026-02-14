@@ -17,7 +17,6 @@ RUN bun run build
 FROM base AS runtime
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
-RUN mkdir -p /app/data
 
 ENV HOST=0.0.0.0
 ENV PORT=4321
