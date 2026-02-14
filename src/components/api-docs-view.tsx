@@ -476,7 +476,8 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
     "plan": "premium",
     "source": "landing-page"
   },
-  "channelId": 1,
+  "projectId": 1,
+  "channelName": "signups",
   "createdAt": "2024-01-15T10:30:00.000Z"
 }`}
               />

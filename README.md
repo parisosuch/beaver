@@ -22,7 +22,6 @@ bun run seed
 
 This creates sample users, projects, channels, and events:
 - Admin user: `admin` / `admin123`
-- Demo user: `demo` / `demo123`
 
 ## Development
 
@@ -68,16 +67,26 @@ Beaver uses SQLite with Drizzle ORM. The database file (`beaver.sqlite`) is crea
 
 ## API Usage
 
-### Posting Events
+### Authentication
+
+All API requests require your project's API key, passed via the `X-API-Key` header. You can find your API key in the project settings page.
+
+```
+X-API-Key: your-project-api-key
+```
+
+### Create Event
 
 Send a `POST` request to `/api/event` to log events from your application.
 
 **Endpoint:** `POST /api/event`
 
 **Headers:**
-```
-Content-Type: application/json
-```
+
+| Header | Required | Description |
+| :----- | :------- | :---------- |
+| `Content-Type` | Yes | Must be `application/json` |
+| `X-API-Key` | Yes | Your project's API key |
 
 **Request Body:**
 
@@ -85,8 +94,7 @@ Content-Type: application/json
 | :---- | :--- | :------- | :---------- |
 | `name` | string | Yes | Event name (e.g., "User Signup") |
 | `channel` | string | Yes | Channel name to post to |
-| `apiKey` | string | Yes | Your project's API key |
-| `description` | string | No | Additional details about the event |
+| `description` | string | No | Additional details about the event (searchable in the dashboard) |
 | `icon` | string | No | Emoji icon for the event |
 | `tags` | object | No | Key-value metadata (string, number, or boolean values) |
 
@@ -95,10 +103,10 @@ Content-Type: application/json
 ```sh
 curl -X POST http://localhost:4321/api/event \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-project-api-key" \
   -d '{
     "name": "New Sale",
     "channel": "sales",
-    "apiKey": "your-project-api-key",
     "description": "Customer completed a purchase",
     "icon": "💰",
     "tags": {
@@ -114,11 +122,13 @@ curl -X POST http://localhost:4321/api/event \
 ```js
 await fetch("http://localhost:4321/api/event", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "X-API-Key": "your-project-api-key",
+  },
   body: JSON.stringify({
     name: "User Signup",
     channel: "signups",
-    apiKey: "your-project-api-key",
     description: "New user registered",
     icon: "👤",
     tags: {
@@ -129,7 +139,7 @@ await fetch("http://localhost:4321/api/event", {
 });
 ```
 
-**Response:**
+**Success Response (200):**
 
 ```json
 {
@@ -148,7 +158,14 @@ await fetch("http://localhost:4321/api/event", {
 }
 ```
 
-You can find your project's API key in the project settings page.
+**Error Responses:**
+
+| Status | Description |
+| :----- | :---------- |
+| `401` | Missing `X-API-Key` header |
+| `400` | Missing required field (`name` or `channel`) |
+| `400` | Invalid `tags` format (not valid JSON) |
+| `500` | Invalid API key or channel not found |
 
 ## Commands
 
