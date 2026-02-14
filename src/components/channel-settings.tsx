@@ -13,8 +13,15 @@ import { Button } from "./ui/button";
 import { Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Label } from "./ui/label";
+import type { Project } from "@/lib/beaver/project";
 
-export default function ChannelSettings({ channels }: { channels: Channel[] }) {
+export default function ChannelSettings({
+  channels,
+  project,
+}: {
+  channels: Channel[];
+  project: Project;
+}) {
   const [clientChannels, setChannels] = useState<Channel[]>(channels);
   const [channelName, setChannelName] = useState("");
   const [channelDeleteError, setChannelDeleteError] = useState("");
@@ -73,7 +80,12 @@ export default function ChannelSettings({ channels }: { channels: Channel[] }) {
           <div className="rounded border p-2 mt-4 flex justify-between items-center">
             <div>
               <div className="flex flex-row space-x-4 items-center">
-                <h3 className="font-medium text-lg"># {channel.name}</h3>
+                <a
+                  href={`/dashboard/${project.id}/channels/${channel.id}`}
+                  className="hover:text-black/50"
+                >
+                  <h3 className="font-medium text-lg"># {channel.name}</h3>
+                </a>
                 <p className="text-xs">
                   {channel.createdAt?.toLocaleDateString()}
                 </p>
