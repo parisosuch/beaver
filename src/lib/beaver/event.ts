@@ -1,7 +1,12 @@
 import { db } from "../db/db";
 import { events, channels, eventTags } from "../db/schema";
-import { eq, and, desc, like, inArray, gt, lt, gte, lte, exists } from "drizzle-orm";
+import { eq, and, asc, desc, like, inArray, gt, lt, gte, lte, exists, max } from "drizzle-orm";
 import { getProject } from "./project";
+
+export async function getMaxEventId(): Promise<number> {
+  const result = await db.select({ maxId: max(events.id) }).from(events);
+  return result[0]?.maxId ?? 0;
+}
 
 export type Tag = {
   id: number;
@@ -41,14 +46,20 @@ export type TagFilter = {
   value: string;
 };
 
+export type SortField = "date" | "name";
+export type SortOrder = "asc" | "desc";
+
 type QueryOptions = {
   search: string | null;
   afterId?: number;
   beforeId?: number;
+  offset?: number;
   limit?: number;
   startDate?: Date;
   endDate?: Date;
   tags?: TagFilter[];
+  sortBy?: SortField;
+  sortOrder?: SortOrder;
 };
 
 // helper function to get tag primitive object from event tags
@@ -96,7 +107,8 @@ export async function getChannelEvents(
     conditions.push(gt(events.id, options.afterId));
   }
 
-  if (options.beforeId) {
+  // Only use cursor pagination for default sort (date desc)
+  if (options.beforeId && !options.offset) {
     conditions.push(lt(events.id, options.beforeId));
   }
 
@@ -127,7 +139,10 @@ export async function getChannelEvents(
     }
   }
 
-  const eventData = await db
+  const orderFn = options.sortOrder === "asc" ? asc : desc;
+  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+
+  let query = db
     .select({
       id: events.id,
       name: events.name,
@@ -140,8 +155,14 @@ export async function getChannelEvents(
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
-    .orderBy(desc(events.id))
+    .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
+
+  if (options.offset) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  const eventData = await query;
   const eventIds = eventData.map((event) => event.id);
 
   const fetchedTags = await getEventTags(eventIds);
@@ -171,7 +192,8 @@ export async function getProjectEvents(
     conditions.push(gt(events.id, options.afterId));
   }
 
-  if (options.beforeId) {
+  // Only use cursor pagination for default sort (date desc)
+  if (options.beforeId && !options.offset) {
     conditions.push(lt(events.id, options.beforeId));
   }
 
@@ -202,7 +224,10 @@ export async function getProjectEvents(
     }
   }
 
-  const eventData = await db
+  const orderFn = options.sortOrder === "asc" ? asc : desc;
+  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+
+  let query = db
     .select({
       id: events.id,
       name: events.name,
@@ -221,8 +246,14 @@ export async function getProjectEvents(
       )
     )
     .where(and(...conditions))
-    .orderBy(desc(events.id))
+    .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
+
+  if (options.offset) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  const eventData = await query;
 
   const eventIds = eventData.map((event) => event.id);
 

@@ -11,6 +11,9 @@ const search = searchParams.get("search");
 const startDate = searchParams.get("startDate");
 const endDate = searchParams.get("endDate");
 const tags = searchParams.get("tags");
+const sortBy = searchParams.get("sortBy");
+const sortOrder = searchParams.get("sortOrder");
+
 ---
 
 <Layout projectID={projectID!}>
@@ -22,5 +25,7 @@ const tags = searchParams.get("tags");
     startDate={startDate}
     endDate={endDate}
     tags={tags}
+    sortBy={sortBy}
+    sortOrder={sortOrder}
   />
 </Layout>

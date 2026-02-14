@@ -1,4 +1,4 @@
-import { getChannelEvents, type TagFilter } from "@/lib/beaver/event";
+import { getChannelEvents, type TagFilter, type SortField, type SortOrder } from "@/lib/beaver/event";
 
 // Paginated endpoint
 export async function GET({
@@ -42,13 +42,24 @@ export async function GET({
       }
     }
 
+    let offset;
+    if (url.searchParams.get("offset")) {
+      offset = parseInt(url.searchParams.get("offset")!);
+    }
+
+    const sortBy = url.searchParams.get("sortBy") as SortField | null;
+    const sortOrder = url.searchParams.get("sortOrder") as SortOrder | null;
+
     const events = await getChannelEvents(parseInt(channelID), {
       search,
       limit,
       beforeId,
+      offset,
       startDate,
       endDate,
       tags,
+      sortBy: sortBy ?? undefined,
+      sortOrder: sortOrder ?? undefined,
     });
 
     return new Response(JSON.stringify(events), {

@@ -1,13 +1,39 @@
-import type { EventWithChannelName, TagFilter } from "@/lib/beaver/event";
+import type { EventWithChannelName, TagFilter, SortField, SortOrder } from "@/lib/beaver/event";
+
+const fetchMaxEventId = async (): Promise<number> => {
+  try {
+    const res = await fetch("/api/events/max-id");
+    const data = await res.json();
+    return data.maxId ?? 0;
+  } catch {
+    return 0;
+  }
+};
 import { useEffect, useRef, useState } from "react";
 import EventCard from "./event-card";
 import { motion } from "framer-motion";
 import { Input } from "./ui/input";
-import { SearchIcon, XIcon } from "lucide-react";
+import { SearchIcon, XIcon, ArrowUpDownIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
 import EventFilterDialog from "./event-filter-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+
+type SortOption = `${SortField}_${SortOrder}`;
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "date_desc", label: "Newest first" },
+  { value: "date_asc", label: "Oldest first" },
+  { value: "name_asc", label: "Name A-Z" },
+  { value: "name_desc", label: "Name Z-A" },
+];
 
 export default function EventFeed({
   type,
@@ -17,6 +43,8 @@ export default function EventFeed({
   startDate,
   endDate,
   tags,
+  sortBy,
+  sortOrder,
 }: {
   type: "channel" | "project";
   projectID?: number;
@@ -25,6 +53,8 @@ export default function EventFeed({
   startDate?: string | null;
   endDate?: string | null;
   tags?: string | null;
+  sortBy?: string | null;
+  sortOrder?: string | null;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +88,8 @@ export default function EventFeed({
     startDate?: string | null;
     endDate?: string | null;
     tags?: TagFilter[] | null;
+    sortBy?: string | null;
+    sortOrder?: string | null;
   }) => {
     const params = new URLSearchParams();
 
@@ -65,11 +97,15 @@ export default function EventFeed({
     const newStartDate = overrides.startDate !== undefined ? overrides.startDate : startDate;
     const newEndDate = overrides.endDate !== undefined ? overrides.endDate : endDate;
     const newTags = overrides.tags !== undefined ? overrides.tags : parsedTags;
+    const newSortBy = overrides.sortBy !== undefined ? overrides.sortBy : sortBy;
+    const newSortOrder = overrides.sortOrder !== undefined ? overrides.sortOrder : sortOrder;
 
     if (newSearch) params.set("search", newSearch);
     if (newStartDate) params.set("startDate", newStartDate);
     if (newEndDate) params.set("endDate", newEndDate);
     if (newTags && newTags.length > 0) params.set("tags", JSON.stringify(newTags));
+    if (newSortBy) params.set("sortBy", newSortBy);
+    if (newSortOrder) params.set("sortOrder", newSortOrder);
 
     const queryString = params.toString();
     return queryString ? `${getBasePath()}?${queryString}` : getBasePath();
@@ -93,19 +129,36 @@ export default function EventFeed({
     if (tags) {
       params.push(`tags=${encodeURIComponent(tags)}`);
     }
+    if (sortBy) {
+      params.push(`sortBy=${encodeURIComponent(sortBy)}`);
+    }
+    if (sortOrder) {
+      params.push(`sortOrder=${encodeURIComponent(sortOrder)}`);
+    }
 
     return params.length > 0 ? `&${params.join("&")}` : "";
   };
 
+  const handleSortChange = (value: SortOption) => {
+    const [field, order] = value.split("_") as [SortField, SortOrder];
+    window.location.href = buildFilterUrl({ sortBy: field, sortOrder: order });
+  };
+
+  const currentSort: SortOption = `${(sortBy as SortField) || "date"}_${(sortOrder as SortOrder) || "desc"}`;
+
   const getEvents = async (): Promise<EventWithChannelName[]> => {
-    const cursor = eventsRef.current.at(-1)?.id ?? null;
     let endpoint = "/api/events";
 
     if (channel) {
-      endpoint += `/channel/${channel.id}?beforeId=${cursor}&limit=20`;
+      endpoint += `/channel/${channel.id}?limit=20`;
     } else {
-      endpoint += `/project/${projectID}?beforeId=${cursor}&limit=20`;
+      endpoint += `/project/${projectID}?limit=20`;
     }
+
+    if (eventsRef.current.length > 0) {
+      endpoint += `&offset=${eventsRef.current.length}`;
+    }
+
     if (search) {
       endpoint += `&search=${encodeURIComponent(search)}`;
     }
@@ -153,19 +206,23 @@ export default function EventFeed({
     setLoading(true);
     eventIdsRef.current.clear();
 
-    // Establish SSE connection
-    const establishStream = (initialEvents: EventWithChannelName[]) => {
-      if (initialEvents.length === 0) {
+    // Establish SSE connection for real-time updates (only for default sort)
+    const isDefaultSort = !sortBy || (sortBy === "date" && (!sortOrder || sortOrder === "desc"));
+
+    const establishStream = (maxId: number) => {
+      // SSE only makes sense for default sort (newest first) since new events
+      // are prepended to the top. For other sorts, real-time updates would
+      // break the sort order.
+      if (!isDefaultSort || maxId === 0) {
         return;
       }
 
       let endpoint = "/api/events";
-      const cursor = initialEvents.at(0)!.id;
 
       if (channel) {
-        endpoint += `/channel/${channel.id}/event-stream?afterId=${cursor}`;
+        endpoint += `/channel/${channel.id}/event-stream?afterId=${maxId}`;
       } else {
-        endpoint += `/project/${projectID}/event-stream?afterId=${cursor}`;
+        endpoint += `/project/${projectID}/event-stream?afterId=${maxId}`;
       }
 
       if (search) {
@@ -198,12 +255,12 @@ export default function EventFeed({
       };
     };
 
-    getEvents().then((res) => {
-      // Add initial events to the ref to prevent duplicates
+    // Fetch events and max ID in parallel
+    Promise.all([getEvents(), fetchMaxEventId()]).then(([res, maxId]) => {
       res.forEach((event) => eventIdsRef.current.add(event.id));
       setEvents(res);
       setLoading(false);
-      establishStream(res);
+      establishStream(maxId);
     });
 
     // Cleanup: close EventSource when dependencies change or component unmounts
@@ -212,11 +269,11 @@ export default function EventFeed({
         eventSource.close();
       }
     };
-  }, [projectID, channel, search, startDate, endDate, tags]);
+  }, [projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
 
   // Infinite scroll effect
   useEffect(() => {
-    if (!bottomRef.current || !scrollContainerRef.current) return;
+    if (loading || !bottomRef.current || !scrollContainerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -245,7 +302,7 @@ export default function EventFeed({
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
-  }, [projectID, channel, search, startDate, endDate, tags]);
+  }, [loading, projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
 
   // Format time filter for display
   const formatTimeFilter = () => {
@@ -300,6 +357,19 @@ export default function EventFeed({
             currentTags={parsedTags}
             onApplyFilters={handleApplyFilters}
           />
+          <Select value={currentSort} onValueChange={handleSortChange}>
+            <SelectTrigger className="w-[160px] gap-2">
+              <ArrowUpDownIcon className="size-4 shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             placeholder="Search..."
             type="text"
