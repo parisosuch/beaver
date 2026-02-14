@@ -1,13 +1,13 @@
 ---
 import "../styles/global.css";
 import OnboardingView from "../components/onboarding-view";
-import { getProjects } from "@/lib/beaver/project";
+import { getAdminUsers } from "@/lib/beaver/user";
 
-// get projects and if there are no projects, do onboarding flow
-const projects = await getProjects();
+// If an admin user already exists, onboarding is complete — send to login
+const adminUsers = await getAdminUsers();
 
-if (projects.length !== 0) {
-  return Astro.redirect(`/dashboard/${projects[0].id}`);
+if (adminUsers.length > 0) {
+  return Astro.redirect("/login");
 }
 ---
 
