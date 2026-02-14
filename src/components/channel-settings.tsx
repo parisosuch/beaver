@@ -77,7 +77,7 @@ export default function ChannelSettings({
     <>
       {clientChannels.map((channel) => (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen} key={channel.id}>
-          <div className="rounded border p-2 mt-4 flex justify-between items-center">
+          <div className="rounded border p-2 md:p-4 mt-4 flex justify-between items-center">
             <div>
               <div className="flex flex-row space-x-4 items-center">
                 <a

@@ -48,9 +48,9 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
   };
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center">
-      <form onSubmit={handleSubmit} className="flex flex-col text-center">
-        <h1 className="text-3xl font-bold">Create Channel</h1>
+    <div className="w-full min-h-screen flex items-center justify-center px-4 md:px-0">
+      <form onSubmit={handleSubmit} className="flex flex-col text-center w-full max-w-sm">
+        <h1 className="text-2xl md:text-3xl font-bold">Create Channel</h1>
         <p className="text-sm mt-2 text-black/50 font-medium">
           Create a new channel to organize your events.
         </p>

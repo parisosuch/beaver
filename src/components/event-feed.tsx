@@ -316,7 +316,7 @@ export default function EventFeed({
 
   if (loading) {
     return (
-      <div className="p-8 w-full min-h-screen flex justify-center items-center">
+      <div className="p-4 md:p-8 w-full min-h-screen flex justify-center items-center">
         <p>Loading...</p>
       </div>
     );
@@ -338,8 +338,8 @@ export default function EventFeed({
   return (
     <div className="w-full max-h-screen flex flex-col">
       {/* Header */}
-      <div className="w-full flex items-center justify-between p-8 border-b">
-        <div>
+      <div className="w-full flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b gap-4">
+        <div className="pl-10 md:pl-0">
           <h1 className="text-2xl font-semibold">
             {type === "project" ? "Feed" : `# ${channel?.name}`}
           </h1>
@@ -347,7 +347,7 @@ export default function EventFeed({
             <p className="text-sm text-black/50 mt-1">{channel.description}</p>
           )}
         </div>
-        <div className="flex space-x-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <EventFilterDialog
             type={type}
             projectID={projectID}
@@ -373,6 +373,7 @@ export default function EventFeed({
           <Input
             placeholder="Search..."
             type="text"
+            className="w-full sm:w-auto"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -385,7 +386,7 @@ export default function EventFeed({
 
       {/* Active filters display */}
       {hasActiveFilters && (
-        <div className="px-8 py-3 border-b bg-gray-50 flex items-center gap-2 flex-wrap">
+        <div className="px-4 md:px-8 py-3 border-b bg-gray-50 flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600">Active filters:</span>
           {(startDate || endDate) && (
             <div className="flex items-center gap-1 rounded-md bg-white border px-2.5 py-1 text-sm">
@@ -422,7 +423,7 @@ export default function EventFeed({
         ref={scrollContainerRef}
         className="w-full flex justify-center max-h-screen overflow-y-auto scroll-smooth"
       >
-        <div className="p-8 w-1/2 space-y-4">
+        <div className="p-4 md:p-8 w-full lg:w-1/2 space-y-4">
           {events.length === 0 ? (
             <div className="w-full text-center">
               <h2 className="text-2xl">

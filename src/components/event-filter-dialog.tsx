@@ -191,7 +191,7 @@ export default function EventFilterDialog({
             </div>
 
             {/* Custom Date Range */}
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="space-y-2">
                 <label className="text-sm text-muted-foreground">From</label>
                 <DatePicker
@@ -221,7 +221,7 @@ export default function EventFilterDialog({
                 No tags available for this {type}
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Key dropdown */}
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Key</label>

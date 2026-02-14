@@ -45,7 +45,7 @@ export default function EventDetail({
   };
 
   return (
-    <div className="flex-1 p-8">
+    <div className="flex-1 p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
         <Button variant="ghost" size="sm" onClick={handleBack}>
           <ArrowLeftIcon className="w-4 h-4 mr-2" />

@@ -47,9 +47,9 @@ const CreateAdminAccount = ({
   setConfirmPassword,
   onNext,
 }: AdminAccountProps) => (
-  <Card className="w-1/2 h-[400px] flex flex-col justify-between p-4">
+  <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div className="flex flex-1 flex-col h-full justify-center">
-      <CardTitle className="text-3xl">Create admin account</CardTitle>
+      <CardTitle className="text-2xl md:text-3xl">Create admin account</CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="admin-username">Username</Label>
         <Input
@@ -120,9 +120,9 @@ const CreateProject = ({
   onBack,
   onCreate,
 }: ProjectProps) => (
-  <Card className="w-1/2 h-[400px] flex flex-col justify-between p-4">
+  <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div>
-      <CardTitle className="text-3xl">Create your first project</CardTitle>
+      <CardTitle className="text-2xl md:text-3xl">Create your first project</CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="project-name">Project name</Label>
         <Input
@@ -227,12 +227,12 @@ function OnboardingView() {
 
   return (
     <div className="w-full min-h-screen flex flex-row">
-      <div className="w-1/2 flex flex-col justify-center h-screen px-8 tracking-tighter bg-gray-100">
-        <h1 className="text-7xl font-bold">Welcome</h1>
-        <h1 className="text-7xl font-bold">To</h1>
-        <h1 className="text-7xl font-bold">Beaver!</h1>
+      <div className="hidden md:flex w-1/2 flex-col justify-center h-screen px-8 tracking-tighter bg-gray-100">
+        <h1 className="text-5xl md:text-7xl font-bold">Welcome</h1>
+        <h1 className="text-5xl md:text-7xl font-bold">To</h1>
+        <h1 className="text-5xl md:text-7xl font-bold">Beaver!</h1>
       </div>
-      <div className="w-1/2 flex justify-center items-center h-screen">
+      <div className="w-full md:w-1/2 flex justify-center items-center min-h-screen px-4 md:px-0">
         {onboardingPart === 0 && (
           <CreateAdminAccount
             username={username}

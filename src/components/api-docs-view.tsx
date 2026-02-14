@@ -160,12 +160,12 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="p-8 border-b">
-        <h1 className="text-2xl font-semibold">API Documentation</h1>
+      <div className="p-4 md:p-8 border-b">
+        <h1 className="text-2xl font-semibold pl-10 md:pl-0">API Documentation</h1>
       </div>
 
       <div className="w-full flex flex-col items-center mt-8 pb-16">
-        <div className="w-3/4 space-y-12">
+        <div className="w-full px-4 md:w-3/4 md:px-0 space-y-12">
           {/* Table of Contents */}
           <nav className="bg-gray-50 border border-gray-200 rounded-xl p-6">
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
@@ -283,7 +283,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             >
               Request Headers
             </h3>
-            <div className="overflow-hidden rounded-xl border border-gray-200 mb-8">
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 mb-8">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
@@ -336,7 +336,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             >
               Request Body
             </h3>
-            <div className="overflow-hidden rounded-xl border border-gray-200 mb-8">
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 mb-8">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">

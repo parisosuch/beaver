@@ -9,25 +9,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { BookOpenIcon, InboxIcon, LogOutIcon, PlusIcon, Settings } from "lucide-react";
+import { BookOpenIcon, InboxIcon, LogOutIcon, MenuIcon, PlusIcon, Settings, XIcon } from "lucide-react";
 import { useAuth, UserProvider } from "../context/user-context";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
-function SidePanelContent({
+function PanelContent({
   currentProject,
   currentProjects,
   currentChannels,
-  currentPath,
+  pathname,
+  onNavigate,
 }: {
   currentProject: Project;
   currentProjects: Project[];
   currentChannels: Channel[];
-  currentPath: string;
+  pathname: string;
+  onNavigate?: () => void;
 }) {
-  const [project] = useState(currentProject);
   const [projects] = useState<Project[]>(currentProjects);
   const [channels, setChannels] = useState<Channel[]>(currentChannels);
-  const [pathname, setPathname] = useState(currentPath);
   const prefetchedChannels = useRef<Set<number>>(new Set());
 
   const { user, signOut } = useAuth();
@@ -43,28 +43,17 @@ function SidePanelContent({
   };
 
   useEffect(() => {
-    const handleNavigation = () => {
-      setPathname(window.location.pathname);
-    };
-
     const handleChannelDeleted = (e: CustomEvent<{ id: number }>) => {
       const { id } = e.detail;
-
       setChannels((prev) => prev.filter((c) => c.id !== id));
     };
 
-    window.addEventListener("popstate", handleNavigation);
-    document.addEventListener("astro:page-load", handleNavigation);
-
-    // add custom even for channel deletion
     window.addEventListener(
       "channel:deleted",
       handleChannelDeleted as EventListener,
     );
 
     return () => {
-      window.removeEventListener("popstate", handleNavigation);
-      document.removeEventListener("astro:page-load", handleNavigation);
       window.removeEventListener(
         "channel:deleted",
         handleChannelDeleted as EventListener,
@@ -77,6 +66,7 @@ function SidePanelContent({
     window.location.replace("/login");
   };
 
+  const project = currentProject;
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
   const isSettingsActive = () =>
     pathname === `/dashboard/${project.id}/settings`;
@@ -91,114 +81,214 @@ function SidePanelContent({
 
   return (
     <Popover>
-      <div className="w-[350px] border-r h-screen sticky top-0 overflow-y-auto p-8">
-        <div className="mt-4 space-y-2">
-          <h1 className="text-sm font-mono">User</h1>
-          <PopoverTrigger asChild>
-            <p className="font-semibold hover:underline hover:cursor-pointer">
-              @{user?.userName}
-            </p>
-          </PopoverTrigger>
-          <PopoverContent>
-            <Button
-              className="w-full hover:cursor-pointer"
-              variant="secondary"
-              onClick={handleSignout}
-            >
-              <LogOutIcon />
-              Sign out
-            </Button>
-          </PopoverContent>
-        </div>
-        {/* Project header */}
-        <div className="flex space-x-2 w-full items-center justify-between mt-4">
-          <h1 className="text-sm font-mono">Project</h1>
-          <a href="/dashboard/create-project">
-            <PlusIcon
-              size={20}
-              className="hover:cursor-pointer hover:text-black/50"
-            />
-          </a>
-        </div>
-        {/* Project selector */}
-        <Select
-          defaultValue={String(currentProject.id)}
-          onValueChange={(value) => {
-            const selectedProject = projects.find(
-              (p) => String(p.id) === value,
-            );
-            if (selectedProject) {
-              window.location.href = `/dashboard/${selectedProject.id}/feed`;
-            }
-          }}
-        >
-          <SelectTrigger className="w-full mt-2">
-            <SelectValue placeholder="Project" />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((p) => (
-              <SelectItem key={p.id} value={String(p.id)}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="mt-4 space-y-2">
-          <h1 className="text-sm font-mono">Navigation</h1>
-          <a
-            className={isFeedActive() ? activeCss : navigationCss}
-            href={`/dashboard/${project.id}/feed`}
+      <div className="mt-4 space-y-2">
+        <h1 className="text-sm font-mono">User</h1>
+        <PopoverTrigger asChild>
+          <p className="font-semibold hover:underline hover:cursor-pointer">
+            @{user?.userName}
+          </p>
+        </PopoverTrigger>
+        <PopoverContent>
+          <Button
+            className="w-full hover:cursor-pointer"
+            variant="secondary"
+            onClick={handleSignout}
           >
-            <InboxIcon size={20} />
-            <p>Feed</p>
-          </a>
-          <a
-            className={isSettingsActive() ? activeCss : navigationCss}
-            href={`/dashboard/${project.id}/settings`}
-          >
-            <Settings size={20} />
-            <p>Settings</p>
-          </a>
-          <a
-            className={isApiDocsActive() ? activeCss : navigationCss}
-            href={`/dashboard/${project.id}/api-docs`}
-          >
-            <BookOpenIcon size={20} />
-            <p>API Docs</p>
-          </a>
-        </div>
-
-        {/* Channels header */}
-        <div className="flex space-x-2 w-full items-center justify-between mt-4">
-          <h1 className="text-sm font-mono">Channels</h1>
-          <a href={`/dashboard/${project.id}/create-channel`}>
-            <PlusIcon
-              size={20}
-              className="hover:cursor-pointer hover:text-black/50"
-            />
-          </a>
-        </div>
-
-        {/* Channels list */}
-        <div className="space-y-2 flex flex-col mt-4">
-          {channels.map((channel) => (
-            <a
-              key={channel.id}
-              href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
-              onMouseEnter={() => handleChannelMouseEnter(channel.id)}
-              className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
-                isChannelActive(channel.id)
-                  ? "bg-gray-100 rounded px-3 py-2 font-medium text-black"
-                  : "px-3 py-2 hover:bg-gray-100 hover:rounded"
-              }`}
-            >
-              # {channel.name}
-            </a>
+            <LogOutIcon />
+            Sign out
+          </Button>
+        </PopoverContent>
+      </div>
+      {/* Project header */}
+      <div className="flex space-x-2 w-full items-center justify-between mt-4">
+        <h1 className="text-sm font-mono">Project</h1>
+        <a href="/dashboard/create-project">
+          <PlusIcon
+            size={20}
+            className="hover:cursor-pointer hover:text-black/50"
+          />
+        </a>
+      </div>
+      {/* Project selector */}
+      <Select
+        defaultValue={String(currentProject.id)}
+        onValueChange={(value) => {
+          const selectedProject = projects.find(
+            (p) => String(p.id) === value,
+          );
+          if (selectedProject) {
+            window.location.href = `/dashboard/${selectedProject.id}/feed`;
+            onNavigate?.();
+          }
+        }}
+      >
+        <SelectTrigger className="w-full mt-2">
+          <SelectValue placeholder="Project" />
+        </SelectTrigger>
+        <SelectContent>
+          {projects.map((p) => (
+            <SelectItem key={p.id} value={String(p.id)}>
+              {p.name}
+            </SelectItem>
           ))}
-        </div>
+        </SelectContent>
+      </Select>
+
+      <div className="mt-4 space-y-2">
+        <h1 className="text-sm font-mono">Navigation</h1>
+        <a
+          className={isFeedActive() ? activeCss : navigationCss}
+          href={`/dashboard/${project.id}/feed`}
+          onClick={() => onNavigate?.()}
+        >
+          <InboxIcon size={20} />
+          <p>Feed</p>
+        </a>
+        <a
+          className={isSettingsActive() ? activeCss : navigationCss}
+          href={`/dashboard/${project.id}/settings`}
+          onClick={() => onNavigate?.()}
+        >
+          <Settings size={20} />
+          <p>Settings</p>
+        </a>
+        <a
+          className={isApiDocsActive() ? activeCss : navigationCss}
+          href={`/dashboard/${project.id}/api-docs`}
+          onClick={() => onNavigate?.()}
+        >
+          <BookOpenIcon size={20} />
+          <p>API Docs</p>
+        </a>
+      </div>
+
+      {/* Channels header */}
+      <div className="flex space-x-2 w-full items-center justify-between mt-4">
+        <h1 className="text-sm font-mono">Channels</h1>
+        <a href={`/dashboard/${project.id}/create-channel`} onClick={() => onNavigate?.()}>
+          <PlusIcon
+            size={20}
+            className="hover:cursor-pointer hover:text-black/50"
+          />
+        </a>
+      </div>
+
+      {/* Channels list */}
+      <div className="space-y-2 flex flex-col mt-4">
+        {channels.map((channel) => (
+          <a
+            key={channel.id}
+            href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
+            onMouseEnter={() => handleChannelMouseEnter(channel.id)}
+            onClick={() => onNavigate?.()}
+            className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
+              isChannelActive(channel.id)
+                ? "bg-gray-100 rounded px-3 py-2 font-medium text-black"
+                : "px-3 py-2 hover:bg-gray-100 hover:rounded"
+            }`}
+          >
+            # {channel.name}
+          </a>
+        ))}
       </div>
     </Popover>
+  );
+}
+
+function SidePanelContent({
+  currentProject,
+  currentProjects,
+  currentChannels,
+  currentPath,
+}: {
+  currentProject: Project;
+  currentProjects: Project[];
+  currentChannels: Channel[];
+  currentPath: string;
+}) {
+  const [pathname, setPathname] = useState(currentPath);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleNavigation = () => {
+      setPathname(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handleNavigation);
+    document.addEventListener("astro:page-load", handleNavigation);
+
+    return () => {
+      window.removeEventListener("popstate", handleNavigation);
+      document.removeEventListener("astro:page-load", handleNavigation);
+    };
+  }, []);
+
+  // Close drawer on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDrawerOpen(false);
+    };
+    if (drawerOpen) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen]);
+
+  const sharedProps = {
+    currentProject,
+    currentProjects,
+    currentChannels,
+    pathname,
+  };
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white border rounded-md shadow-sm"
+        onClick={() => setDrawerOpen(true)}
+        aria-label="Open menu"
+      >
+        <MenuIcon size={20} />
+      </button>
+
+      {/* Mobile drawer overlay */}
+      {drawerOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/50"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <div
+        className={`md:hidden fixed top-0 left-0 z-50 h-screen w-[300px] bg-white border-r overflow-y-auto p-6 transition-transform duration-200 ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex justify-end">
+          <button
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Close menu"
+            className="p-2 hover:bg-gray-100 rounded"
+          >
+            <XIcon size={20} />
+          </button>
+        </div>
+        <PanelContent {...sharedProps} onNavigate={() => setDrawerOpen(false)} />
+      </div>
+
+      {/* Desktop side panel */}
+      <div className="hidden md:block w-[350px] shrink-0 border-r h-screen sticky top-0 overflow-y-auto p-8">
+        <PanelContent {...sharedProps} />
+      </div>
+    </>
   );
 }
 

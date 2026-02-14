@@ -19,7 +19,7 @@ export default function EventCard({ event }: { event: EventWithChannelName }) {
 
   return (
     <a href={eventUrl} onMouseEnter={handleMouseEnter}>
-      <Card className="p-8 hover:bg-gray-50 transition-colors cursor-pointer">
+      <Card className="p-4 md:p-8 hover:bg-gray-50 transition-colors cursor-pointer">
         <div className="flex items-center space-x-4">
           <div className="bg-gray-100 p-2 rounded-md">
             <p className="text-xl">{event.icon ? `${event.icon} ` : "🪵"}</p>

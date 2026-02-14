@@ -17,11 +17,11 @@ const metaH3Css = "font-medium";
 
 <Layout projectID={projectID!}>
   <div class="w-full">
-    <div class="p-8 border-b text-2xl font-semibold">
-      <h1>Project Settings</h1>
+    <div class="p-4 md:p-8 border-b text-2xl font-semibold">
+      <h1 class="pl-10 md:pl-0">Project Settings</h1>
     </div>
     <div class="w-full flex flex-col items-center mt-8">
-      <div class="w-3/4 flex flex-col space-y-4">
+      <div class="w-full px-4 md:w-3/4 md:px-0 flex flex-col space-y-4">
         <h2 class="font-mono mb-2">Meta</h2>
         <div class={metaCss}>
           <h3 class={metaH3Css}>Project Name</h3>
@@ -36,7 +36,7 @@ const metaH3Css = "font-medium";
           <APIKey client:load project={project} />
         </div>
       </div>
-      <div class="w-3/4 mt-8">
+      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
         <h2 class="font-mono">Channels</h2>
         <div class="flex flex-col">
           <ChannelSettings client:load channels={channels} project={project} />
