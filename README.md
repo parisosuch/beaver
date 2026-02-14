@@ -65,7 +65,7 @@ openssl rand -base64 32
 
 ```sh
 docker build -t beaver .
-docker run -p 4321:4321 --env-file .env -v beaver-data:/app beaver
+docker run -p 4321:4321 --env-file .env -v beaver-data:/app/data beaver
 ```
 
 The volume mount persists the SQLite database across container restarts.
@@ -86,7 +86,7 @@ JWT_SECRET="your-secure-secret-key" bun ./dist/server/entry.mjs
 
 ## Database
 
-Beaver uses SQLite with Drizzle ORM. The database file (`beaver.sqlite`) is created automatically in the project root.
+Beaver uses SQLite with Drizzle ORM. The database file (`data/beaver.sqlite`) is created automatically in the `data/` directory.
 
 ## API Usage
 

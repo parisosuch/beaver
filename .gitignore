@@ -25,6 +25,7 @@ pnpm-debug.log*
 
 # sqlite files
 *.sqlite
+data/
 
 # VSCODE
 .vscode/

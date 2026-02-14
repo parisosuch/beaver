@@ -2,4 +2,5 @@ node_modules
 dist
 .astro
 beaver.sqlite
+data/
 .env
