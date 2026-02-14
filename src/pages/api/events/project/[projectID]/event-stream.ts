@@ -43,6 +43,9 @@ export async function GET({
   // TODO: handle limits which in this case shouldn't have a limit.
   const stream = new ReadableStream({
     start(controller) {
+      // Send initial comment to flush headers through reverse proxies
+      controller.enqueue(encoder.encode(": ok\n\n"));
+
       async function sendEvents() {
         try {
           var afterId;
