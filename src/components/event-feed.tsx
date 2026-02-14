@@ -339,7 +339,7 @@ export default function EventFeed({
     <div className="w-full max-h-screen flex flex-col">
       {/* Header */}
       <div className="w-full flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b gap-4">
-        <div className="pl-10 md:pl-0">
+        <div>
           <h1 className="text-2xl font-semibold">
             {type === "project" ? "Feed" : `# ${channel?.name}`}
           </h1>
@@ -370,17 +370,19 @@ export default function EventFeed({
               ))}
             </SelectContent>
           </Select>
-          <Input
-            placeholder="Search..."
-            type="text"
-            className="w-full sm:w-auto"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          />
-          <Button variant="secondary" onClick={handleSearch}>
-            <SearchIcon />
-          </Button>
+          <div className="flex gap-2 items-center w-full sm:w-auto">
+            <Input
+              placeholder="Search..."
+              type="text"
+              className="flex-1 sm:w-auto"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <Button variant="secondary" onClick={handleSearch}>
+              <SearchIcon />
+            </Button>
+          </div>
         </div>
       </div>
 

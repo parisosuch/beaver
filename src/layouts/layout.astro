@@ -24,7 +24,7 @@ const channels = await getChannels(project.id);
     <ClientRouter />
   </head>
   <body>
-    <div class="flex flex-row">
+    <div class="flex flex-col md:flex-row">
       <SidePanel
         client:load
         currentProject={project}
@@ -33,7 +33,9 @@ const channels = await getChannels(project.id);
         currentPath={Astro.url.pathname}
         transition:persist
       />
-      <slot />
+      <div class="flex-1 min-w-0">
+        <slot />
+      </div>
     </div>
   </body>
 </html>

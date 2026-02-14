@@ -161,7 +161,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
     <div className="w-full">
       {/* Header */}
       <div className="p-4 md:p-8 border-b">
-        <h1 className="text-2xl font-semibold pl-10 md:pl-0">API Documentation</h1>
+        <h1 className="text-2xl font-semibold">API Documentation</h1>
       </div>
 
       <div className="w-full flex flex-col items-center mt-8 pb-16">

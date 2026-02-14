@@ -249,14 +249,16 @@ function SidePanelContent({
 
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white border rounded-md shadow-sm"
-        onClick={() => setDrawerOpen(true)}
-        aria-label="Open menu"
-      >
-        <MenuIcon size={20} />
-      </button>
+      {/* Mobile header bar */}
+      <div className="md:hidden w-full border-b px-4 py-3 flex items-center">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open menu"
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-md"
+        >
+          <MenuIcon size={20} />
+        </button>
+      </div>
 
       {/* Mobile drawer overlay */}
       {drawerOpen && (
