@@ -131,13 +131,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
     const stored = getStoredTokens();
-    if (!stored?.refreshToken) return false;
 
     try {
+      // Send refresh token from localStorage if available,
+      // otherwise the server will fall back to the httpOnly cookie
       const res = await fetch("/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: stored.refreshToken }),
+        body: stored?.refreshToken
+          ? JSON.stringify({ refreshToken: stored.refreshToken })
+          : "{}",
       });
 
       if (!res.ok) {
@@ -157,14 +160,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Validate session on mount
   useEffect(() => {
     const validateSession = async () => {
-      const stored = getStoredTokens();
-
-      if (!stored) {
-        setState((prev) => ({ ...prev, isLoading: false }));
-        return;
-      }
-
-      // Try to validate/refresh the token
+      // Always attempt to refresh — even without localStorage tokens,
+      // the httpOnly refresh_token cookie may still be valid
       const success = await refreshAccessToken();
 
       if (!success) {
