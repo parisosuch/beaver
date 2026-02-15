@@ -36,3 +36,21 @@ export async function getProject(project_id: number) {
 
   return res[0];
 }
+
+export async function getProjectsByOwner(ownerId: number) {
+  const res = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.ownerId, ownerId));
+
+  return res;
+}
+
+export async function deleteProject(projectId: number) {
+  const res = await db
+    .delete(projects)
+    .where(eq(projects.id, projectId))
+    .returning();
+
+  return res[0];
+}

@@ -1,9 +1,10 @@
 ---
+import APIKey from "@/components/api-key";
+import ChannelSettings from "@/components/channel-settings";
+import ProjectDangerZone from "@/components/project-danger-zone";
 import Layout from "@/layouts/layout.astro";
 import { getChannels } from "@/lib/beaver/channel";
 import { getProject } from "@/lib/beaver/project";
-import APIKey from "@/components/api-key";
-import ChannelSettings from "@/components/channel-settings";
 
 const { projectID } = Astro.params;
 
@@ -41,6 +42,10 @@ const metaH3Css = "font-medium";
         <div class="flex flex-col">
           <ChannelSettings client:load channels={channels} project={project} />
         </div>
+      </div>
+      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
+        <h2 class="font-mono">Danger Zone</h2>
+        <ProjectDangerZone client:load project={project} />
       </div>
     </div>
   </div>
