@@ -2,6 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
+import { getProjects } from "./lib/beaver/project";
 import { initDB } from "./lib/db/init";
 
 // Routes that don't require authentication
@@ -9,6 +10,9 @@ const PUBLIC_ROUTES = ["/login", "/onboarding"];
 
 // API routes that don't require authentication
 const PUBLIC_API_ROUTES = ["/api/auth/", "/api/event", "/api/admin"];
+
+// Routes that authed users should be redirected away from
+const AUTH_REDIRECT_ROUTES = ["/login", "/onboarding"];
 
 let dbInitialized = false;
 
@@ -28,6 +32,24 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
+async function getAuthedRedirect(context: Parameters<Parameters<typeof defineMiddleware>[0]>[0]): Promise<string | null> {
+  const refreshToken = context.cookies.get("refresh_token")?.value;
+  if (!refreshToken) return null;
+
+  const payload = await verifyToken(refreshToken);
+  if (!payload) return null;
+
+  const session = await getSessionByToken(refreshToken);
+  if (!session || new Date(session.expiresAt) < new Date()) return null;
+
+  const projects = await getProjects();
+  if (projects.length > 0) {
+    return `/dashboard/${projects[0].id}/feed`;
+  }
+
+  return null;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   if (!dbInitialized) {
     await initDB();
@@ -35,7 +57,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   const { pathname } = context.url;
 
-  // Allow public routes
+  // For login/onboarding, redirect authed users to dashboard
+  if (AUTH_REDIRECT_ROUTES.includes(pathname)) {
+    const redirect = await getAuthedRedirect(context);
+    if (redirect) {
+      return context.redirect(redirect);
+    }
+    return next();
+  }
+
+  // Allow other public routes (API routes)
   if (isPublicRoute(pathname)) {
     return next();
   }
