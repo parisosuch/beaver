@@ -68,7 +68,7 @@ function LoginView() {
       <form onSubmit={handleSubmit} className="flex flex-col h-full w-full max-w-sm">
         <div className="flex flex-1 flex-col justify-center">
           <h1 className="text-2xl md:text-3xl font-bold">Beaver</h1>
-          <p className="text-sm mt-2 text-black/50 font-medium">
+          <p className="text-sm mt-2 text-muted-foreground font-medium">
             Please sign in to your account.
           </p>
           <div className="mt-4 space-y-2">

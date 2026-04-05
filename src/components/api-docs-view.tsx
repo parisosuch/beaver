@@ -96,10 +96,10 @@ function Badge({
   variant?: "default" | "success" | "warning" | "info";
 }) {
   const variants = {
-    default: "bg-gray-100 text-gray-700 border-gray-200",
-    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    warning: "bg-amber-50 text-amber-700 border-amber-200",
-    info: "bg-blue-50 text-blue-700 border-blue-200",
+    default: "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10",
+    success: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
+    warning: "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
+    info: "bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
   };
 
   return (
@@ -167,8 +167,8 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
       <div className="w-full flex flex-col items-center mt-8 pb-16">
         <div className="w-full px-4 md:w-3/4 md:px-0 space-y-12">
           {/* Table of Contents */}
-          <nav className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+          <nav className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-4">
               Table of Contents
             </h2>
             <ul className="space-y-2">
@@ -176,7 +176,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 <li key={section.id}>
                   <a
                     href={`#${section.id}`}
-                    className="text-gray-600 hover:text-gray-900 hover:underline transition-colors"
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors"
                   >
                     {section.title}
                   </a>
@@ -186,7 +186,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         <li key={child.id}>
                           <a
                             href={`#${child.id}`}
-                            className="text-gray-500 hover:text-gray-700 hover:underline transition-colors text-sm"
+                            className="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm"
                           >
                             {child.title}
                           </a>
@@ -201,20 +201,20 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 
           {/* Overview */}
           <section id="overview">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <span className="text-gray-400">#</span>
               Overview
             </h2>
-            <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
               The Beaver API allows you to send events from your applications to
               track important activities. Events are organized by channels
               within your project.
             </p>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-blue-600 font-semibold">Base URL</span>
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">Base URL</span>
               </div>
-              <code className="text-lg font-mono text-blue-900 bg-white/60 px-3 py-1.5 rounded-lg">
+              <code className="text-lg font-mono text-blue-900 dark:text-blue-300 bg-white/60 dark:bg-white/10 px-3 py-1.5 rounded-lg">
                 {baseUrl}/api
               </code>
             </div>
@@ -222,32 +222,32 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 
           {/* Authentication */}
           <section id="authentication">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <span className="text-gray-400">#</span>
               Authentication
             </h2>
-            <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
               All API requests require authentication via the{" "}
-              <code className="bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+              <code className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                 X-API-Key
               </code>{" "}
               header. You can find your project's API key in the{" "}
               <a
                 href="settings"
-                className="text-blue-600 hover:text-blue-800 underline underline-offset-2"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline underline-offset-2"
               >
                 Settings
               </a>{" "}
               page.
             </p>
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-6 mb-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-amber-700 font-semibold">
+                <span className="text-amber-700 dark:text-amber-400 font-semibold">
                   Your API Key
                 </span>
                 <Badge variant="warning">Keep this secret</Badge>
               </div>
-              <code className="block font-mono text-amber-900 bg-white/60 px-4 py-3 rounded-lg text-sm break-all">
+              <code className="block font-mono text-amber-900 dark:text-amber-300 bg-white/60 dark:bg-white/10 px-4 py-3 rounded-lg text-sm break-all">
                 {apiKey}
               </code>
             </div>
@@ -260,11 +260,11 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 
           {/* Create Event Endpoint */}
           <section id="create-event">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <span className="text-gray-400">#</span>
               Create Event
             </h2>
-            <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
               Send events to a specific channel in your project.
             </p>
 
@@ -279,50 +279,50 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             {/* Request Headers */}
             <h3
               id="request-headers"
-              className="text-lg font-semibold text-gray-900 mb-4"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
               Request Headers
             </h3>
-            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 mb-8">
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-8">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                  <tr className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Header
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Required
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Description
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  <tr className="hover:bg-gray-50 transition-colors">
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         X-API-Key
                       </code>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       Your project's API key for authentication
                     </td>
                   </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         Content-Type
                       </code>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      Must be <code className="bg-gray-100 px-1 rounded">application/json</code>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      Must be <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">application/json</code>
                     </td>
                   </tr>
                 </tbody>
@@ -332,96 +332,96 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             {/* Request Body */}
             <h3
               id="request-body"
-              className="text-lg font-semibold text-gray-900 mb-4"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
               Request Body
             </h3>
-            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 mb-8">
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-8">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                  <tr className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Field
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Type
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Required
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Description
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  <tr className="hover:bg-gray-50 transition-colors">
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         name
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       The name/title of the event
                     </td>
                   </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         channel
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       The channel name to send the event to
                     </td>
                   </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         description
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       Additional details about the event
                     </td>
                   </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         icon
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       An emoji or icon for the event
                     </td>
                   </tr>
-                  <tr className="hover:bg-gray-50 transition-colors">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <code className="text-sm bg-gray-100 px-2 py-0.5 rounded text-pink-600">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                         tags
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">object</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">object</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       Key-value pairs for additional metadata
                     </td>
                   </tr>
@@ -432,7 +432,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             {/* Example Request */}
             <h3
               id="example-request"
-              className="text-lg font-semibold text-gray-900 mb-4"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
               Example Request
             </h3>
@@ -459,7 +459,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             {/* Success Response */}
             <h3
               id="success-response"
-              className="text-lg font-semibold text-gray-900 mb-4"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
               Success Response
             </h3>
@@ -486,7 +486,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             {/* Error Responses */}
             <h3
               id="error-responses"
-              className="text-lg font-semibold text-gray-900 mb-4"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
               Error Responses
             </h3>
@@ -524,18 +524,18 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 
           {/* Code Examples */}
           <section id="code-examples">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <span className="text-gray-400">#</span>
               Code Examples
             </h2>
-            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
               Copy and paste these examples into your project to get started
               quickly.
             </p>
 
             <div className="space-y-8">
               <div id="javascript">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded bg-yellow-400 flex items-center justify-center text-xs font-bold text-yellow-900">
                     JS
                   </span>
@@ -577,7 +577,7 @@ await sendEvent({
               </div>
 
               <div id="python">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded bg-blue-500 flex items-center justify-center text-xs font-bold text-white">
                     PY
                   </span>
@@ -616,7 +616,7 @@ send_event(
               </div>
 
               <div id="go">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded bg-cyan-500 flex items-center justify-center text-xs font-bold text-white">
                     GO
                   </span>

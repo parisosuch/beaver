@@ -18,6 +18,17 @@ if (adminUsers.length > 0) {
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/png" href="/beaver.png" />
     <title>Beaver - Onboarding</title>
+    <script is:inline>
+      (function () {
+        const stored = localStorage.getItem("theme") || "system";
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (stored === "dark" || (stored === "system" && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      })();
+    </script>
   </head>
   <body>
     <OnboardingView client:only="react" />

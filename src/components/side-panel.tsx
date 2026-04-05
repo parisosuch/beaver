@@ -77,8 +77,8 @@ function PanelContent({
     pathname === `/dashboard/${project.id}/channels/${channelId}`;
 
   const navigationCss =
-    "flex px-3 py-2 space-x-2 items-center hover:bg-gray-100 hover:cursor-pointer hover:font-medium rounded ";
-  const activeCss = navigationCss + "bg-gray-100 font-medium rounded-md";
+    "flex px-3 py-2 space-x-2 items-center hover:bg-gray-100 dark:hover:bg-white/8 hover:cursor-pointer hover:font-medium rounded ";
+  const activeCss = navigationCss + "bg-gray-100 dark:bg-white/8 font-medium rounded-md";
 
   return (
     <Popover>
@@ -182,10 +182,10 @@ function PanelContent({
             href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
             onMouseEnter={() => handleChannelMouseEnter(channel.id)}
             onClick={() => onNavigate?.()}
-            className={`text-lg hover:text-black hover:font-medium hover:cursor-pointer ${
+            className={`text-lg hover:font-medium hover:cursor-pointer ${
               isChannelActive(channel.id)
-                ? "bg-gray-100 rounded px-3 py-2 font-medium text-black"
-                : "px-3 py-2 hover:bg-gray-100 hover:rounded"
+                ? "bg-gray-100 dark:bg-white/8 rounded px-3 py-2 font-medium"
+                : "px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/8 hover:rounded"
             }`}
           >
             # {channel.name}
