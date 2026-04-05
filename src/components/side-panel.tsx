@@ -12,6 +12,7 @@ import {
 import { BookOpenIcon, InboxIcon, LogOutIcon, MenuIcon, PlusIcon, Settings, XIcon } from "lucide-react";
 import { useAuth, UserProvider } from "../context/user-context";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import ThemeToggle from "./theme-toggle";
 
 function PanelContent({
   currentProject,
@@ -190,6 +191,12 @@ function PanelContent({
             # {channel.name}
           </a>
         ))}
+      </div>
+
+      {/* Theme toggle */}
+      <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
+        <h1 className="text-sm font-mono">Theme</h1>
+        <ThemeToggle />
       </div>
     </Popover>
   );

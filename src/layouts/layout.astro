@@ -24,6 +24,19 @@ const channels = await getChannels(project.id);
     <link rel="icon" type="image/png" href="/beaver.png" />
     <title>Beaver</title>
     <ClientRouter />
+    <script is:inline>
+      function applyStoredTheme() {
+        const stored = localStorage.getItem("theme") || "system";
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (stored === "dark" || (stored === "system" && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+      applyStoredTheme();
+      document.addEventListener("astro:after-swap", applyStoredTheme);
+    </script>
   </head>
   <body>
     <div class="flex flex-col md:flex-row">
