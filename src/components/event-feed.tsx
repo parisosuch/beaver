@@ -344,7 +344,7 @@ export default function EventFeed({
             {type === "project" ? "Feed" : `# ${channel?.name}`}
           </h1>
           {type === "channel" && channel?.description && (
-            <p className="text-sm text-black/50 mt-1">{channel.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{channel.description}</p>
           )}
         </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -388,14 +388,14 @@ export default function EventFeed({
 
       {/* Active filters display */}
       {hasActiveFilters && (
-        <div className="px-4 md:px-8 py-3 border-b bg-gray-50 flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-600">Active filters:</span>
+        <div className="px-4 md:px-8 py-3 border-b bg-gray-50 dark:bg-white/5 flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
           {(startDate || endDate) && (
-            <div className="flex items-center gap-1 rounded-md bg-white border px-2.5 py-1 text-sm">
+            <div className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm">
               {formatTimeFilter()}
               <button
                 onClick={handleRemoveTimeFilter}
-                className="ml-1 rounded hover:bg-gray-100 p-0.5"
+                className="ml-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 p-0.5"
               >
                 <XIcon className="size-3" />
               </button>
@@ -404,14 +404,14 @@ export default function EventFeed({
           {parsedTags.map((tag, i) => (
             <div
               key={i}
-              className="flex items-center gap-1 rounded-md bg-white border px-2.5 py-1 text-sm"
+              className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm"
             >
               <span className="font-medium">{tag.key}</span>
-              <span className="text-gray-400">=</span>
+              <span className="text-gray-400 dark:text-gray-500">=</span>
               <span>{tag.value}</span>
               <button
                 onClick={() => handleRemoveTag(i)}
-                className="ml-1 rounded hover:bg-gray-100 p-0.5"
+                className="ml-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 p-0.5"
               >
                 <XIcon className="size-3" />
               </button>

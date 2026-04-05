@@ -51,7 +51,7 @@ function CreateProjectForm() {
       <form onSubmit={handleSubmit} className="flex flex-col h-full w-full max-w-sm">
         <div className="flex flex-1 flex-col justify-center">
           <h1 className="text-2xl md:text-3xl font-bold">Create Project</h1>
-          <p className="text-sm mt-2 text-black/50 font-medium">
+          <p className="text-sm mt-2 text-muted-foreground font-medium">
             Create a new project to start tracking events.
           </p>
           <div className="mt-4 space-y-2">

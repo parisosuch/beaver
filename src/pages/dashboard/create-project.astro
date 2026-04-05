@@ -10,6 +10,17 @@ import CreateProjectView from "@/components/create-project-view";
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>Beaver - Create Project</title>
+    <script is:inline>
+      (function () {
+        const stored = localStorage.getItem("theme") || "system";
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (stored === "dark" || (stored === "system" && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      })();
+    </script>
   </head>
   <body>
     <CreateProjectView client:only="react" />
