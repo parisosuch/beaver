@@ -3,10 +3,8 @@ import { events, eventTags, channels } from "../db/schema";
 import { createUser, getUserByUsername } from "../beaver/user";
 import { createProject } from "../beaver/project";
 import { createChannel } from "../beaver/channel";
-import { initDB } from "./init";
 
 async function seed() {
-  await initDB();
   console.log("Seeding database...\n");
 
   // Create admin user

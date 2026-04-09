@@ -3,7 +3,6 @@ import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
 import { getProjects } from "./lib/beaver/project";
-import { initDB } from "./lib/db/init";
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ["/login", "/onboarding"];
@@ -13,8 +12,6 @@ const PUBLIC_API_ROUTES = ["/api/auth/", "/api/event", "/api/admin"];
 
 // Routes that authed users should be redirected away from
 const AUTH_REDIRECT_ROUTES = ["/login", "/onboarding"];
-
-let dbInitialized = false;
 
 function isPublicRoute(pathname: string): boolean {
   // Check exact public routes
@@ -51,10 +48,6 @@ async function getAuthedRedirect(context: Parameters<Parameters<typeof defineMid
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  if (!dbInitialized) {
-    await initDB();
-    dbInitialized = true;
-  }
   const { pathname } = context.url;
 
   // For login/onboarding, redirect authed users to dashboard

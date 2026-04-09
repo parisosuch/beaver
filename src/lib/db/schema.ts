@@ -23,6 +23,7 @@ export const channels = sqliteTable("channels", {
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
+  order: integer("order").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),

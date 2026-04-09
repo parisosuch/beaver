@@ -54,7 +54,6 @@ export default function ChannelSettings({
       setChannels([...clientChannels, channel]);
     };
 
-    // add custom even for channel deletion
     window.addEventListener(
       "channel:deleted",
       handleChannelDeleted as EventListener,

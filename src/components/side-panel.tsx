@@ -1,6 +1,7 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { Project } from "@/lib/beaver/project";
 import { useEffect, useRef, useState } from "react";
+import { Reorder } from "framer-motion";
 import { Button } from "./ui/button";
 import {
   Select,
@@ -30,6 +31,7 @@ function PanelContent({
   const [projects] = useState<Project[]>(currentProjects);
   const [channels, setChannels] = useState<Channel[]>(currentChannels);
   const prefetchedChannels = useRef<Set<number>>(new Set());
+  const latestChannels = useRef<Channel[]>(currentChannels);
 
   const { user, signOut } = useAuth();
 
@@ -49,16 +51,22 @@ function PanelContent({
       setChannels((prev) => prev.filter((c) => c.id !== id));
     };
 
-    window.addEventListener(
-      "channel:deleted",
-      handleChannelDeleted as EventListener,
-    );
+    const handleChannelReordered = (e: CustomEvent<{ channels: Channel[] }>) => {
+      setChannels(e.detail.channels);
+    };
+
+    const handleChannelCreated = (e: CustomEvent<{ channel: Channel }>) => {
+      setChannels((prev) => [...prev, e.detail.channel]);
+    };
+
+    window.addEventListener("channel:deleted", handleChannelDeleted as EventListener);
+    window.addEventListener("channel:reordered", handleChannelReordered as EventListener);
+    window.addEventListener("channel:created", handleChannelCreated as EventListener);
 
     return () => {
-      window.removeEventListener(
-        "channel:deleted",
-        handleChannelDeleted as EventListener,
-      );
+      window.removeEventListener("channel:deleted", handleChannelDeleted as EventListener);
+      window.removeEventListener("channel:reordered", handleChannelReordered as EventListener);
+      window.removeEventListener("channel:created", handleChannelCreated as EventListener);
     };
   }, []);
 
@@ -175,23 +183,48 @@ function PanelContent({
       </div>
 
       {/* Channels list */}
-      <div className="space-y-2 flex flex-col mt-4">
+      <Reorder.Group
+        axis="y"
+        values={channels}
+        onReorder={(newOrder) => {
+          setChannels(newOrder);
+          latestChannels.current = newOrder;
+        }}
+        className="flex flex-col mt-4"
+        as="div"
+      >
         {channels.map((channel) => (
-          <a
+          <Reorder.Item
             key={channel.id}
-            href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
-            onMouseEnter={() => handleChannelMouseEnter(channel.id)}
-            onClick={() => onNavigate?.()}
-            className={`text-lg hover:font-medium hover:cursor-pointer ${
-              isChannelActive(channel.id)
-                ? "bg-gray-100 dark:bg-white/8 rounded px-3 py-2 font-medium"
-                : "px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/8 hover:rounded"
-            }`}
+            value={channel}
+            as="div"
+            onDragEnd={() => {
+              const ordered = latestChannels.current;
+              fetch("/api/channel", {
+                method: "PATCH",
+                body: JSON.stringify({ channels: ordered.map((c, i) => ({ id: c.id, order: i })) }),
+                headers: { "Content-Type": "application/json" },
+              });
+              window.dispatchEvent(new CustomEvent("channel:reordered", { detail: { channels: ordered } }));
+            }}
+            className="cursor-grab active:cursor-grabbing"
           >
-            # {channel.name}
-          </a>
+            <a
+              href={`/dashboard/${currentProject.id}/channels/${channel.id}`}
+              onMouseEnter={() => handleChannelMouseEnter(channel.id)}
+              onClick={() => onNavigate?.()}
+              draggable={false}
+              className={`flex text-lg hover:font-medium ${
+                isChannelActive(channel.id)
+                  ? "bg-gray-100 dark:bg-white/8 rounded px-3 py-2 font-medium"
+                  : "px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/8 hover:rounded"
+              }`}
+            >
+              # {channel.name}
+            </a>
+          </Reorder.Item>
         ))}
-      </div>
+      </Reorder.Group>
 
       {/* Theme toggle */}
       <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
