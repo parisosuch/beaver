@@ -5,6 +5,7 @@ import {
   getProject,
   getProjects,
   getProjectsByOwner,
+  renameProject,
 } from "@/lib/beaver/project";
 
 export const GET: APIRoute = async () => {
@@ -40,6 +41,57 @@ export const POST: APIRoute = async ({ request }) => {
     const project = await createProject(name, crypto.randomUUID(), ownerId);
 
     return new Response(JSON.stringify(project), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.error(err);
+    return new Response(
+      JSON.stringify({ error: "An unkown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};
+
+export const PATCH: APIRoute = async ({ request, locals }) => {
+  try {
+    const { projectID, name } = await request.json();
+
+    if (!projectID || !name?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "projectID and name are required." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const project = await getProject(parseInt(projectID));
+
+    if (!project) {
+      return new Response(
+        JSON.stringify({ error: "Project not found." }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (project.ownerId !== locals.user!.id) {
+      return new Response(
+        JSON.stringify({ error: "You do not own this project." }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const updated = await renameProject(parseInt(projectID), name.trim());
+
+    return new Response(JSON.stringify(updated), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

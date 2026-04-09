@@ -2,6 +2,7 @@
 import APIKey from "@/components/api-key";
 import ChannelSettings from "@/components/channel-settings";
 import ProjectDangerZone from "@/components/project-danger-zone";
+import ProjectRename from "@/components/project-rename";
 import Layout from "@/layouts/layout.astro";
 import { getChannels } from "@/lib/beaver/channel";
 import { getProject } from "@/lib/beaver/project";
@@ -26,7 +27,7 @@ const metaH3Css = "font-medium";
         <h2 class="font-mono mb-2">Meta</h2>
         <div class={metaCss}>
           <h3 class={metaH3Css}>Project Name</h3>
-          <p>{project.name}</p>
+          <ProjectRename client:load project={project} />
         </div>
         <div class={metaCss}>
           <h3 class={metaH3Css}>Created</h3>
