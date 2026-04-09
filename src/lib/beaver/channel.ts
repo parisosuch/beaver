@@ -1,12 +1,13 @@
 import { db } from "../db/db";
 import { channels, events, eventTags } from "../db/schema";
-import { eq, and, asc, inArray } from "drizzle-orm";
+import { eq, and, asc, max, inArray } from "drizzle-orm";
 
 export type Channel = {
   id: number;
   name: string;
   description: string | null;
   projectId: number;
+  order: number;
   createdAt: Date | null;
 };
 
@@ -15,7 +16,7 @@ export async function getChannels(project_id: number) {
     .select()
     .from(channels)
     .where(eq(channels.projectId, project_id))
-    .orderBy(asc(channels.createdAt));
+    .orderBy(asc(channels.order));
 
   return res;
 }
@@ -49,16 +50,32 @@ export async function createChannel(
     throw new Error("Channel with name already exists for this project.");
   }
 
+  const [{ maxOrder }] = await db
+    .select({ maxOrder: max(channels.order) })
+    .from(channels)
+    .where(eq(channels.projectId, project_id));
+
   const res = await db
     .insert(channels)
     .values({
       name: channel_name,
       projectId: project_id,
       description: description ?? null,
+      order: (maxOrder ?? -1) + 1,
     })
     .returning();
 
   return res[0];
+}
+
+export async function reorderChannels(
+  items: { id: number; order: number }[]
+) {
+  await Promise.all(
+    items.map(({ id, order }) =>
+      db.update(channels).set({ order }).where(eq(channels.id, id))
+    )
+  );
 }
 
 export async function deleteChannel(channelID: number) {

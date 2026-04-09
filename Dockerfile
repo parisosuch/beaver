@@ -17,10 +17,12 @@ RUN bun run build
 FROM base AS runtime
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/drizzle ./drizzle
+COPY --from=build /app/src/lib/db/migrate.ts ./src/lib/db/migrate.ts
 
 ENV HOST=0.0.0.0
 ENV PORT=4321
 
 EXPOSE 4321
 
-CMD ["bun", "./dist/server/entry.mjs"]
+CMD ["sh", "-c", "bun src/lib/db/migrate.ts && bun ./dist/server/entry.mjs"]

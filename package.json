@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "migrate": "bun src/lib/db/migrate.ts",
     "seed": "bun src/lib/db/seed.ts"
   },
   "dependencies": {

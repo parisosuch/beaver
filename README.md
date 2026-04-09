@@ -86,7 +86,19 @@ JWT_SECRET="your-secure-secret-key" bun ./dist/server/entry.mjs
 
 ## Database
 
-Beaver uses SQLite with Drizzle ORM. The database file (`data/beaver.sqlite`) is created automatically in the `data/` directory.
+Beaver uses SQLite (via `bun:sqlite`) with Drizzle ORM. The database file (`data/beaver.sqlite`) is created automatically.
+
+Run migrations before starting the server:
+
+```sh
+bun run migrate
+```
+
+Migrations live in `drizzle/`. To generate a new migration after changing the schema:
+
+```sh
+bun drizzle-kit generate
+```
 
 ## API Usage
 
@@ -198,5 +210,6 @@ await fetch("http://localhost:4321/api/event", {
 | `bun run dev` | Start dev server at `localhost:4321` |
 | `bun run build` | Build for production to `./dist/` |
 | `bun run preview` | Preview production build locally |
+| `bun run migrate` | Run database migrations |
 | `bun run seed` | Seed database with sample data |
 | `bun run format` | Format code with Prettier |
