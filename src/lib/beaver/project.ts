@@ -46,6 +46,16 @@ export async function getProjectsByOwner(ownerId: number) {
   return res;
 }
 
+export async function renameProject(projectId: number, name: string) {
+  const res = await db
+    .update(projects)
+    .set({ name })
+    .where(eq(projects.id, projectId))
+    .returning();
+
+  return res[0];
+}
+
 export async function deleteProject(projectId: number) {
   const res = await db
     .delete(projects)
