@@ -3,6 +3,7 @@ import "@/styles/global.css";
 import SidePanel from "@/components/side-panel";
 import { getProject, getProjects } from "@/lib/beaver/project";
 import { getChannels } from "@/lib/beaver/channel";
+import { getChannelGroups } from "@/lib/beaver/channel-group";
 import { ClientRouter } from "astro:transitions";
 
 interface Props {
@@ -15,6 +16,7 @@ const project = await getProject(parseInt(projectID));
 
 const projects = await getProjects();
 const channels = await getChannels(project.id);
+const channelGroupsData = await getChannelGroups(project.id);
 ---
 
 <html lang="en">
@@ -45,6 +47,7 @@ const channels = await getChannels(project.id);
         currentProject={project}
         currentProjects={projects}
         currentChannels={channels}
+        currentGroups={channelGroupsData}
         currentPath={Astro.url.pathname}
         transition:persist
       />
