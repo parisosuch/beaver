@@ -13,6 +13,9 @@ const PUBLIC_API_ROUTES = ["/api/auth/", "/api/event", "/api/admin"];
 // Routes that authed users should be redirected away from
 const AUTH_REDIRECT_ROUTES = ["/login", "/onboarding"];
 
+// Route for forced password change
+const CHANGE_PASSWORD_ROUTE = "/change-password";
+
 function isPublicRoute(pathname: string): boolean {
   // Check exact public routes
   if (PUBLIC_ROUTES.includes(pathname)) {
@@ -29,7 +32,9 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
-async function getAuthedRedirect(context: Parameters<Parameters<typeof defineMiddleware>[0]>[0]): Promise<string | null> {
+async function getAuthedRedirect(
+  context: Parameters<Parameters<typeof defineMiddleware>[0]>[0],
+): Promise<string | null> {
   const refreshToken = context.cookies.get("refresh_token")?.value;
   if (!refreshToken) return null;
 
@@ -106,6 +111,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
     userName: payload.userName,
     isAdmin: payload.isAdmin,
   };
+
+  // If user must change password, redirect to the change-password page
+  // (except for API routes and the change-password page itself)
+  if (
+    payload.mustChangePassword &&
+    !pathname.startsWith("/api/") &&
+    pathname !== CHANGE_PASSWORD_ROUTE
+  ) {
+    return context.redirect(CHANGE_PASSWORD_ROUTE);
+  }
 
   const response = await next();
 

@@ -34,7 +34,7 @@ export async function getChannel(channelID: number) {
 export async function createChannel(
   channel_name: string,
   project_id: number,
-  description?: string
+  description?: string,
 ) {
   if (channel_name.length > 16) {
     throw new Error("Channel name cannot be longer than 16 characters.");
@@ -44,7 +44,7 @@ export async function createChannel(
     .select()
     .from(channels)
     .where(
-      and(eq(channels.projectId, project_id), eq(channels.name, channel_name))
+      and(eq(channels.projectId, project_id), eq(channels.name, channel_name)),
     );
 
   if (projectChannels.length > 0) {
@@ -70,15 +70,15 @@ export async function createChannel(
 }
 
 export async function reorderChannels(
-  items: { id: number; order: number; groupId?: number | null }[]
+  items: { id: number; order: number; groupId?: number | null }[],
 ) {
   await Promise.all(
     items.map(({ id, order, groupId }) =>
       db
         .update(channels)
         .set({ order, ...(groupId !== undefined ? { groupId } : {}) })
-        .where(eq(channels.id, id))
-    )
+        .where(eq(channels.id, id)),
+    ),
   );
 }
 

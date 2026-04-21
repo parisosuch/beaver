@@ -1,0 +1,39 @@
+---
+import "../../styles/global.css";
+import { getAllUsers } from "@/lib/beaver/user";
+import { getProjects } from "@/lib/beaver/project";
+import AdminUsersView from "@/components/admin-users-view";
+
+const user = Astro.locals.user;
+if (!user?.isAdmin) {
+  return Astro.redirect("/login");
+}
+
+const allUsers = await getAllUsers();
+const projects = await getProjects();
+const backUrl = projects.length > 0 ? `/dashboard/${projects[0].id}/feed` : "/";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="/beaver.png" />
+    <title>Users — Beaver</title>
+    <script is:inline>
+      function applyStoredTheme() {
+        const stored = localStorage.getItem("theme") || "system";
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (stored === "dark" || (stored === "system" && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+      applyStoredTheme();
+    </script>
+  </head>
+  <body>
+    <AdminUsersView client:load initialUsers={allUsers} currentUserId={user.id} backUrl={backUrl} />
+  </body>
+</html>

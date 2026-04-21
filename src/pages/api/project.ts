@@ -29,7 +29,7 @@ export const GET: APIRoute = async () => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -69,23 +69,23 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     if (!projectID || !name?.trim()) {
       return new Response(
         JSON.stringify({ error: "projectID and name are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
     const project = await getProject(parseInt(projectID));
 
     if (!project) {
-      return new Response(
-        JSON.stringify({ error: "Project not found." }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Project not found." }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (project.ownerId !== locals.user!.id) {
       return new Response(
         JSON.stringify({ error: "You do not own this project." }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
+        { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -108,7 +108,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -118,25 +118,25 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     const { projectID } = await request.json();
 
     if (!projectID) {
-      return new Response(
-        JSON.stringify({ error: "projectID is required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "projectID is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const project = await getProject(parseInt(projectID));
 
     if (!project) {
-      return new Response(
-        JSON.stringify({ error: "Project not found." }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Project not found." }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (project.ownerId !== locals.user!.id) {
       return new Response(
         JSON.stringify({ error: "You do not own this project." }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
+        { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -145,15 +145,18 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     if (userProjects.length <= 1) {
       return new Response(
         JSON.stringify({
-          error: "You must have at least one project. Create a new project before deleting this one.",
+          error:
+            "You must have at least one project. Create a new project before deleting this one.",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
     await deleteProject(parseInt(projectID));
 
-    const remainingProjects = userProjects.filter((p) => p.id !== parseInt(projectID));
+    const remainingProjects = userProjects.filter(
+      (p) => p.id !== parseInt(projectID),
+    );
 
     return new Response(JSON.stringify({ projects: remainingProjects }), {
       status: 200,
@@ -172,7 +175,7 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };

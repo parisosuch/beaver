@@ -82,7 +82,9 @@ export default function EventDetail({
           {tags.length > 0 && (
             <CardContent>
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">Tags</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Tags
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {tags.map(([key, value]) => (
                     <TagBadge key={key} tagKey={key} value={value} />

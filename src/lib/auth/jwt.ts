@@ -1,7 +1,7 @@
 import * as jose from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "beaver-default-secret-change-in-production"
+  process.env.JWT_SECRET || "beaver-default-secret-change-in-production",
 );
 
 const ACCESS_TOKEN_EXPIRY = "15m";
@@ -11,6 +11,7 @@ export interface JWTPayload {
   userId: number;
   userName: string;
   isAdmin: boolean;
+  mustChangePassword: boolean;
 }
 
 export async function createAccessToken(payload: JWTPayload): Promise<string> {
@@ -36,6 +37,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
       userId: payload.userId as number,
       userName: payload.userName as string,
       isAdmin: payload.isAdmin as boolean,
+      mustChangePassword: (payload.mustChangePassword as boolean) ?? false,
     };
   } catch {
     return null;

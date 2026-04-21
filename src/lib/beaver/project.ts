@@ -18,7 +18,7 @@ export async function getProjects() {
 export async function createProject(
   name: string,
   apiKey: string,
-  ownerId: number
+  ownerId: number,
 ) {
   const res = await db
     .insert(projects)

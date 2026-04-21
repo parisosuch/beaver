@@ -1,4 +1,9 @@
-import { getChannelEvents, type TagFilter, type SortField, type SortOrder } from "@/lib/beaver/event";
+import {
+  getChannelEvents,
+  type TagFilter,
+  type SortField,
+  type SortOrder,
+} from "@/lib/beaver/event";
 
 // Paginated endpoint
 export async function GET({
@@ -78,7 +83,7 @@ export async function GET({
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 }

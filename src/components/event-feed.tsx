@@ -1,4 +1,9 @@
-import type { EventWithChannelName, TagFilter, SortField, SortOrder } from "@/lib/beaver/event";
+import type {
+  EventWithChannelName,
+  TagFilter,
+  SortField,
+  SortOrder,
+} from "@/lib/beaver/event";
 
 const fetchMaxEventId = async (): Promise<number> => {
   try {
@@ -93,17 +98,23 @@ export default function EventFeed({
   }) => {
     const params = new URLSearchParams();
 
-    const newSearch = overrides.search !== undefined ? overrides.search : search;
-    const newStartDate = overrides.startDate !== undefined ? overrides.startDate : startDate;
-    const newEndDate = overrides.endDate !== undefined ? overrides.endDate : endDate;
+    const newSearch =
+      overrides.search !== undefined ? overrides.search : search;
+    const newStartDate =
+      overrides.startDate !== undefined ? overrides.startDate : startDate;
+    const newEndDate =
+      overrides.endDate !== undefined ? overrides.endDate : endDate;
     const newTags = overrides.tags !== undefined ? overrides.tags : parsedTags;
-    const newSortBy = overrides.sortBy !== undefined ? overrides.sortBy : sortBy;
-    const newSortOrder = overrides.sortOrder !== undefined ? overrides.sortOrder : sortOrder;
+    const newSortBy =
+      overrides.sortBy !== undefined ? overrides.sortBy : sortBy;
+    const newSortOrder =
+      overrides.sortOrder !== undefined ? overrides.sortOrder : sortOrder;
 
     if (newSearch) params.set("search", newSearch);
     if (newStartDate) params.set("startDate", newStartDate);
     if (newEndDate) params.set("endDate", newEndDate);
-    if (newTags && newTags.length > 0) params.set("tags", JSON.stringify(newTags));
+    if (newTags && newTags.length > 0)
+      params.set("tags", JSON.stringify(newTags));
     if (newSortBy) params.set("sortBy", newSortBy);
     if (newSortOrder) params.set("sortOrder", newSortOrder);
 
@@ -178,12 +189,18 @@ export default function EventFeed({
   };
 
   // Handle filter changes - navigate to new URL
-  const handleApplyFilters = (newStartDate: string | null, newEndDate: string | null, newTags: TagFilter[]) => {
-    navigate(buildFilterUrl({
-      startDate: newStartDate,
-      endDate: newEndDate,
-      tags: newTags.length > 0 ? newTags : null,
-    }));
+  const handleApplyFilters = (
+    newStartDate: string | null,
+    newEndDate: string | null,
+    newTags: TagFilter[],
+  ) => {
+    navigate(
+      buildFilterUrl({
+        startDate: newStartDate,
+        endDate: newEndDate,
+        tags: newTags.length > 0 ? newTags : null,
+      }),
+    );
   };
 
   // Remove a specific tag filter
@@ -207,7 +224,8 @@ export default function EventFeed({
     eventIdsRef.current.clear();
 
     // Establish SSE connection for real-time updates (only for default sort)
-    const isDefaultSort = !sortBy || (sortBy === "date" && (!sortOrder || sortOrder === "desc"));
+    const isDefaultSort =
+      !sortBy || (sortBy === "date" && (!sortOrder || sortOrder === "desc"));
 
     const establishStream = (maxId: number) => {
       // SSE only makes sense for default sort (newest first) since new events
@@ -238,7 +256,7 @@ export default function EventFeed({
         const newEvents: EventWithChannelName[] = JSON.parse(event.data);
 
         const newUniqueEvents = newEvents.filter(
-          (newEvent) => !eventIdsRef.current.has(newEvent.id)
+          (newEvent) => !eventIdsRef.current.has(newEvent.id),
         );
 
         if (newUniqueEvents.length > 0) {
@@ -297,12 +315,22 @@ export default function EventFeed({
         root: scrollContainerRef.current,
         rootMargin: "200px",
         threshold: 0.1,
-      }
+      },
     );
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
-  }, [loading, projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
+  }, [
+    loading,
+    projectID,
+    channel,
+    search,
+    startDate,
+    endDate,
+    tags,
+    sortBy,
+    sortOrder,
+  ]);
 
   // Format time filter for display
   const formatTimeFilter = () => {
@@ -344,7 +372,9 @@ export default function EventFeed({
             {type === "project" ? "Feed" : `# ${channel?.name}`}
           </h1>
           {type === "channel" && channel?.description && (
-            <p className="text-sm text-muted-foreground mt-1">{channel.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {channel.description}
+            </p>
           )}
         </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -389,7 +419,9 @@ export default function EventFeed({
       {/* Active filters display */}
       {hasActiveFilters && (
         <div className="px-4 md:px-8 py-3 border-b bg-gray-50 dark:bg-white/5 flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Active filters:
+          </span>
           {(startDate || endDate) && (
             <div className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm">
               {formatTimeFilter()}

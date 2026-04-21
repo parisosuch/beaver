@@ -22,7 +22,7 @@ function storeTokens(data: AuthResponse): void {
       user: data.user,
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
-    })
+    }),
   );
 }
 
@@ -49,7 +49,9 @@ const CreateAdminAccount = ({
 }: AdminAccountProps) => (
   <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div className="flex flex-1 flex-col h-full justify-center">
-      <CardTitle className="text-2xl md:text-3xl">Create admin account</CardTitle>
+      <CardTitle className="text-2xl md:text-3xl">
+        Create admin account
+      </CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="admin-username">Username</Label>
         <Input
@@ -122,7 +124,9 @@ const CreateProject = ({
 }: ProjectProps) => (
   <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div>
-      <CardTitle className="text-2xl md:text-3xl">Create your first project</CardTitle>
+      <CardTitle className="text-2xl md:text-3xl">
+        Create your first project
+      </CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="project-name">Project name</Label>
         <Input
@@ -250,13 +254,13 @@ function OnboardingView() {
               }
               if (!/[A-Z]/.test(password)) {
                 setError(
-                  "Password must contain at least one uppercase letter."
+                  "Password must contain at least one uppercase letter.",
                 );
                 return;
               }
               if (!/[a-z]/.test(password)) {
                 setError(
-                  "Password must contain at least one lowercase letter."
+                  "Password must contain at least one lowercase letter.",
                 );
                 return;
               }
@@ -266,7 +270,7 @@ function OnboardingView() {
               }
               if (!/[^A-Za-z0-9]/.test(password)) {
                 setError(
-                  "Password must contain at least one special character."
+                  "Password must contain at least one special character.",
                 );
                 return;
               }

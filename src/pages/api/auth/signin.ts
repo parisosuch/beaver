@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!username || !password) {
       return new Response(
         JSON.stringify({ error: "Username and password are required" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -23,7 +23,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!user) {
       return new Response(
         JSON.stringify({ error: "Invalid username or password" }),
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!isValidPassword) {
       return new Response(
         JSON.stringify({ error: "Invalid username or password" }),
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -39,6 +39,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       userId: user.id,
       userName: user.userName,
       isAdmin: user.isAdmin,
+      mustChangePassword: user.mustChangePassword,
     };
 
     const accessToken = await createAccessToken(payload);
@@ -64,6 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           id: user.id,
           userName: user.userName,
           isAdmin: user.isAdmin,
+          mustChangePassword: user.mustChangePassword,
         },
       }),
       {
@@ -71,7 +73,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Sign in error:", error);

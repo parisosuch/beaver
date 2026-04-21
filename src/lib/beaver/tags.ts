@@ -8,7 +8,7 @@ export interface AvailableTag {
 }
 
 export async function getChannelAvailableTags(
-  channelId: number
+  channelId: number,
 ): Promise<AvailableTag[]> {
   // Get distinct key-value pairs for events in this channel
   const result = await db
@@ -43,7 +43,7 @@ export async function getChannelAvailableTags(
 }
 
 export async function getProjectAvailableTags(
-  projectId: number
+  projectId: number,
 ): Promise<AvailableTag[]> {
   // Get distinct key-value pairs for events in this project
   const result = await db

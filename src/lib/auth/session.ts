@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 export async function createSession(
   userId: number,
   token: string,
-  expiresAt: Date
+  expiresAt: Date,
 ): Promise<void> {
   await db.insert(sessions).values({
     userId,

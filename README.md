@@ -21,6 +21,7 @@ bun run seed
 ```
 
 This creates sample users, projects, channels, and events:
+
 - Admin user: `admin` / `admin123`
 
 ## Development
@@ -72,11 +73,11 @@ The volume mount persists the SQLite database across container restarts.
 
 ### Environment Variables
 
-| Variable | Description | Default |
-| :------- | :---------- | :------ |
+| Variable     | Description                       | Default                                      |
+| :----------- | :-------------------------------- | :------------------------------------------- |
 | `JWT_SECRET` | Secret key for signing JWT tokens | `beaver-default-secret-change-in-production` |
-| `PORT` | Server port | `4321` |
-| `HOST` | Server host | `localhost` |
+| `PORT`       | Server port                       | `4321`                                       |
+| `HOST`       | Server host                       | `localhost`                                  |
 
 For production, set a secure `JWT_SECRET`:
 
@@ -118,20 +119,20 @@ Send a `POST` request to `/api/event` to log events from your application.
 
 **Headers:**
 
-| Header | Required | Description |
-| :----- | :------- | :---------- |
-| `Content-Type` | Yes | Must be `application/json` |
-| `X-API-Key` | Yes | Your project's API key |
+| Header         | Required | Description                |
+| :------------- | :------- | :------------------------- |
+| `Content-Type` | Yes      | Must be `application/json` |
+| `X-API-Key`    | Yes      | Your project's API key     |
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-| :---- | :--- | :------- | :---------- |
-| `name` | string | Yes | Event name (e.g., "User Signup") |
-| `channel` | string | Yes | Channel name to post to |
-| `description` | string | No | Additional details about the event (searchable in the dashboard) |
-| `icon` | string | No | Emoji icon for the event |
-| `tags` | object | No | Key-value metadata (string, number, or boolean values) |
+| Field         | Type   | Required | Description                                                      |
+| :------------ | :----- | :------- | :--------------------------------------------------------------- |
+| `name`        | string | Yes      | Event name (e.g., "User Signup")                                 |
+| `channel`     | string | Yes      | Channel name to post to                                          |
+| `description` | string | No       | Additional details about the event (searchable in the dashboard) |
+| `icon`        | string | No       | Emoji icon for the event                                         |
+| `tags`        | object | No       | Key-value metadata (string, number, or boolean values)           |
 
 **Example with curl:**
 
@@ -195,21 +196,21 @@ await fetch("http://localhost:4321/api/event", {
 
 **Error Responses:**
 
-| Status | Description |
-| :----- | :---------- |
-| `401` | Missing `X-API-Key` header |
-| `400` | Missing required field (`name` or `channel`) |
-| `400` | Invalid `tags` format (not valid JSON) |
-| `500` | Invalid API key or channel not found |
+| Status | Description                                  |
+| :----- | :------------------------------------------- |
+| `401`  | Missing `X-API-Key` header                   |
+| `400`  | Missing required field (`name` or `channel`) |
+| `400`  | Invalid `tags` format (not valid JSON)       |
+| `500`  | Invalid API key or channel not found         |
 
 ## Commands
 
-| Command | Action |
-| :------ | :----- |
-| `bun install` | Install dependencies |
-| `bun run dev` | Start dev server at `localhost:4321` |
-| `bun run build` | Build for production to `./dist/` |
-| `bun run preview` | Preview production build locally |
-| `bun run migrate` | Run database migrations |
-| `bun run seed` | Seed database with sample data |
-| `bun run format` | Format code with Prettier |
+| Command           | Action                               |
+| :---------------- | :----------------------------------- |
+| `bun install`     | Install dependencies                 |
+| `bun run dev`     | Start dev server at `localhost:4321` |
+| `bun run build`   | Build for production to `./dist/`    |
+| `bun run preview` | Preview production build locally     |
+| `bun run migrate` | Run database migrations              |
+| `bun run seed`    | Seed database with sample data       |
+| `bun run format`  | Format code with Prettier            |
