@@ -7,6 +7,7 @@ export type Channel = {
   name: string;
   description: string | null;
   projectId: number;
+  groupId: number | null;
   order: number;
   createdAt: Date | null;
 };
@@ -69,11 +70,14 @@ export async function createChannel(
 }
 
 export async function reorderChannels(
-  items: { id: number; order: number }[]
+  items: { id: number; order: number; groupId?: number | null }[]
 ) {
   await Promise.all(
-    items.map(({ id, order }) =>
-      db.update(channels).set({ order }).where(eq(channels.id, id))
+    items.map(({ id, order, groupId }) =>
+      db
+        .update(channels)
+        .set({ order, ...(groupId !== undefined ? { groupId } : {}) })
+        .where(eq(channels.id, id))
     )
   );
 }

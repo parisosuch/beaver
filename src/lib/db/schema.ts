@@ -15,6 +15,19 @@ export const projects = sqliteTable("projects", {
     .references(() => users.id, { onDelete: "cascade" }), // TODO: should a delete on user delete the owner?
 });
 
+// ---- CHANNEL GROUPS ----
+export const channelGroups = sqliteTable("channel_groups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  order: integer("order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
 // ---- CHANNELS ----
 export const channels = sqliteTable("channels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -23,6 +36,7 @@ export const channels = sqliteTable("channels", {
   projectId: integer("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
+  groupId: integer("group_id").references(() => channelGroups.id),
   order: integer("order").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
@@ -91,12 +105,25 @@ export const sessions = sqliteTable("sessions", {
 // ---- RELATIONS ----
 export const projectRelations = relations(projects, ({ many }) => ({
   channels: many(channels),
+  channelGroups: many(channelGroups),
+}));
+
+export const channelGroupRelations = relations(channelGroups, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [channelGroups.projectId],
+    references: [projects.id],
+  }),
+  channels: many(channels),
 }));
 
 export const channelRelations = relations(channels, ({ one, many }) => ({
   project: one(projects, {
     fields: [channels.projectId],
     references: [projects.id],
+  }),
+  group: one(channelGroups, {
+    fields: [channels.groupId],
+    references: [channelGroups.id],
   }),
   events: many(events),
 }));
