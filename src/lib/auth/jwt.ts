@@ -1,7 +1,7 @@
 import * as jose from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "beaver-default-secret-change-in-production"
+  process.env.JWT_SECRET || "beaver-default-secret-change-in-production",
 );
 
 const ACCESS_TOKEN_EXPIRY = "15m";

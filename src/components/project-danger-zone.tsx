@@ -30,7 +30,7 @@ export default function ProjectDangerZone({ project }: { project: Project }) {
 
       const latest = data.projects.sort(
         (a: Project, b: Project) =>
-          new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+          new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime(),
       )[0];
 
       window.location.href = `/dashboard/${latest.id}/feed`;
@@ -42,9 +42,7 @@ export default function ProjectDangerZone({ project }: { project: Project }) {
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      {error && (
-        <p className="text-sm text-rose-500">{error}</p>
-      )}
+      {error && <p className="text-sm text-rose-500">{error}</p>}
       <div className="flex flex-col md:flex-row md:items-end gap-2">
         <div className="flex flex-col w-full md:w-4/5">
           <Label>Enter project name to delete</Label>

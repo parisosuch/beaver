@@ -48,7 +48,10 @@ function CreateProjectForm() {
 
   return (
     <div className="w-full min-h-screen flex flex-row items-center justify-center text-center px-4 md:px-0">
-      <form onSubmit={handleSubmit} className="flex flex-col h-full w-full max-w-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col h-full w-full max-w-sm"
+      >
         <div className="flex flex-1 flex-col justify-center">
           <h1 className="text-2xl md:text-3xl font-bold">Create Project</h1>
           <p className="text-sm mt-2 text-muted-foreground font-medium">

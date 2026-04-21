@@ -38,7 +38,9 @@ function TempPasswordCell({ tempPassword }: { tempPassword: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{tempPassword}</code>
+      <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+        {tempPassword}
+      </code>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -127,7 +129,9 @@ export default function AdminUsersView({
       body: JSON.stringify({ id, isAdmin }),
     });
     if (res.ok) {
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, isAdmin } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, isAdmin } : u)),
+      );
     }
   };
 
@@ -144,8 +148,10 @@ export default function AdminUsersView({
         const { tempPassword } = await res.json();
         setUsers((prev) =>
           prev.map((u) =>
-            u.id === resetTarget.id ? { ...u, tempPassword, mustChangePassword: true } : u
-          )
+            u.id === resetTarget.id
+              ? { ...u, tempPassword, mustChangePassword: true }
+              : u,
+          ),
         );
         setResetTarget(null);
       }
@@ -156,199 +162,227 @@ export default function AdminUsersView({
 
   return (
     <TooltipProvider delayDuration={300}>
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-4xl mx-auto p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <a
-            href={backUrl}
-            data-astro-reload
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeftIcon size={14} />
-            Back
-          </a>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-mono text-muted-foreground">Admin</p>
-              <h1 className="text-2xl font-semibold">Users</h1>
-            </div>
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="max-w-4xl mx-auto p-8">
+          {/* Header */}
+          <div className="mb-8">
+            <a
+              href={backUrl}
+              data-astro-reload
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeftIcon size={14} />
+              Back
+            </a>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-mono text-muted-foreground">Admin</p>
+                <h1 className="text-2xl font-semibold">Users</h1>
+              </div>
 
-            {/* Create user dialog */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <PlusIcon size={16} />
-                  New user
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create user</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleCreate} className="space-y-4 mt-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input
-                      id="username"
-                      value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      placeholder="e.g. paris"
-                      required
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    A temporary password will be generated. Share it with the
-                    user — they'll be prompted to set a new one on first login.
-                  </p>
-                  {createError && (
-                    <p className="text-sm text-destructive">{createError}</p>
-                  )}
-                  <Button type="submit" className="w-full" disabled={creating}>
-                    {creating ? "Creating…" : "Create user"}
+              {/* Create user dialog */}
+              <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <PlusIcon size={16} />
+                    New user
                   </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        {/* User table */}
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Username</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Temp password</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, i) => (
-                <tr
-                  key={user.id}
-                  className={`border-b last:border-0 ${i % 2 === 0 ? "" : "bg-muted/20"}`}
-                >
-                  <td className="px-4 py-3 font-mono">@{user.userName}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                        user.isAdmin
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {user.isAdmin ? "Admin" : "User"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {user.tempPassword ? (
-                      <TempPasswordCell tempPassword={user.tempPassword} />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create user</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreate} className="space-y-4 mt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        placeholder="e.g. paris"
+                        required
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      A temporary password will be generated. Share it with the
+                      user — they'll be prompted to set a new one on first
+                      login.
+                    </p>
+                    {createError && (
+                      <p className="text-sm text-destructive">{createError}</p>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      {user.id !== currentUserId && (
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={creating}
+                    >
+                      {creating ? "Creating…" : "Create user"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* User table */}
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    Username
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    Role
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    Temp password
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user, i) => (
+                  <tr
+                    key={user.id}
+                    className={`border-b last:border-0 ${i % 2 === 0 ? "" : "bg-muted/20"}`}
+                  >
+                    <td className="px-4 py-3 font-mono">@{user.userName}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                          user.isAdmin
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {user.isAdmin ? "Admin" : "User"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.tempPassword ? (
+                        <TempPasswordCell tempPassword={user.tempPassword} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {user.id !== currentUserId && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() =>
+                                  handleToggleAdmin(user.id, !user.isAdmin)
+                                }
+                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                {user.isAdmin ? (
+                                  <ShieldOffIcon size={15} />
+                                ) : (
+                                  <ShieldIcon size={15} />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {user.isAdmin ? "Remove admin" : "Make admin"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
-                              onClick={() => handleToggleAdmin(user.id, !user.isAdmin)}
+                              onClick={() => setResetTarget(user)}
                               className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                             >
-                              {user.isAdmin ? <ShieldOffIcon size={15} /> : <ShieldIcon size={15} />}
+                              <RefreshCwIcon size={15} />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent>{user.isAdmin ? "Remove admin" : "Make admin"}</TooltipContent>
+                          <TooltipContent>Reset password</TooltipContent>
                         </Tooltip>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => setResetTarget(user)}
-                            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <RefreshCwIcon size={15} />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Reset password</TooltipContent>
-                      </Tooltip>
-                      {user.id !== currentUserId && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => setDeleteTarget(user)}
-                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2Icon size={15} />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete user</TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {user.id !== currentUserId && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => setDeleteTarget(user)}
+                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <Trash2Icon size={15} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete user</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Delete confirmation dialog */}
+        <Dialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete user</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete{" "}
+              <span className="font-mono font-medium text-foreground">
+                @{deleteTarget?.userName}
+              </span>
+              ? This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end mt-2">
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset password confirmation dialog */}
+        <Dialog
+          open={!!resetTarget}
+          onOpenChange={(open) => !open && setResetTarget(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset password</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              This will generate a new temporary password for{" "}
+              <span className="font-mono font-medium text-foreground">
+                @{resetTarget?.userName}
+              </span>{" "}
+              and sign them out. They'll need to set a new password on next
+              login.
+            </p>
+            <div className="flex gap-2 justify-end mt-2">
+              <Button variant="secondary" onClick={() => setResetTarget(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleResetConfirm} disabled={resetting}>
+                {resetting ? "Resetting…" : "Reset password"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Delete confirmation dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete user</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <span className="font-mono font-medium text-foreground">
-              @{deleteTarget?.userName}
-            </span>
-            ? This cannot be undone.
-          </p>
-          <div className="flex gap-2 justify-end mt-2">
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-              disabled={deleting}
-            >
-              {deleting ? "Deleting…" : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reset password confirmation dialog */}
-      <Dialog open={!!resetTarget} onOpenChange={(open) => !open && setResetTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset password</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will generate a new temporary password for{" "}
-            <span className="font-mono font-medium text-foreground">
-              @{resetTarget?.userName}
-            </span>{" "}
-            and sign them out. They'll need to set a new password on next login.
-          </p>
-          <div className="flex gap-2 justify-end mt-2">
-            <Button variant="secondary" onClick={() => setResetTarget(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleResetConfirm} disabled={resetting}>
-              {resetting ? "Resetting…" : "Reset password"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
     </TooltipProvider>
   );
 }

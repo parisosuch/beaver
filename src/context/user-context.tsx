@@ -80,7 +80,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         isAuthenticated: true,
       });
     },
-    []
+    [],
   );
 
   const signIn = useCallback(
@@ -103,7 +103,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [setAuth]
+    [setAuth],
   );
 
   const signOut = useCallback(async () => {

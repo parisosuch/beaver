@@ -16,7 +16,7 @@ export type ChannelGroupWithChannels = ChannelGroup & {
 };
 
 export async function getChannelGroups(
-  projectId: number
+  projectId: number,
 ): Promise<ChannelGroupWithChannels[]> {
   const groups = await db
     .select()
@@ -38,7 +38,7 @@ export async function getChannelGroups(
 
 export async function createChannelGroup(
   name: string,
-  projectId: number
+  projectId: number,
 ): Promise<ChannelGroup> {
   const [{ maxOrder }] = await db
     .select({ maxOrder: max(channelGroups.order) })
@@ -59,7 +59,7 @@ export async function createChannelGroup(
 
 export async function renameChannelGroup(
   id: number,
-  name: string
+  name: string,
 ): Promise<void> {
   await db.update(channelGroups).set({ name }).where(eq(channelGroups.id, id));
 }
@@ -75,11 +75,11 @@ export async function deleteChannelGroup(id: number): Promise<void> {
 }
 
 export async function reorderGroups(
-  items: { id: number; order: number }[]
+  items: { id: number; order: number }[],
 ): Promise<void> {
   await Promise.all(
     items.map(({ id, order }) =>
-      db.update(channelGroups).set({ order }).where(eq(channelGroups.id, id))
-    )
+      db.update(channelGroups).set({ order }).where(eq(channelGroups.id, id)),
+    ),
   );
 }

@@ -64,9 +64,13 @@ export async function GET({
 
             if (events.length > 0) {
               afterId = events.at(0)!.id;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(events)}\n\n`));
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(events)}\n\n`),
+              );
             } else {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify([])}\n\n`));
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify([])}\n\n`),
+              );
             }
 
             await new Promise((resolve) => setTimeout(resolve, 10000));

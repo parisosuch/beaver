@@ -111,8 +111,8 @@ The Dockerfile uses a multi-stage build (deps → build → runtime) with the `o
 
 ## Environment Variables
 
-| Variable | Description | Default |
-| :------- | :---------- | :------ |
+| Variable     | Description                   | Default                                      |
+| :----------- | :---------------------------- | :------------------------------------------- |
 | `JWT_SECRET` | Secret for signing JWT tokens | `beaver-default-secret-change-in-production` |
-| `PORT` | Server port | `4321` |
-| `HOST` | Server host | `localhost` |
+| `PORT`       | Server port                   | `4321`                                       |
+| `HOST`       | Server host                   | `localhost`                                  |

@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
     if (!project_id) {
       return new Response(
         JSON.stringify({ error: "project_id is a required query parameter." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -32,10 +32,13 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
 
@@ -46,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!name || !project_id) {
       return new Response(
         JSON.stringify({ error: "name and project_id are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -63,10 +66,13 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
 
@@ -78,7 +84,7 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (!Array.isArray(groups) || groups.length === 0) {
       return new Response(
         JSON.stringify({ error: "groups array is required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -95,10 +101,13 @@ export const PATCH: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
 
@@ -110,7 +119,7 @@ export const PUT: APIRoute = async ({ request }) => {
     if (!id || !name) {
       return new Response(
         JSON.stringify({ error: "id and name are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -127,10 +136,13 @@ export const PUT: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
 
@@ -158,10 +170,13 @@ export const DELETE: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
 

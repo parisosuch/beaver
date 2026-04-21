@@ -1,6 +1,20 @@
 import { db } from "../db/db";
 import { events, channels, eventTags } from "../db/schema";
-import { eq, and, or, asc, desc, like, inArray, gt, lt, gte, lte, exists, max } from "drizzle-orm";
+import {
+  eq,
+  and,
+  or,
+  asc,
+  desc,
+  like,
+  inArray,
+  gt,
+  lt,
+  gte,
+  lte,
+  exists,
+  max,
+} from "drizzle-orm";
 import { getProject } from "./project";
 
 export async function getMaxEventId(): Promise<number> {
@@ -64,7 +78,7 @@ type QueryOptions = {
 
 // helper function to get tag primitive object from event tags
 const getEventTags = async (
-  ids: number[]
+  ids: number[],
 ): Promise<Record<number, TagPrimitive>> => {
   // batch fetch all tags for these events
   const allTags = await db
@@ -92,7 +106,7 @@ const getEventTags = async (
 
 export async function getChannelEvents(
   channelId: number,
-  options: QueryOptions
+  options: QueryOptions,
 ): Promise<EventWithChannelName[]> {
   // initial where clause
   const conditions: any[] = [eq(events.channelId, channelId)];
@@ -100,9 +114,11 @@ export async function getChannelEvents(
   if (options.search) {
     const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
-    conditions.push(...searchTerms.map((term) =>
-      or(like(events.name, term), like(events.description, term))
-    ));
+    conditions.push(
+      ...searchTerms.map((term) =>
+        or(like(events.name, term), like(events.description, term)),
+      ),
+    );
   }
 
   if (options.afterId) {
@@ -133,8 +149,8 @@ export async function getChannelEvents(
           and(
             eq(eventTags.eventId, events.id),
             eq(eventTags.key, tagFilter.key),
-            eq(eventTags.value, tagFilter.value)
-          )
+            eq(eventTags.value, tagFilter.value),
+          ),
         );
 
       conditions.push(exists(tagSubquery));
@@ -142,7 +158,8 @@ export async function getChannelEvents(
   }
 
   const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+  const orderColumn =
+    options.sortBy === "name" ? events.name : events.createdAt;
 
   let query = db
     .select({
@@ -179,7 +196,7 @@ export async function getChannelEvents(
 
 export async function getProjectEvents(
   projectId: number,
-  options: QueryOptions
+  options: QueryOptions,
 ): Promise<EventWithChannelName[]> {
   // initial where clause
   const conditions: any[] = [eq(events.projectId, projectId)];
@@ -187,9 +204,11 @@ export async function getProjectEvents(
   if (options.search) {
     const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
-    conditions.push(...searchTerms.map((term) =>
-      or(like(events.name, term), like(events.description, term))
-    ));
+    conditions.push(
+      ...searchTerms.map((term) =>
+        or(like(events.name, term), like(events.description, term)),
+      ),
+    );
   }
 
   if (options.afterId) {
@@ -220,8 +239,8 @@ export async function getProjectEvents(
           and(
             eq(eventTags.eventId, events.id),
             eq(eventTags.key, tagFilter.key),
-            eq(eventTags.value, tagFilter.value)
-          )
+            eq(eventTags.value, tagFilter.value),
+          ),
         );
 
       conditions.push(exists(tagSubquery));
@@ -229,7 +248,8 @@ export async function getProjectEvents(
   }
 
   const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+  const orderColumn =
+    options.sortBy === "name" ? events.name : events.createdAt;
 
   let query = db
     .select({
@@ -246,8 +266,8 @@ export async function getProjectEvents(
       channels,
       and(
         eq(events.channelId, channels.id),
-        eq(events.projectId, channels.projectId)
-      )
+        eq(events.projectId, channels.projectId),
+      ),
     )
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
@@ -272,7 +292,7 @@ export async function getProjectEvents(
 }
 
 export async function getEvent(
-  eventId: number
+  eventId: number,
 ): Promise<EventWithChannelName | null> {
   const eventData = await db
     .select({

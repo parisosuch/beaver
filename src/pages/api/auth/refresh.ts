@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!refreshToken) {
       return new Response(
         JSON.stringify({ error: "Refresh token is required" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,7 +104,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Token refresh error:", error);

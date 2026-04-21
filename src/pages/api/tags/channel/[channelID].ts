@@ -1,10 +1,6 @@
 import { getChannelAvailableTags } from "@/lib/beaver/tags";
 
-export async function GET({
-  params,
-}: {
-  params: { channelID: string };
-}) {
+export async function GET({ params }: { params: { channelID: string } }) {
   try {
     const tags = await getChannelAvailableTags(parseInt(params.channelID));
     return new Response(JSON.stringify(tags), {
@@ -23,7 +19,7 @@ export async function GET({
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 }

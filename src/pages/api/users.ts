@@ -76,17 +76,20 @@ export const PATCH: APIRoute = async (context) => {
     const { id, isAdmin } = await context.request.json();
 
     if (id === undefined || isAdmin === undefined) {
-      return new Response(JSON.stringify({ error: "id and isAdmin are required." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "id and isAdmin are required." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Prevent admin from removing their own admin status
     if (id === context.locals.user?.id && !isAdmin) {
       return new Response(
         JSON.stringify({ error: "You cannot remove your own admin status." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -120,7 +123,7 @@ export const DELETE: APIRoute = async (context) => {
     if (id === context.locals.user?.id) {
       return new Response(
         JSON.stringify({ error: "You cannot delete your own account." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 

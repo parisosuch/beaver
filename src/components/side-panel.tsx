@@ -57,7 +57,8 @@ import {
 // ─── ID helpers ───────────────────────────────────────────────────────────────
 const grpId = (id: number) => `grp-${id}` as UniqueIdentifier;
 const chId = (id: number) => `ch-${id}` as UniqueIdentifier;
-const parseGrpId = (uid: UniqueIdentifier) => parseInt((uid as string).slice(4));
+const parseGrpId = (uid: UniqueIdentifier) =>
+  parseInt((uid as string).slice(4));
 const parseChId = (uid: UniqueIdentifier) => parseInt((uid as string).slice(3));
 const isGrp = (uid: UniqueIdentifier) => (uid as string).startsWith("grp-");
 const isCh = (uid: UniqueIdentifier) => (uid as string).startsWith("ch-");
@@ -76,8 +77,14 @@ function SortableChannel({
   onNavigate?: () => void;
   indent?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: chId(channel.id) });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: chId(channel.id) });
 
   return (
     <div
@@ -132,8 +139,14 @@ function SortableGroup({
   channelItems: UniqueIdentifier[];
   dimChannels?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: grpId(group.id) });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: grpId(group.id) });
 
   const isChannelActive = (id: number) =>
     pathname === `/dashboard/${projectId}/channels/${id}`;
@@ -181,8 +194,13 @@ function SortableGroup({
       </ContextMenu>
 
       {!collapsed && (
-        <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
-          <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
+        <SortableContext
+          items={channelItems}
+          strategy={verticalListSortingStrategy}
+        >
+          <div
+            className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}
+          >
             {group.channels.map((ch) => (
               <SortableChannel
                 key={ch.id}
@@ -239,7 +257,10 @@ function InlineNameInput({
       placeholder={placeholder}
       onKeyDown={(e) => {
         if (e.key === "Enter") commit();
-        if (e.key === "Escape") { committed.current = true; onCancel(); }
+        if (e.key === "Escape") {
+          committed.current = true;
+          onCancel();
+        }
       }}
       onBlur={commit}
       className={className}
@@ -266,7 +287,8 @@ function ChannelGroups({
   onTriggerCreateDone: () => void;
 }) {
   const [ungrouped, setUngrouped] = useState<Channel[]>(initialUngrouped);
-  const [groups, setGroups] = useState<ChannelGroupWithChannels[]>(initialGroups);
+  const [groups, setGroups] =
+    useState<ChannelGroupWithChannels[]>(initialGroups);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -276,11 +298,18 @@ function ChannelGroups({
   // Refs for current state (avoids stale closures in drag handlers)
   const ungroupedRef = useRef(ungrouped);
   const groupsRef = useRef(groups);
-  useEffect(() => { ungroupedRef.current = ungrouped; }, [ungrouped]);
-  useEffect(() => { groupsRef.current = groups; }, [groups]);
+  useEffect(() => {
+    ungroupedRef.current = ungrouped;
+  }, [ungrouped]);
+  useEffect(() => {
+    groupsRef.current = groups;
+  }, [groups]);
 
   // Snapshot for cancel
-  const snapshotRef = useRef<{ ungrouped: Channel[]; groups: ChannelGroupWithChannels[] } | null>(null);
+  const snapshotRef = useRef<{
+    ungrouped: Channel[];
+    groups: ChannelGroupWithChannels[];
+  } | null>(null);
   const collapsedSnapshotRef = useRef<Set<number>>(new Set());
 
   // Sync external trigger for creating group
@@ -299,7 +328,10 @@ function ChannelGroups({
     const onDeleted = (e: CustomEvent<{ id: number }>) => {
       setUngrouped((prev) => prev.filter((c) => c.id !== e.detail.id));
       setGroups((prev) =>
-        prev.map((g) => ({ ...g, channels: g.channels.filter((c) => c.id !== e.detail.id) }))
+        prev.map((g) => ({
+          ...g,
+          channels: g.channels.filter((c) => c.id !== e.detail.id),
+        })),
       );
     };
     window.addEventListener("channel:created", onCreated as EventListener);
@@ -311,7 +343,7 @@ function ChannelGroups({
   }, []);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
   // ── Container lookup ───────────────────────────────────────────────────────
@@ -346,7 +378,10 @@ function ChannelGroups({
     setActiveId(active.id);
     snapshotRef.current = {
       ungrouped: ungroupedRef.current.map((c) => ({ ...c })),
-      groups: groupsRef.current.map((g) => ({ ...g, channels: g.channels.map((c) => ({ ...c })) })),
+      groups: groupsRef.current.map((g) => ({
+        ...g,
+        channels: g.channels.map((c) => ({ ...c })),
+      })),
     };
     if (isGrp(active.id)) {
       setIsDraggingGroup(true);
@@ -383,7 +418,10 @@ function ChannelGroups({
         const overNum = parseChId(over.id);
         const overIdx = without.findIndex((c) => c.id === overNum);
         const updated = [...without];
-        updated.splice(overIdx >= 0 ? overIdx : updated.length, 0, { ...channel, groupId: null });
+        updated.splice(overIdx >= 0 ? overIdx : updated.length, 0, {
+          ...channel,
+          groupId: null,
+        });
         return updated;
       }
       return [...without, { ...channel, groupId: null }];
@@ -397,11 +435,14 @@ function ChannelGroups({
           const overNum = parseChId(over.id);
           const overIdx = without.findIndex((c) => c.id === overNum);
           const updated = [...without];
-          updated.splice(overIdx >= 0 ? overIdx : updated.length, 0, { ...channel, groupId: g.id });
+          updated.splice(overIdx >= 0 ? overIdx : updated.length, 0, {
+            ...channel,
+            groupId: g.id,
+          });
           return { ...g, channels: updated };
         }
         return { ...g, channels: [...without, { ...channel, groupId: g.id }] };
-      })
+      }),
     );
   };
 
@@ -422,7 +463,10 @@ function ChannelGroups({
     if (isGrp(active.id)) {
       setIsDraggingGroup(false);
       setCollapsed(collapsedSnapshotRef.current);
-      if (!isGrp(over.id)) { snapshotRef.current = null; return; }
+      if (!isGrp(over.id)) {
+        snapshotRef.current = null;
+        return;
+      }
       const cur = groupsRef.current;
       const oldIdx = cur.findIndex((g) => grpId(g.id) === active.id);
       const newIdx = cur.findIndex((g) => grpId(g.id) === over.id);
@@ -431,7 +475,9 @@ function ChannelGroups({
         setGroups(reordered);
         fetch("/api/channel-group", {
           method: "PATCH",
-          body: JSON.stringify({ groups: reordered.map((g, i) => ({ id: g.id, order: i })) }),
+          body: JSON.stringify({
+            groups: reordered.map((g, i) => ({ id: g.id, order: i })),
+          }),
           headers: { "Content-Type": "application/json" },
         });
       }
@@ -461,7 +507,7 @@ function ChannelGroups({
               const oldIdx = g.channels.findIndex((c) => c.id === chNum);
               const newIdx = g.channels.findIndex((c) => c.id === overNum);
               return { ...g, channels: arrayMove(g.channels, oldIdx, newIdx) };
-            })
+            }),
           );
         }
       }
@@ -473,7 +519,9 @@ function ChannelGroups({
       const g = groupsRef.current;
       const allItems = [
         ...u.map((c, i) => ({ id: c.id, order: i, groupId: null as null })),
-        ...g.flatMap((grp) => grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id }))),
+        ...g.flatMap((grp) =>
+          grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id })),
+        ),
       ];
       fetch("/api/channel", {
         method: "PATCH",
@@ -523,7 +571,10 @@ function ChannelGroups({
   const handleDeleteGroup = async (id: number) => {
     const group = groupsRef.current.find((g) => g.id === id);
     if (group) {
-      setUngrouped((prev) => [...prev, ...group.channels.map((c) => ({ ...c, groupId: null }))]);
+      setUngrouped((prev) => [
+        ...prev,
+        ...group.channels.map((c) => ({ ...c, groupId: null })),
+      ]);
     }
     setGroups((prev) => prev.filter((g) => g.id !== id));
     await fetch("/api/channel-group", {
@@ -536,8 +587,12 @@ function ChannelGroups({
   // ── Derived ────────────────────────────────────────────────────────────────
   const ungroupedItems = ungrouped.map((c) => chId(c.id));
   const groupItems = groups.map((g) => grpId(g.id));
-  const activeChannel = activeId && isCh(activeId) ? getChannel(activeId) : null;
-  const activeGroup = activeId && isGrp(activeId) ? groups.find((g) => grpId(g.id) === activeId) : null;
+  const activeChannel =
+    activeId && isCh(activeId) ? getChannel(activeId) : null;
+  const activeGroup =
+    activeId && isGrp(activeId)
+      ? groups.find((g) => grpId(g.id) === activeId)
+      : null;
   const isChannelActive = (id: number) =>
     pathname === `/dashboard/${projectId}/channels/${id}`;
 
@@ -551,7 +606,10 @@ function ChannelGroups({
       onDragCancel={handleDragCancel}
     >
       {/* Ungrouped channels */}
-      <SortableContext items={ungroupedItems} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={ungroupedItems}
+        strategy={verticalListSortingStrategy}
+      >
         {ungrouped.map((ch) => (
           <SortableChannel
             key={ch.id}
@@ -564,7 +622,10 @@ function ChannelGroups({
       </SortableContext>
 
       {/* Groups */}
-      <SortableContext items={groupItems} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={groupItems}
+        strategy={verticalListSortingStrategy}
+      >
         {groups.map((group) => {
           if (renamingGroupId === group.id) {
             return (
@@ -659,12 +720,15 @@ function PanelContent({
 
   const project = currentProject;
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
-  const isSettingsActive = () => pathname === `/dashboard/${project.id}/settings`;
-  const isApiDocsActive = () => pathname === `/dashboard/${project.id}/api-docs`;
+  const isSettingsActive = () =>
+    pathname === `/dashboard/${project.id}/settings`;
+  const isApiDocsActive = () =>
+    pathname === `/dashboard/${project.id}/api-docs`;
 
   const navCss =
     "flex px-3 py-2 space-x-2 items-center hover:bg-gray-100 dark:hover:bg-white/8 hover:cursor-pointer hover:font-medium rounded ";
-  const activeNavCss = navCss + "bg-gray-100 dark:bg-white/8 font-medium rounded-md";
+  const activeNavCss =
+    navCss + "bg-gray-100 dark:bg-white/8 font-medium rounded-md";
 
   const ungroupedChannels = currentChannels.filter((c) => !c.groupId);
 
@@ -694,7 +758,10 @@ function PanelContent({
       <div className="flex space-x-2 w-full items-center justify-between mt-4">
         <h1 className="text-sm font-mono">Project</h1>
         <a href="/dashboard/create-project">
-          <PlusIcon size={20} className="hover:cursor-pointer hover:text-black/50" />
+          <PlusIcon
+            size={20}
+            className="hover:cursor-pointer hover:text-black/50"
+          />
         </a>
       </div>
       <Select
@@ -722,18 +789,38 @@ function PanelContent({
       {/* Navigation */}
       <div className="mt-4 space-y-2">
         <h1 className="text-sm font-mono">Navigation</h1>
-        <a className={isFeedActive() ? activeNavCss : navCss} href={`/dashboard/${project.id}/feed`} onClick={() => onNavigate?.()}>
-          <InboxIcon size={20} /><p>Feed</p>
+        <a
+          className={isFeedActive() ? activeNavCss : navCss}
+          href={`/dashboard/${project.id}/feed`}
+          onClick={() => onNavigate?.()}
+        >
+          <InboxIcon size={20} />
+          <p>Feed</p>
         </a>
-        <a className={isSettingsActive() ? activeNavCss : navCss} href={`/dashboard/${project.id}/settings`} onClick={() => onNavigate?.()}>
-          <Settings size={20} /><p>Settings</p>
+        <a
+          className={isSettingsActive() ? activeNavCss : navCss}
+          href={`/dashboard/${project.id}/settings`}
+          onClick={() => onNavigate?.()}
+        >
+          <Settings size={20} />
+          <p>Settings</p>
         </a>
-        <a className={isApiDocsActive() ? activeNavCss : navCss} href={`/dashboard/${project.id}/api-docs`} onClick={() => onNavigate?.()}>
-          <BookOpenIcon size={20} /><p>API Docs</p>
+        <a
+          className={isApiDocsActive() ? activeNavCss : navCss}
+          href={`/dashboard/${project.id}/api-docs`}
+          onClick={() => onNavigate?.()}
+        >
+          <BookOpenIcon size={20} />
+          <p>API Docs</p>
         </a>
         {user?.isAdmin && (
-          <a className={pathname === "/admin/users" ? activeNavCss : navCss} href="/admin/users" onClick={() => onNavigate?.()}>
-            <UsersIcon size={20} /><p>Users</p>
+          <a
+            className={pathname === "/admin/users" ? activeNavCss : navCss}
+            href="/admin/users"
+            onClick={() => onNavigate?.()}
+          >
+            <UsersIcon size={20} />
+            <p>Users</p>
           </a>
         )}
       </div>
@@ -822,7 +909,13 @@ function SidePanelContent({
     };
   }, [drawerOpen]);
 
-  const sharedProps = { currentProject, currentProjects, currentChannels, currentGroups, pathname };
+  const sharedProps = {
+    currentProject,
+    currentProjects,
+    currentChannels,
+    currentGroups,
+    pathname,
+  };
 
   return (
     <>
@@ -858,7 +951,10 @@ function SidePanelContent({
             <XIcon size={20} />
           </button>
         </div>
-        <PanelContent {...sharedProps} onNavigate={() => setDrawerOpen(false)} />
+        <PanelContent
+          {...sharedProps}
+          onNavigate={() => setDrawerOpen(false)}
+        />
       </div>
 
       {/* Desktop */}

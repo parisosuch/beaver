@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
     if (!channel) {
@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       } catch (error) {
         return new Response(
           JSON.stringify({ error: "tags object is not valid JSON." }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 400, headers: { "Content-Type": "application/json" } },
         );
       }
     }
@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };

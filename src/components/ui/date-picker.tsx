@@ -32,7 +32,7 @@ export function DatePicker({
           className={cn(
             "w-full justify-start text-left font-normal",
             !date && "text-muted-foreground",
-            className
+            className,
           )}
         >
           <CalendarIcon className="mr-2 size-4" />

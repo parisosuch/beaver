@@ -83,7 +83,9 @@ export const users = sqliteTable("users", {
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   userName: text("username").notNull(),
   password: text("password").notNull(),
-  mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
+  mustChangePassword: integer("must_change_password", { mode: "boolean" })
+    .notNull()
+    .default(false),
   tempPassword: text("temp_password"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
@@ -109,13 +111,16 @@ export const projectRelations = relations(projects, ({ many }) => ({
   channelGroups: many(channelGroups),
 }));
 
-export const channelGroupRelations = relations(channelGroups, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [channelGroups.projectId],
-    references: [projects.id],
+export const channelGroupRelations = relations(
+  channelGroups,
+  ({ one, many }) => ({
+    project: one(projects, {
+      fields: [channelGroups.projectId],
+      references: [projects.id],
+    }),
+    channels: many(channels),
   }),
-  channels: many(channels),
-}));
+);
 
 export const channelRelations = relations(channels, ({ one, many }) => ({
   project: one(projects, {

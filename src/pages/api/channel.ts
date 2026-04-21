@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
     if (!project_id) {
       return new Response(
         JSON.stringify({ error: "project_id is a required query parameter." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -49,12 +49,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!name) {
       return new Response(
-        JSON.stringify({ error: "name is required to create channel." })
+        JSON.stringify({ error: "name is required to create channel." }),
       );
     }
     if (!project_id) {
       return new Response(
-        JSON.stringify({ error: "project_id is required to create channel." })
+        JSON.stringify({ error: "project_id is required to create channel." }),
       );
     }
 
@@ -81,7 +81,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -93,7 +93,7 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (!Array.isArray(channels) || channels.length === 0) {
       return new Response(
         JSON.stringify({ error: "channels array is required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -116,7 +116,7 @@ export const PATCH: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -151,7 +151,7 @@ export const DELETE: APIRoute = async ({ request }) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };

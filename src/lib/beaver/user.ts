@@ -50,7 +50,7 @@ export async function getAdminUsers(): Promise<User[]> {
 }
 
 export async function getUserByUsername(
-  userName: string
+  userName: string,
 ): Promise<DatabaseUser | null> {
   const result = await db
     .select()
@@ -63,7 +63,7 @@ export async function getUserByUsername(
 
 export async function verifyPassword(
   password: string,
-  hashedPassword: string
+  hashedPassword: string,
 ): Promise<boolean> {
   return await Bun.password.verify(password, hashedPassword);
 }
@@ -80,7 +80,7 @@ export function generateTempPassword(): string {
 export async function createUser(
   userName: string,
   password: string,
-  isAdmin: boolean
+  isAdmin: boolean,
 ): Promise<User> {
   const hashedPassword = await Bun.password.hash(password);
 
@@ -99,7 +99,9 @@ export async function createUser(
   return user;
 }
 
-export async function createUserAccount(userName: string): Promise<User & { tempPassword: string }> {
+export async function createUserAccount(
+  userName: string,
+): Promise<User & { tempPassword: string }> {
   const tempPassword = generateTempPassword();
   const hashedPassword = await Bun.password.hash(tempPassword);
 
@@ -129,7 +131,10 @@ export async function deleteUser(id: number): Promise<void> {
   await db.delete(users).where(eq(users.id, id));
 }
 
-export async function setUserAdmin(id: number, isAdmin: boolean): Promise<void> {
+export async function setUserAdmin(
+  id: number,
+  isAdmin: boolean,
+): Promise<void> {
   await db.update(users).set({ isAdmin }).where(eq(users.id, id));
 }
 
@@ -148,12 +153,19 @@ export async function resetUserPassword(id: number): Promise<string> {
   return tempPassword;
 }
 
-export async function changePassword(id: number, newPassword: string): Promise<void> {
+export async function changePassword(
+  id: number,
+  newPassword: string,
+): Promise<void> {
   const hashedPassword = await Bun.password.hash(newPassword);
 
   await db
     .update(users)
-    .set({ password: hashedPassword, tempPassword: null, mustChangePassword: false })
+    .set({
+      password: hashedPassword,
+      tempPassword: null,
+      mustChangePassword: false,
+    })
     .where(eq(users.id, id));
 
   // Invalidate all sessions so user must re-login with new password

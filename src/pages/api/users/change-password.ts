@@ -15,7 +15,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     if (!password || password.length < 8) {
       return new Response(
         JSON.stringify({ error: "Password must be at least 8 characters." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -29,10 +29,13 @@ export const POST: APIRoute = async (context: APIContext) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Failed to change password." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Failed to change password." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
 

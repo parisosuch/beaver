@@ -50,13 +50,41 @@ async function seed() {
 
   // Create channels
   const channelsData = [
-    { name: "sales", projectId: projects[0].id, description: "Track all sales and revenue events" },
-    { name: "errors", projectId: projects[0].id, description: "Monitor application errors and failures" },
-    { name: "signups", projectId: projects[0].id, description: "New user registrations and onboarding events" },
-    { name: "notifications", projectId: projects[0].id, description: "Email and push notification delivery events" },
-    { name: "purchases", projectId: projects[1].id, description: "In-app purchases and transactions" },
-    { name: "crashes", projectId: projects[1].id, description: "Application crash reports and diagnostics" },
-    { name: "analytics", projectId: projects[1].id, description: "User engagement and analytics events" },
+    {
+      name: "sales",
+      projectId: projects[0].id,
+      description: "Track all sales and revenue events",
+    },
+    {
+      name: "errors",
+      projectId: projects[0].id,
+      description: "Monitor application errors and failures",
+    },
+    {
+      name: "signups",
+      projectId: projects[0].id,
+      description: "New user registrations and onboarding events",
+    },
+    {
+      name: "notifications",
+      projectId: projects[0].id,
+      description: "Email and push notification delivery events",
+    },
+    {
+      name: "purchases",
+      projectId: projects[1].id,
+      description: "In-app purchases and transactions",
+    },
+    {
+      name: "crashes",
+      projectId: projects[1].id,
+      description: "Application crash reports and diagnostics",
+    },
+    {
+      name: "analytics",
+      projectId: projects[1].id,
+      description: "User engagement and analytics events",
+    },
   ];
 
   const channelMap: Record<string, { id: number; projectId: number }> = {};
@@ -74,24 +102,63 @@ async function seed() {
   const ecomTemplates = [
     {
       name: "New Sale",
-      descriptions: ["A customer completed a purchase", "Premium subscription purchased", "Flash sale item sold", "Bundle deal completed", "Gift card purchase", "Wholesale order placed", "Repeat customer order"],
+      descriptions: [
+        "A customer completed a purchase",
+        "Premium subscription purchased",
+        "Flash sale item sold",
+        "Bundle deal completed",
+        "Gift card purchase",
+        "Wholesale order placed",
+        "Repeat customer order",
+      ],
       icon: "💰",
       channelName: "sales",
       projectId: projects[0].id,
       tagVariants: [
-        { amount: 99.99, currency: "USD", customer_id: "cust_123", method: "credit_card" },
+        {
+          amount: 99.99,
+          currency: "USD",
+          customer_id: "cust_123",
+          method: "credit_card",
+        },
         { amount: 299.99, currency: "USD", plan: "premium", method: "paypal" },
-        { amount: 49.95, currency: "EUR", customer_id: "cust_456", method: "credit_card" },
-        { amount: 149.00, currency: "USD", plan: "business", method: "stripe" },
-        { amount: 19.99, currency: "GBP", customer_id: "cust_789", method: "apple_pay" },
-        { amount: 599.99, currency: "USD", customer_id: "cust_321", method: "credit_card" },
-        { amount: 74.50, currency: "CAD", plan: "starter", method: "paypal" },
-        { amount: 1249.00, currency: "USD", customer_id: "cust_vip", method: "wire_transfer" },
+        {
+          amount: 49.95,
+          currency: "EUR",
+          customer_id: "cust_456",
+          method: "credit_card",
+        },
+        { amount: 149.0, currency: "USD", plan: "business", method: "stripe" },
+        {
+          amount: 19.99,
+          currency: "GBP",
+          customer_id: "cust_789",
+          method: "apple_pay",
+        },
+        {
+          amount: 599.99,
+          currency: "USD",
+          customer_id: "cust_321",
+          method: "credit_card",
+        },
+        { amount: 74.5, currency: "CAD", plan: "starter", method: "paypal" },
+        {
+          amount: 1249.0,
+          currency: "USD",
+          customer_id: "cust_vip",
+          method: "wire_transfer",
+        },
       ],
     },
     {
       name: "Refund Issued",
-      descriptions: ["Customer requested a full refund", "Partial refund for damaged item", "Subscription cancellation refund", "Return processed and refunded", "Chargeback refund processed"],
+      descriptions: [
+        "Customer requested a full refund",
+        "Partial refund for damaged item",
+        "Subscription cancellation refund",
+        "Return processed and refunded",
+        "Chargeback refund processed",
+      ],
       icon: "💸",
       channelName: "sales",
       projectId: projects[0].id,
@@ -104,26 +171,42 @@ async function seed() {
     },
     {
       name: "Cart Abandoned",
-      descriptions: ["User left items in cart", "Cart expired after 24 hours", "User navigated away during checkout", "Payment page abandoned"],
+      descriptions: [
+        "User left items in cart",
+        "Cart expired after 24 hours",
+        "User navigated away during checkout",
+        "Payment page abandoned",
+      ],
       icon: "🛒",
       channelName: "sales",
       projectId: projects[0].id,
       tagVariants: [
         { cart_value: 89.99, items: 3, stage: "payment" },
-        { cart_value: 249.00, items: 1, stage: "shipping" },
-        { cart_value: 34.50, items: 2, stage: "review" },
+        { cart_value: 249.0, items: 1, stage: "shipping" },
+        { cart_value: 34.5, items: 2, stage: "review" },
         { cart_value: 599.99, items: 5, stage: "login" },
       ],
     },
     {
       name: "Payment Error",
-      descriptions: ["Credit card declined", "Insufficient funds", "Payment gateway timeout", "Currency conversion failed", "3D Secure verification failed", "Card expired"],
+      descriptions: [
+        "Credit card declined",
+        "Insufficient funds",
+        "Payment gateway timeout",
+        "Currency conversion failed",
+        "3D Secure verification failed",
+        "Card expired",
+      ],
       icon: "❌",
       channelName: "errors",
       projectId: projects[0].id,
       tagVariants: [
         { error_code: "card_declined", retryable: true, gateway: "stripe" },
-        { error_code: "insufficient_funds", retryable: false, gateway: "stripe" },
+        {
+          error_code: "insufficient_funds",
+          retryable: false,
+          gateway: "stripe",
+        },
         { error_code: "gateway_timeout", retryable: true, gateway: "paypal" },
         { error_code: "currency_error", retryable: true, gateway: "adyen" },
         { error_code: "3ds_failed", retryable: true, gateway: "stripe" },
@@ -133,7 +216,14 @@ async function seed() {
     },
     {
       name: "API Error",
-      descriptions: ["Internal server error on /api/checkout", "Database connection timeout", "Rate limit exceeded", "Authentication token expired", "Invalid request payload", "Service unavailable"],
+      descriptions: [
+        "Internal server error on /api/checkout",
+        "Database connection timeout",
+        "Rate limit exceeded",
+        "Authentication token expired",
+        "Invalid request payload",
+        "Service unavailable",
+      ],
       icon: "🔥",
       channelName: "errors",
       projectId: projects[0].id,
@@ -148,7 +238,12 @@ async function seed() {
     },
     {
       name: "Validation Error",
-      descriptions: ["Invalid email format", "Password too short", "Missing required field", "Invalid phone number"],
+      descriptions: [
+        "Invalid email format",
+        "Password too short",
+        "Missing required field",
+        "Invalid phone number",
+      ],
       icon: "⚠️",
       channelName: "errors",
       projectId: projects[0].id,
@@ -161,7 +256,14 @@ async function seed() {
     },
     {
       name: "User Signup",
-      descriptions: ["New user registered via Google OAuth", "New user registered via email", "New user registered via GitHub", "New user registered via Apple ID", "New user via referral link", "New user from marketing campaign"],
+      descriptions: [
+        "New user registered via Google OAuth",
+        "New user registered via email",
+        "New user registered via GitHub",
+        "New user registered via Apple ID",
+        "New user via referral link",
+        "New user from marketing campaign",
+      ],
       icon: "👤",
       channelName: "signups",
       projectId: projects[0].id,
@@ -178,7 +280,11 @@ async function seed() {
     },
     {
       name: "Account Deleted",
-      descriptions: ["User requested account deletion", "Account removed due to inactivity", "GDPR deletion request processed"],
+      descriptions: [
+        "User requested account deletion",
+        "Account removed due to inactivity",
+        "GDPR deletion request processed",
+      ],
       icon: "🗑️",
       channelName: "signups",
       projectId: projects[0].id,
@@ -190,22 +296,51 @@ async function seed() {
     },
     {
       name: "Email Sent",
-      descriptions: ["Welcome email delivered", "Password reset email sent", "Order confirmation email sent", "Shipping notification sent", "Weekly digest delivered", "Promotional campaign sent"],
+      descriptions: [
+        "Welcome email delivered",
+        "Password reset email sent",
+        "Order confirmation email sent",
+        "Shipping notification sent",
+        "Weekly digest delivered",
+        "Promotional campaign sent",
+      ],
       icon: "📧",
       channelName: "notifications",
       projectId: projects[0].id,
       tagVariants: [
         { template: "welcome", provider: "sendgrid", status: "delivered" },
-        { template: "password_reset", provider: "sendgrid", status: "delivered" },
-        { template: "order_confirmation", provider: "ses", status: "delivered" },
+        {
+          template: "password_reset",
+          provider: "sendgrid",
+          status: "delivered",
+        },
+        {
+          template: "order_confirmation",
+          provider: "ses",
+          status: "delivered",
+        },
         { template: "shipping_update", provider: "ses", status: "bounced" },
-        { template: "weekly_digest", provider: "sendgrid", status: "delivered" },
-        { template: "promo_campaign", provider: "mailchimp", status: "delivered" },
+        {
+          template: "weekly_digest",
+          provider: "sendgrid",
+          status: "delivered",
+        },
+        {
+          template: "promo_campaign",
+          provider: "mailchimp",
+          status: "delivered",
+        },
       ],
     },
     {
       name: "Push Notification",
-      descriptions: ["Flash sale alert sent", "Order status update pushed", "Price drop notification", "Cart abandonment reminder", "New feature announcement"],
+      descriptions: [
+        "Flash sale alert sent",
+        "Order status update pushed",
+        "Price drop notification",
+        "Cart abandonment reminder",
+        "New feature announcement",
+      ],
       icon: "🔔",
       channelName: "notifications",
       projectId: projects[0].id,
@@ -222,7 +357,14 @@ async function seed() {
   const mobileTemplates = [
     {
       name: "In-App Purchase",
-      descriptions: ["User bought premium features", "Coin pack purchased", "Ad-free upgrade bought", "Season pass activated", "Extra storage purchased", "Custom theme unlocked"],
+      descriptions: [
+        "User bought premium features",
+        "Coin pack purchased",
+        "Ad-free upgrade bought",
+        "Season pass activated",
+        "Extra storage purchased",
+        "Custom theme unlocked",
+      ],
       icon: "🛒",
       channelName: "purchases",
       projectId: projects[1].id,
@@ -239,7 +381,13 @@ async function seed() {
     },
     {
       name: "Subscription Renewed",
-      descriptions: ["Monthly subscription auto-renewed", "Annual plan renewed", "Family plan renewed", "Student plan renewed", "Trial converted to paid"],
+      descriptions: [
+        "Monthly subscription auto-renewed",
+        "Annual plan renewed",
+        "Family plan renewed",
+        "Student plan renewed",
+        "Trial converted to paid",
+      ],
       icon: "🔄",
       channelName: "purchases",
       projectId: projects[1].id,
@@ -253,7 +401,11 @@ async function seed() {
     },
     {
       name: "Subscription Cancelled",
-      descriptions: ["User cancelled monthly plan", "Annual plan not renewed", "Downgraded to free tier"],
+      descriptions: [
+        "User cancelled monthly plan",
+        "Annual plan not renewed",
+        "Downgraded to free tier",
+      ],
       icon: "📉",
       channelName: "purchases",
       projectId: projects[1].id,
@@ -265,14 +417,26 @@ async function seed() {
     },
     {
       name: "App Crash",
-      descriptions: ["Crash in checkout flow", "Crash on app launch", "Crash during media upload", "Crash in settings screen", "Crash during sync", "Out of memory crash", "Null pointer exception"],
+      descriptions: [
+        "Crash in checkout flow",
+        "Crash on app launch",
+        "Crash during media upload",
+        "Crash in settings screen",
+        "Crash during sync",
+        "Out of memory crash",
+        "Null pointer exception",
+      ],
       icon: "💥",
       channelName: "crashes",
       projectId: projects[1].id,
       tagVariants: [
         { screen: "checkout", os_version: "iOS 17.2", app_version: "2.1.0" },
         { screen: "launch", os_version: "Android 14", app_version: "2.1.0" },
-        { screen: "media_upload", os_version: "iOS 17.1", app_version: "2.0.9" },
+        {
+          screen: "media_upload",
+          os_version: "iOS 17.1",
+          app_version: "2.0.9",
+        },
         { screen: "settings", os_version: "Android 13", app_version: "2.1.0" },
         { screen: "sync", os_version: "iOS 16.5", app_version: "2.0.8" },
         { screen: "feed", os_version: "Android 14", app_version: "2.1.1" },
@@ -281,7 +445,12 @@ async function seed() {
     },
     {
       name: "ANR Detected",
-      descriptions: ["Application not responding on main thread", "ANR during database query", "ANR on network request", "UI thread blocked by heavy computation"],
+      descriptions: [
+        "Application not responding on main thread",
+        "ANR during database query",
+        "ANR on network request",
+        "UI thread blocked by heavy computation",
+      ],
       icon: "🐌",
       channelName: "crashes",
       projectId: projects[1].id,
@@ -294,7 +463,14 @@ async function seed() {
     },
     {
       name: "Screen View",
-      descriptions: ["User viewed home screen", "User viewed profile page", "User viewed search results", "User viewed product detail", "User viewed settings", "User viewed notifications"],
+      descriptions: [
+        "User viewed home screen",
+        "User viewed profile page",
+        "User viewed search results",
+        "User viewed product detail",
+        "User viewed settings",
+        "User viewed notifications",
+      ],
       icon: "👁",
       channelName: "analytics",
       projectId: projects[1].id,
@@ -302,14 +478,29 @@ async function seed() {
         { screen: "home", session_id: "sess_001", platform: "ios" },
         { screen: "profile", session_id: "sess_002", platform: "android" },
         { screen: "search", session_id: "sess_003", platform: "ios" },
-        { screen: "product_detail", session_id: "sess_004", platform: "android" },
+        {
+          screen: "product_detail",
+          session_id: "sess_004",
+          platform: "android",
+        },
         { screen: "settings", session_id: "sess_005", platform: "ios" },
-        { screen: "notifications", session_id: "sess_006", platform: "android" },
+        {
+          screen: "notifications",
+          session_id: "sess_006",
+          platform: "android",
+        },
       ],
     },
     {
       name: "Feature Used",
-      descriptions: ["User used dark mode toggle", "User exported data", "User shared content", "User used barcode scanner", "User enabled notifications", "User customized dashboard"],
+      descriptions: [
+        "User used dark mode toggle",
+        "User exported data",
+        "User shared content",
+        "User used barcode scanner",
+        "User enabled notifications",
+        "User customized dashboard",
+      ],
       icon: "⚡",
       channelName: "analytics",
       projectId: projects[1].id,
@@ -324,7 +515,13 @@ async function seed() {
     },
     {
       name: "Session Started",
-      descriptions: ["New app session began", "User returned after background", "Cold start session", "Session from push notification", "Session from deep link"],
+      descriptions: [
+        "New app session began",
+        "User returned after background",
+        "Cold start session",
+        "Session from push notification",
+        "Session from deep link",
+      ],
       icon: "🚀",
       channelName: "analytics",
       projectId: projects[1].id,
@@ -338,7 +535,12 @@ async function seed() {
     },
     {
       name: "User Feedback",
-      descriptions: ["User submitted app rating", "Bug report submitted", "Feature request sent", "Support ticket opened"],
+      descriptions: [
+        "User submitted app rating",
+        "Bug report submitted",
+        "Feature request sent",
+        "Support ticket opened",
+      ],
       icon: "💬",
       channelName: "analytics",
       projectId: projects[1].id,
@@ -367,7 +569,9 @@ async function seed() {
     const tagIndex = i % template.tagVariants.length;
 
     // Spread timestamps across last 30 days (newest first)
-    const ageMs = Math.floor((i / totalEvents) * thirtyDaysMs + Math.random() * 3600000);
+    const ageMs = Math.floor(
+      (i / totalEvents) * thirtyDaysMs + Math.random() * 3600000,
+    );
     const createdAt = new Date(now - ageMs);
 
     const channelKey = `${template.projectId}-${template.channelName}`;

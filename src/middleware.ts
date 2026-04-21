@@ -32,7 +32,9 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
-async function getAuthedRedirect(context: Parameters<Parameters<typeof defineMiddleware>[0]>[0]): Promise<string | null> {
+async function getAuthedRedirect(
+  context: Parameters<Parameters<typeof defineMiddleware>[0]>[0],
+): Promise<string | null> {
   const refreshToken = context.cookies.get("refresh_token")?.value;
   if (!refreshToken) return null;
 

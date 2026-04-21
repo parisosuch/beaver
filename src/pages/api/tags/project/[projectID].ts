@@ -1,10 +1,6 @@
 import { getProjectAvailableTags } from "@/lib/beaver/tags";
 
-export async function GET({
-  params,
-}: {
-  params: { projectID: string };
-}) {
+export async function GET({ params }: { params: { projectID: string } }) {
   try {
     const tags = await getProjectAvailableTags(parseInt(params.projectID));
     return new Response(JSON.stringify(tags), {
@@ -23,7 +19,7 @@ export async function GET({
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 }

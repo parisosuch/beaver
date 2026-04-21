@@ -36,15 +36,39 @@ interface EventFilterDialogProps {
   currentStartDate: string | null;
   currentEndDate: string | null;
   currentTags: TagFilter[];
-  onApplyFilters: (startDate: string | null, endDate: string | null, tags: TagFilter[]) => void;
+  onApplyFilters: (
+    startDate: string | null,
+    endDate: string | null,
+    tags: TagFilter[],
+  ) => void;
 }
 
 const timePresets = [
-  { label: "Last hour", value: "1h" as const, getDates: () => ({ start: subHours(new Date(), 1), end: new Date() }) },
-  { label: "Last day", value: "day" as const, getDates: () => ({ start: subDays(new Date(), 1), end: new Date() }) },
-  { label: "Last week", value: "week" as const, getDates: () => ({ start: subWeeks(new Date(), 1), end: new Date() }) },
-  { label: "Last month", value: "month" as const, getDates: () => ({ start: subMonths(new Date(), 1), end: new Date() }) },
-  { label: "Last year", value: "year" as const, getDates: () => ({ start: subYears(new Date(), 1), end: new Date() }) },
+  {
+    label: "Last hour",
+    value: "1h" as const,
+    getDates: () => ({ start: subHours(new Date(), 1), end: new Date() }),
+  },
+  {
+    label: "Last day",
+    value: "day" as const,
+    getDates: () => ({ start: subDays(new Date(), 1), end: new Date() }),
+  },
+  {
+    label: "Last week",
+    value: "week" as const,
+    getDates: () => ({ start: subWeeks(new Date(), 1), end: new Date() }),
+  },
+  {
+    label: "Last month",
+    value: "month" as const,
+    getDates: () => ({ start: subMonths(new Date(), 1), end: new Date() }),
+  },
+  {
+    label: "Last year",
+    value: "year" as const,
+    getDates: () => ({ start: subYears(new Date(), 1), end: new Date() }),
+  },
 ];
 
 export default function EventFilterDialog({
@@ -58,10 +82,10 @@ export default function EventFilterDialog({
 }: EventFilterDialogProps) {
   const [open, setOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(
-    currentStartDate ? new Date(currentStartDate) : undefined
+    currentStartDate ? new Date(currentStartDate) : undefined,
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
-    currentEndDate ? new Date(currentEndDate) : undefined
+    currentEndDate ? new Date(currentEndDate) : undefined,
   );
   const [tags, setTags] = useState<TagFilter[]>(currentTags);
   const [availableTags, setAvailableTags] = useState<AvailableTag[]>([]);
@@ -102,7 +126,9 @@ export default function EventFilterDialog({
     }
   };
 
-  const handleTimePresetSelect = (preset: typeof timePresets[number]["value"]) => {
+  const handleTimePresetSelect = (
+    preset: (typeof timePresets)[number]["value"],
+  ) => {
     const presetConfig = timePresets.find((p) => p.value === preset);
     if (presetConfig) {
       const { start, end } = presetConfig.getDates();
@@ -122,7 +148,7 @@ export default function EventFilterDialog({
     onApplyFilters(
       startDate ? startDate.toISOString() : null,
       endDate ? endDate.toISOString() : null,
-      tags
+      tags,
     );
     setOpen(false);
   };
@@ -131,8 +157,10 @@ export default function EventFilterDialog({
     setTags(tags.filter((_, i) => i !== index));
   };
 
-  const hasActiveFilters = currentStartDate || currentEndDate || currentTags.length > 0;
-  const filterCount = (currentStartDate || currentEndDate ? 1 : 0) + currentTags.length;
+  const hasActiveFilters =
+    currentStartDate || currentEndDate || currentTags.length > 0;
+  const filterCount =
+    (currentStartDate || currentEndDate ? 1 : 0) + currentTags.length;
 
   // Check if a preset matches current dates
   const getActivePreset = () => {
@@ -181,7 +209,9 @@ export default function EventFilterDialog({
               {timePresets.map((preset) => (
                 <Button
                   key={preset.value}
-                  variant={activePreset === preset.value ? "default" : "outline"}
+                  variant={
+                    activePreset === preset.value ? "default" : "outline"
+                  }
                   size="sm"
                   onClick={() => handleTimePresetSelect(preset.value)}
                 >
@@ -251,7 +281,9 @@ export default function EventFilterDialog({
                     onValueChange={(value) => {
                       if (selectedTagKey && value) {
                         // Add the tag filter if not already present
-                        const exists = tags.some(t => t.key === selectedTagKey && t.value === value);
+                        const exists = tags.some(
+                          (t) => t.key === selectedTagKey && t.value === value,
+                        );
                         if (!exists) {
                           setTags([...tags, { key: selectedTagKey, value }]);
                         }
@@ -261,7 +293,13 @@ export default function EventFilterDialog({
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder={selectedTagKey ? "Select value..." : "Select key first"} />
+                      <SelectValue
+                        placeholder={
+                          selectedTagKey
+                            ? "Select value..."
+                            : "Select key first"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {selectedTagKey &&

@@ -96,9 +96,12 @@ function Badge({
   variant?: "default" | "success" | "warning" | "info";
 }) {
   const variants = {
-    default: "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10",
-    success: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
-    warning: "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
+    default:
+      "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10",
+    success:
+      "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
+    warning:
+      "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
     info: "bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
   };
 
@@ -212,7 +215,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             </p>
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">Base URL</span>
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  Base URL
+                </span>
               </div>
               <code className="text-lg font-mono text-blue-900 dark:text-blue-300 bg-white/60 dark:bg-white/10 px-3 py-1.5 rounded-lg">
                 {baseUrl}/api
@@ -322,7 +327,10 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                       <Badge variant="success">Yes</Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      Must be <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">application/json</code>
+                      Must be{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">
+                        application/json
+                      </code>
                     </td>
                   </tr>
                 </tbody>
@@ -361,7 +369,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         name
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      string
+                    </td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
@@ -375,7 +385,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         channel
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      string
+                    </td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
@@ -389,7 +401,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         description
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      string
+                    </td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
@@ -403,7 +417,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         icon
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      string
+                    </td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
@@ -417,7 +433,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         tags
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">object</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      object
+                    </td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>

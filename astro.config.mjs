@@ -9,7 +9,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   prefetch: true,
   output: "server",
-  adapter: node({mode: "standalone"}),
+  adapter: node({ mode: "standalone" }),
   vite: {
     plugins: [tailwindcss()],
   },
