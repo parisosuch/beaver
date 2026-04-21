@@ -39,6 +39,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       userId: user.id,
       userName: user.userName,
       isAdmin: user.isAdmin,
+      mustChangePassword: user.mustChangePassword,
     };
 
     const accessToken = await createAccessToken(payload);
@@ -64,6 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           id: user.id,
           userName: user.userName,
           isAdmin: user.isAdmin,
+          mustChangePassword: user.mustChangePassword,
         },
       }),
       {

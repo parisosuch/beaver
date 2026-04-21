@@ -40,6 +40,7 @@ import {
   MenuIcon,
   PlusIcon,
   Settings,
+  UsersIcon,
   XIcon,
 } from "lucide-react";
 import { useAuth, UserProvider } from "../context/user-context";
@@ -730,6 +731,11 @@ function PanelContent({
         <a className={isApiDocsActive() ? activeNavCss : navCss} href={`/dashboard/${project.id}/api-docs`} onClick={() => onNavigate?.()}>
           <BookOpenIcon size={20} /><p>API Docs</p>
         </a>
+        {user?.isAdmin && (
+          <a className={pathname === "/admin/users" ? activeNavCss : navCss} href="/admin/users" onClick={() => onNavigate?.()}>
+            <UsersIcon size={20} /><p>Users</p>
+          </a>
+        )}
       </div>
 
       {/* Channels header */}

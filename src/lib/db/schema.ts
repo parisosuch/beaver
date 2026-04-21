@@ -80,10 +80,11 @@ export const eventTags = sqliteTable("event_tags", {
 // --- USER ----
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   userName: text("username").notNull(),
   password: text("password").notNull(),
+  mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
+  tempPassword: text("temp_password"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
