@@ -72,3 +72,12 @@ export async function deleteProject(projectId: number) {
 
   return res[0];
 }
+
+export async function rotateApiKey(projectId: number): Promise<string> {
+  const newKey = crypto.randomUUID();
+  await db
+    .update(projects)
+    .set({ apiKey: newKey })
+    .where(eq(projects.id, projectId));
+  return newKey;
+}

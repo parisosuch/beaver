@@ -14,6 +14,12 @@ import { Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Label } from "./ui/label";
 import type { Project } from "@/lib/beaver/project";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 export default function ChannelSettings({
   channels,
@@ -73,7 +79,7 @@ export default function ChannelSettings({
   }, []);
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       {clientChannels.map((channel) => (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen} key={channel.id}>
           <div className="rounded border p-2 md:p-4 mt-4 flex justify-between items-center">
@@ -92,9 +98,16 @@ export default function ChannelSettings({
               <p className="font-light text-xs">{channel.description}</p>
             </div>
             <div>
-              <DialogTrigger asChild>
-                <Trash2Icon className="hover:cursor-pointer" />
-              </DialogTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <button className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2Icon size={15} />
+                    </button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Delete channel</TooltipContent>
+              </Tooltip>
             </div>
           </div>
           {/* Delete channel dialog */}
@@ -136,6 +149,6 @@ export default function ChannelSettings({
           </DialogContent>
         </Dialog>
       ))}
-    </>
+    </TooltipProvider>
   );
 }
