@@ -58,6 +58,107 @@ function TempPasswordCell({ tempPassword }: { tempPassword: string }) {
   );
 }
 
+function UserRoleBadge({ isAdmin }: { isAdmin: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+        isAdmin
+          ? "bg-primary/10 text-primary"
+          : "bg-muted text-muted-foreground"
+      }`}
+    >
+      {isAdmin ? "Admin" : "User"}
+    </span>
+  );
+}
+
+function UserActions({
+  user,
+  currentUserId,
+  onToggleCanCreateProjects,
+  onToggleAdmin,
+  onReset,
+  onDelete,
+}: {
+  user: User;
+  currentUserId: number;
+  onToggleCanCreateProjects: (id: number, val: boolean) => void;
+  onToggleAdmin: (id: number, val: boolean) => void;
+  onReset: (user: User) => void;
+  onDelete: (user: User) => void;
+}) {
+  return (
+    <>
+      {user.id !== currentUserId && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() =>
+                onToggleCanCreateProjects(user.id, !user.canCreateProjects)
+              }
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {user.canCreateProjects ? (
+                <FolderPlusIcon size={15} />
+              ) : (
+                <FolderIcon size={15} />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {user.canCreateProjects
+              ? "Revoke project creation"
+              : "Allow project creation"}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {user.id !== currentUserId && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => onToggleAdmin(user.id, !user.isAdmin)}
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {user.isAdmin ? (
+                <ShieldOffIcon size={15} />
+              ) : (
+                <ShieldIcon size={15} />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {user.isAdmin ? "Remove admin" : "Make admin"}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onReset(user)}
+            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <RefreshCwIcon size={15} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Reset password</TooltipContent>
+      </Tooltip>
+      {user.id !== currentUserId && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => onDelete(user)}
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2Icon size={15} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Delete user</TooltipContent>
+        </Tooltip>
+      )}
+    </>
+  );
+}
+
 export default function AdminUsersView({
   initialUsers,
   currentUserId,
@@ -186,7 +287,7 @@ export default function AdminUsersView({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background text-foreground">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
           {/* Header */}
           <div className="mb-8">
             <a
@@ -261,8 +362,8 @@ export default function AdminUsersView({
             </div>
           </div>
 
-          {/* User table */}
-          <div className="border rounded-lg overflow-hidden">
+          {/* Desktop table */}
+          <div className="hidden md:block border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40">
@@ -288,15 +389,7 @@ export default function AdminUsersView({
                   >
                     <td className="px-4 py-3 font-mono">@{user.userName}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                          user.isAdmin
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {user.isAdmin ? "Admin" : "User"}
-                      </span>
+                      <UserRoleBadge isAdmin={user.isAdmin} />
                     </td>
                     <td className="px-4 py-3">
                       {user.tempPassword ? (
@@ -307,83 +400,54 @@ export default function AdminUsersView({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {user.id !== currentUserId && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() =>
-                                  handleToggleCanCreateProjects(
-                                    user.id,
-                                    !user.canCreateProjects,
-                                  )
-                                }
-                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                {user.canCreateProjects ? (
-                                  <FolderPlusIcon size={15} />
-                                ) : (
-                                  <FolderIcon size={15} />
-                                )}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {user.canCreateProjects
-                                ? "Revoke project creation"
-                                : "Allow project creation"}
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        {user.id !== currentUserId && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() =>
-                                  handleToggleAdmin(user.id, !user.isAdmin)
-                                }
-                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                {user.isAdmin ? (
-                                  <ShieldOffIcon size={15} />
-                                ) : (
-                                  <ShieldIcon size={15} />
-                                )}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {user.isAdmin ? "Remove admin" : "Make admin"}
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => setResetTarget(user)}
-                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <RefreshCwIcon size={15} />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Reset password</TooltipContent>
-                        </Tooltip>
-                        {user.id !== currentUserId && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => setDeleteTarget(user)}
-                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
-                              >
-                                <Trash2Icon size={15} />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>Delete user</TooltipContent>
-                          </Tooltip>
-                        )}
+                        <UserActions
+                          user={user}
+                          currentUserId={currentUserId}
+                          onToggleCanCreateProjects={
+                            handleToggleCanCreateProjects
+                          }
+                          onToggleAdmin={handleToggleAdmin}
+                          onReset={setResetTarget}
+                          onDelete={setDeleteTarget}
+                        />
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden flex flex-col gap-3">
+            {users.map((user) => (
+              <div key={user.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-medium">
+                    @{user.userName}
+                  </span>
+                  <UserRoleBadge isAdmin={user.isAdmin} />
+                </div>
+                {user.tempPassword && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Temp password
+                    </p>
+                    <TempPasswordCell tempPassword={user.tempPassword} />
+                  </div>
+                )}
+                <div className="flex items-center justify-end gap-1 pt-1 border-t">
+                  <UserActions
+                    user={user}
+                    currentUserId={currentUserId}
+                    onToggleCanCreateProjects={handleToggleCanCreateProjects}
+                    onToggleAdmin={handleToggleAdmin}
+                    onReset={setResetTarget}
+                    onDelete={setDeleteTarget}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
