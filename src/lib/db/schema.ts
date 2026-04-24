@@ -1,5 +1,5 @@
 // src/db/schema.ts
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 // ---- PROJECTS ----
@@ -16,66 +16,103 @@ export const projects = sqliteTable("projects", {
 });
 
 // ---- CHANNEL GROUPS ----
-export const channelGroups = sqliteTable("channel_groups", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  projectId: integer("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
-  order: integer("order").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .default(sql`(unixepoch() * 1000)`)
-    .notNull(),
-});
+export const channelGroups = sqliteTable(
+  "channel_groups",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    order: integer("order").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index("channel_groups_project_id_idx").on(table.projectId),
+  }),
+);
 
 // ---- CHANNELS ----
-export const channels = sqliteTable("channels", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  description: text("description"),
-  projectId: integer("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
-  groupId: integer("group_id").references(() => channelGroups.id),
-  order: integer("order").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .default(sql`(unixepoch() * 1000)`)
-    .notNull(),
-});
+export const channels = sqliteTable(
+  "channels",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    description: text("description"),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    groupId: integer("group_id").references(() => channelGroups.id),
+    order: integer("order").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index("channels_project_id_idx").on(table.projectId),
+    nameIdx: index("channels_name_idx").on(table.name),
+  }),
+);
 
 // ---- EVENTS ----
-export const events = sqliteTable("events", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  description: text("description"),
-  icon: text("icon"),
-  projectId: integer("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
-  channelId: integer("channel_id")
-    .notNull()
-    .references(() => channels.id, { onDelete: "cascade" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .default(sql`(unixepoch() * 1000)`)
-    .notNull(),
-});
+export const events = sqliteTable(
+  "events",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    description: text("description"),
+    icon: text("icon"),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    channelCreatedAtIdx: index("events_channel_id_created_at_idx").on(
+      table.channelId,
+      table.createdAt,
+    ),
+    projectCreatedAtIdx: index("events_project_id_created_at_idx").on(
+      table.projectId,
+      table.createdAt,
+    ),
+  }),
+);
 
 // --- EVENT TAGS ---
-export const eventTags = sqliteTable("event_tags", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const eventTags = sqliteTable(
+  "event_tags",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
 
-  eventId: integer("event_id")
-    .notNull()
-    .references(() => events.id, { onDelete: "cascade" }),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
 
-  key: text("key").notNull(),
+    key: text("key").notNull(),
 
-  value: text("value").notNull(),
+    value: text("value").notNull(),
 
-  type: text("type", {
-    enum: ["string", "number", "boolean"],
-  }).notNull(),
-});
+    type: text("type", {
+      enum: ["string", "number", "boolean"],
+    }).notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index("event_tags_event_id_idx").on(table.eventId),
+    eventIdKeyValueIdx: index("event_tags_event_id_key_value_idx").on(
+      table.eventId,
+      table.key,
+      table.value,
+    ),
+  }),
+);
 
 // --- USER ----
 export const users = sqliteTable("users", {
@@ -96,21 +133,31 @@ export const users = sqliteTable("users", {
 });
 
 // --- PROJECT MEMBERS ---
-export const projectMembers = sqliteTable("project_members", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  projectId: integer("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  role: text("role", { enum: ["owner", "maintainer", "guest"] })
-    .notNull()
-    .default("guest"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .default(sql`(unixepoch() * 1000)`)
-    .notNull(),
-});
+export const projectMembers = sqliteTable(
+  "project_members",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["owner", "maintainer", "guest"] })
+      .notNull()
+      .default("guest"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    projectUserIdx: index("project_members_project_id_user_id_idx").on(
+      table.projectId,
+      table.userId,
+    ),
+    userIdIdx: index("project_members_user_id_idx").on(table.userId),
+  }),
+);
 
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
