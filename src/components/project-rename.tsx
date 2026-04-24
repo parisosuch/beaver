@@ -3,6 +3,12 @@ import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 export default function ProjectRename({ project }: { project: Project }) {
   const [editing, setEditing] = useState(false);
@@ -89,14 +95,21 @@ export default function ProjectRename({ project }: { project: Project }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <p>{project.name}</p>
-      <button
-        onClick={() => setEditing(true)}
-        className="hover:cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Pencil size={14} />
-      </button>
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex items-center gap-2">
+        <p>{project.name}</p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => setEditing(true)}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Pencil size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Rename project</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -4,6 +4,7 @@ import {
   deleteProject,
   getProject,
   renameProject,
+  rotateApiKey,
 } from "@/lib/beaver/project";
 import {
   getUserProjectRole,
@@ -197,6 +198,59 @@ export const DELETE: APIRoute = async (context: APIContext) => {
     );
 
     return new Response(JSON.stringify({ projects: remainingProjects }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+};
+
+export const PUT: APIRoute = async (context: APIContext) => {
+  if (!context.locals.user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const { projectID } = await context.request.json();
+
+    if (!projectID) {
+      return new Response(JSON.stringify({ error: "projectID is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const role = await getUserProjectRole(
+      parseInt(projectID),
+      context.locals.user.id,
+    );
+    if (!context.locals.user.isAdmin && role !== "owner") {
+      return new Response(
+        JSON.stringify({
+          error: "Only the project owner can rotate the API key.",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const newKey = await rotateApiKey(parseInt(projectID));
+    return new Response(JSON.stringify({ apiKey: newKey }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
