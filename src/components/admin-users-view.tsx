@@ -20,6 +20,8 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   ClipboardIcon,
+  FolderIcon,
+  FolderPlusIcon,
   PlusIcon,
   RefreshCwIcon,
   ShieldIcon,
@@ -70,6 +72,7 @@ export default function AdminUsersView({
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+  const [newCanCreateProjects, setNewCanCreateProjects] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -89,7 +92,10 @@ export default function AdminUsersView({
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userName: newUsername.trim() }),
+        body: JSON.stringify({
+          userName: newUsername.trim(),
+          canCreateProjects: newCanCreateProjects,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -98,6 +104,7 @@ export default function AdminUsersView({
       }
       setUsers((prev) => [...prev, data]);
       setNewUsername("");
+      setNewCanCreateProjects(false);
       setCreateOpen(false);
     } finally {
       setCreating(false);
@@ -131,6 +138,22 @@ export default function AdminUsersView({
     if (res.ok) {
       setUsers((prev) =>
         prev.map((u) => (u.id === id ? { ...u, isAdmin } : u)),
+      );
+    }
+  };
+
+  const handleToggleCanCreateProjects = async (
+    id: number,
+    canCreateProjects: boolean,
+  ) => {
+    const res = await fetch("/api/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, canCreateProjects }),
+    });
+    if (res.ok) {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, canCreateProjects } : u)),
       );
     }
   };
@@ -203,6 +226,20 @@ export default function AdminUsersView({
                         required
                       />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="canCreateProjects"
+                        checked={newCanCreateProjects}
+                        onChange={(e) =>
+                          setNewCanCreateProjects(e.target.checked)
+                        }
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="canCreateProjects">
+                        Can create projects
+                      </Label>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       A temporary password will be generated. Share it with the
                       user — they'll be prompted to set a new one on first
@@ -270,6 +307,32 @@ export default function AdminUsersView({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {user.id !== currentUserId && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() =>
+                                  handleToggleCanCreateProjects(
+                                    user.id,
+                                    !user.canCreateProjects,
+                                  )
+                                }
+                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                {user.canCreateProjects ? (
+                                  <FolderPlusIcon size={15} />
+                                ) : (
+                                  <FolderIcon size={15} />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {user.canCreateProjects
+                                ? "Revoke project creation"
+                                : "Allow project creation"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                         {user.id !== currentUserId && (
                           <Tooltip>
                             <TooltipTrigger asChild>

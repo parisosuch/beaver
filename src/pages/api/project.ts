@@ -1,44 +1,72 @@
-import type { APIRoute } from "astro";
+import type { APIContext, APIRoute } from "astro";
 import {
   createProject,
   deleteProject,
   getProject,
-  getProjects,
-  getProjectsByOwner,
   renameProject,
 } from "@/lib/beaver/project";
+import {
+  getUserProjectRole,
+  getProjectsForUser,
+} from "@/lib/beaver/project-member";
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async (context: APIContext) => {
+  if (!context.locals.user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const projects = await getProjects();
+    const projects = context.locals.user.isAdmin
+      ? await (await import("@/lib/beaver/project")).getProjects()
+      : await getProjectsForUser(context.locals.user.id);
 
     return new Response(JSON.stringify(projects), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    if (err instanceof Error) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    console.error(err);
     return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
-  try {
-    const { name, ownerId } = await request.json();
+export const POST: APIRoute = async (context: APIContext) => {
+  if (!context.locals.user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-    const project = await createProject(name, crypto.randomUUID(), ownerId);
+  if (!context.locals.user.isAdmin && !context.locals.user.canCreateProjects) {
+    return new Response(
+      JSON.stringify({
+        error: "You do not have permission to create projects.",
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  try {
+    const { name } = await context.request.json();
+
+    if (!name?.trim()) {
+      return new Response(JSON.stringify({ error: "name is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const project = await createProject(
+      name.trim(),
+      crypto.randomUUID(),
+      context.locals.user.id,
+    );
 
     return new Response(JSON.stringify(project), {
       status: 200,
@@ -51,20 +79,23 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    console.error(err);
     return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 };
 
-export const PATCH: APIRoute = async ({ request, locals }) => {
+export const PATCH: APIRoute = async (context: APIContext) => {
+  if (!context.locals.user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const { projectID, name } = await request.json();
+    const { projectID, name } = await context.request.json();
 
     if (!projectID || !name?.trim()) {
       return new Response(
@@ -74,7 +105,6 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     }
 
     const project = await getProject(parseInt(projectID));
-
     if (!project) {
       return new Response(JSON.stringify({ error: "Project not found." }), {
         status: 404,
@@ -82,15 +112,18 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    if (project.ownerId !== locals.user!.id) {
+    const role = await getUserProjectRole(
+      parseInt(projectID),
+      context.locals.user.id,
+    );
+    if (!context.locals.user.isAdmin && role !== "owner") {
       return new Response(
-        JSON.stringify({ error: "You do not own this project." }),
+        JSON.stringify({ error: "Only the project owner can rename it." }),
         { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 
     const updated = await renameProject(parseInt(projectID), name.trim());
-
     return new Response(JSON.stringify(updated), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -102,20 +135,23 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    console.error(err);
     return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 };
 
-export const DELETE: APIRoute = async ({ request, locals }) => {
+export const DELETE: APIRoute = async (context: APIContext) => {
+  if (!context.locals.user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const { projectID } = await request.json();
+    const { projectID } = await context.request.json();
 
     if (!projectID) {
       return new Response(JSON.stringify({ error: "projectID is required." }), {
@@ -125,7 +161,6 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     }
 
     const project = await getProject(parseInt(projectID));
-
     if (!project) {
       return new Response(JSON.stringify({ error: "Project not found." }), {
         status: 404,
@@ -133,15 +168,18 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    if (project.ownerId !== locals.user!.id) {
+    const role = await getUserProjectRole(
+      parseInt(projectID),
+      context.locals.user.id,
+    );
+    if (!context.locals.user.isAdmin && role !== "owner") {
       return new Response(
-        JSON.stringify({ error: "You do not own this project." }),
+        JSON.stringify({ error: "Only the project owner can delete it." }),
         { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 
-    const userProjects = await getProjectsByOwner(locals.user!.id);
-
+    const userProjects = await getProjectsForUser(context.locals.user.id);
     if (userProjects.length <= 1) {
       return new Response(
         JSON.stringify({
@@ -169,13 +207,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    console.error(err);
     return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: "An unknown error has occurred." }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 };

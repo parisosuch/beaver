@@ -126,6 +126,7 @@ function SortableGroup({
   onNavigate,
   channelItems,
   dimChannels,
+  canEdit,
 }: {
   group: ChannelGroupWithChannels;
   collapsed: boolean;
@@ -138,6 +139,7 @@ function SortableGroup({
   onNavigate?: () => void;
   channelItems: UniqueIdentifier[];
   dimChannels?: boolean;
+  canEdit: boolean;
 }) {
   const {
     attributes,
@@ -146,10 +148,25 @@ function SortableGroup({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: grpId(group.id) });
+  } = useSortable({ id: grpId(group.id), disabled: !canEdit });
 
   const isChannelActive = (id: number) =>
     pathname === `/dashboard/${projectId}/channels/${id}`;
+
+  const headerButton = (
+    <button
+      {...(canEdit ? { ...attributes, ...listeners } : {})}
+      onClick={onToggle}
+      className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-colors select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
+    >
+      {collapsed ? (
+        <ChevronRightIcon size={12} className="shrink-0" />
+      ) : (
+        <ChevronDownIcon size={12} className="shrink-0" />
+      )}
+      <span className="truncate">{group.name}</span>
+    </button>
+  );
 
   return (
     <div
@@ -161,37 +178,29 @@ function SortableGroup({
       }}
       className="mt-2"
     >
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <button
-            {...attributes}
-            {...listeners}
-            onClick={onToggle}
-            className="flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 cursor-grab active:cursor-grabbing transition-colors select-none"
-          >
-            {collapsed ? (
-              <ChevronRightIcon size={12} className="shrink-0" />
-            ) : (
-              <ChevronDownIcon size={12} className="shrink-0" />
-            )}
-            <span className="truncate">{group.name}</span>
-          </button>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onSelect={() => onRename(group.id)}>
-            Rename
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={onNewGroup}>Add New Group</ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onSelect={() => onDelete(group.id)}
-            className="text-destructive focus:text-destructive"
-          >
-            Delete Group
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+      {canEdit ? (
+        <ContextMenu>
+          <ContextMenuTrigger asChild>{headerButton}</ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onSelect={() => onRename(group.id)}>
+              Rename
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={onNewGroup}>
+              Add New Group
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onSelect={() => onDelete(group.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              Delete Group
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      ) : (
+        headerButton
+      )}
 
       {!collapsed && (
         <SortableContext
@@ -277,6 +286,7 @@ function ChannelGroups({
   onNavigate,
   triggerCreate,
   onTriggerCreateDone,
+  canEdit,
 }: {
   initialUngrouped: Channel[];
   initialGroups: ChannelGroupWithChannels[];
@@ -285,6 +295,7 @@ function ChannelGroups({
   onNavigate?: () => void;
   triggerCreate: boolean;
   onTriggerCreateDone: () => void;
+  canEdit: boolean;
 }) {
   const [ungrouped, setUngrouped] = useState<Channel[]>(initialUngrouped);
   const [groups, setGroups] =
@@ -343,7 +354,9 @@ function ChannelGroups({
   }, []);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, {
+      activationConstraint: canEdit ? { distance: 6 } : { distance: 999999 },
+    }),
   );
 
   // ── Container lookup ───────────────────────────────────────────────────────
@@ -660,6 +673,7 @@ function ChannelGroups({
               onNavigate={onNavigate}
               channelItems={group.channels.map((c) => chId(c.id))}
               dimChannels={isDraggingGroup}
+              canEdit={canEdit}
             />
           );
         })}
@@ -701,6 +715,7 @@ function PanelContent({
   currentGroups,
   pathname,
   onNavigate,
+  userRole,
 }: {
   currentProject: Project;
   currentProjects: Project[];
@@ -708,10 +723,14 @@ function PanelContent({
   currentGroups: ChannelGroupWithChannels[];
   pathname: string;
   onNavigate?: () => void;
+  userRole: "owner" | "maintainer" | "guest";
 }) {
   const [projects] = useState<Project[]>(currentProjects);
   const [triggerCreateGroup, setTriggerCreateGroup] = useState(false);
   const { user, signOut } = useAuth();
+
+  const canEdit = userRole === "owner" || userRole === "maintainer";
+  const isOwner = userRole === "owner";
 
   const handleSignout = async () => {
     await signOut();
@@ -757,12 +776,14 @@ function PanelContent({
       {/* Project */}
       <div className="flex space-x-2 w-full items-center justify-between mt-4">
         <h1 className="text-sm font-mono">Project</h1>
-        <a href="/dashboard/create-project">
-          <PlusIcon
-            size={20}
-            className="hover:cursor-pointer hover:text-black/50"
-          />
-        </a>
+        {(user?.isAdmin || user?.canCreateProjects) && (
+          <a href="/dashboard/create-project">
+            <PlusIcon
+              size={20}
+              className="hover:cursor-pointer hover:text-black/50"
+            />
+          </a>
+        )}
       </div>
       <Select
         defaultValue={String(currentProject.id)}
@@ -797,22 +818,26 @@ function PanelContent({
           <InboxIcon size={20} />
           <p>Feed</p>
         </a>
-        <a
-          className={isSettingsActive() ? activeNavCss : navCss}
-          href={`/dashboard/${project.id}/settings`}
-          onClick={() => onNavigate?.()}
-        >
-          <Settings size={20} />
-          <p>Settings</p>
-        </a>
-        <a
-          className={isApiDocsActive() ? activeNavCss : navCss}
-          href={`/dashboard/${project.id}/api-docs`}
-          onClick={() => onNavigate?.()}
-        >
-          <BookOpenIcon size={20} />
-          <p>API Docs</p>
-        </a>
+        {canEdit && (
+          <a
+            className={isSettingsActive() ? activeNavCss : navCss}
+            href={`/dashboard/${project.id}/settings`}
+            onClick={() => onNavigate?.()}
+          >
+            <Settings size={20} />
+            <p>Settings</p>
+          </a>
+        )}
+        {canEdit && (
+          <a
+            className={isApiDocsActive() ? activeNavCss : navCss}
+            href={`/dashboard/${project.id}/api-docs`}
+            onClick={() => onNavigate?.()}
+          >
+            <BookOpenIcon size={20} />
+            <p>API Docs</p>
+          </a>
+        )}
         {user?.isAdmin && (
           <a
             className={pathname === "/admin/users" ? activeNavCss : navCss}
@@ -828,23 +853,25 @@ function PanelContent({
       {/* Channels header */}
       <div className="flex w-full items-center justify-between mt-4 mb-1">
         <h1 className="text-sm font-mono">Channels</h1>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setTriggerCreateGroup(true)}
-            title="New group"
-            className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <FolderPlusIcon size={15} />
-          </button>
-          <a
-            href={`/dashboard/${project.id}/create-channel`}
-            onClick={() => onNavigate?.()}
-            title="New channel"
-            className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <PlusIcon size={15} />
-          </a>
-        </div>
+        {canEdit && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setTriggerCreateGroup(true)}
+              title="New group"
+              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FolderPlusIcon size={15} />
+            </button>
+            <a
+              href={`/dashboard/${project.id}/create-channel`}
+              onClick={() => onNavigate?.()}
+              title="New channel"
+              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <PlusIcon size={15} />
+            </a>
+          </div>
+        )}
       </div>
 
       <ChannelGroups
@@ -855,6 +882,7 @@ function PanelContent({
         onNavigate={onNavigate}
         triggerCreate={triggerCreateGroup}
         onTriggerCreateDone={() => setTriggerCreateGroup(false)}
+        canEdit={canEdit}
       />
 
       {/* Theme */}
@@ -873,12 +901,14 @@ function SidePanelContent({
   currentChannels,
   currentGroups,
   currentPath,
+  userRole,
 }: {
   currentProject: Project;
   currentProjects: Project[];
   currentChannels: Channel[];
   currentGroups: ChannelGroupWithChannels[];
   currentPath: string;
+  userRole: "owner" | "maintainer" | "guest";
 }) {
   const [pathname, setPathname] = useState(currentPath);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -915,6 +945,7 @@ function SidePanelContent({
     currentChannels,
     currentGroups,
     pathname,
+    userRole,
   };
 
   return (

@@ -1,6 +1,14 @@
 ---
 import "@/styles/global.css";
 import CreateProjectView from "@/components/create-project-view";
+
+const user = Astro.locals.user;
+if (!user?.isAdmin && !user?.canCreateProjects) {
+  const { getProjectsForUser } = await import("@/lib/beaver/project-member");
+  const projects = await getProjectsForUser(user!.id);
+  const fallback = projects.length > 0 ? `/dashboard/${projects[0].id}/feed` : "/";
+  return Astro.redirect(fallback);
+}
 ---
 
 <html lang="en">

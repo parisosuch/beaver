@@ -4,6 +4,7 @@ import {
   createUserAccount,
   deleteUser,
   setUserAdmin,
+  setCanCreateProjects,
 } from "@/lib/beaver/user";
 
 function requireAdmin(context: APIContext): Response | null {
@@ -39,7 +40,7 @@ export const POST: APIRoute = async (context) => {
   if (denied) return denied;
 
   try {
-    const { userName } = await context.request.json();
+    const { userName, canCreateProjects } = await context.request.json();
 
     if (!userName?.trim()) {
       return new Response(JSON.stringify({ error: "userName is required." }), {
@@ -48,7 +49,10 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    const user = await createUserAccount(userName.trim());
+    const user = await createUserAccount(
+      userName.trim(),
+      canCreateProjects ?? false,
+    );
     return new Response(JSON.stringify(user), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -67,33 +71,36 @@ export const POST: APIRoute = async (context) => {
   }
 };
 
-// Toggle admin status
+// Toggle admin status or canCreateProjects
 export const PATCH: APIRoute = async (context) => {
   const denied = requireAdmin(context);
   if (denied) return denied;
 
   try {
-    const { id, isAdmin } = await context.request.json();
+    const { id, isAdmin, canCreateProjects } = await context.request.json();
 
-    if (id === undefined || isAdmin === undefined) {
-      return new Response(
-        JSON.stringify({ error: "id and isAdmin are required." }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    if (id === undefined) {
+      return new Response(JSON.stringify({ error: "id is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    // Prevent admin from removing their own admin status
-    if (id === context.locals.user?.id && !isAdmin) {
-      return new Response(
-        JSON.stringify({ error: "You cannot remove your own admin status." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+    if (isAdmin !== undefined) {
+      // Prevent admin from removing their own admin status
+      if (id === context.locals.user?.id && !isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "You cannot remove your own admin status." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      await setUserAdmin(id, isAdmin);
     }
 
-    await setUserAdmin(id, isAdmin);
+    if (canCreateProjects !== undefined) {
+      await setCanCreateProjects(id, canCreateProjects);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

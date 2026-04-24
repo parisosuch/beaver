@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
-import { getProjects } from "./lib/beaver/project";
+import { getProjectsForUser } from "./lib/beaver/project-member";
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ["/login", "/onboarding"];
@@ -44,12 +44,24 @@ async function getAuthedRedirect(
   const session = await getSessionByToken(refreshToken);
   if (!session || new Date(session.expiresAt) < new Date()) return null;
 
-  const projects = await getProjects();
+  if (payload.isAdmin) {
+    const { getProjects } = await import("./lib/beaver/project");
+    const projects = await getProjects();
+    if (projects.length > 0) return `/dashboard/${projects[0].id}/feed`;
+    return "/";
+  }
+
+  const projects = await getProjectsForUser(payload.userId);
   if (projects.length > 0) {
     return `/dashboard/${projects[0].id}/feed`;
   }
 
-  return null;
+  // Authenticated but no projects
+  if (payload.canCreateProjects) {
+    return "/dashboard/create-project";
+  }
+
+  return "/no-projects";
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -110,6 +122,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     id: payload.userId,
     userName: payload.userName,
     isAdmin: payload.isAdmin,
+    canCreateProjects: payload.canCreateProjects ?? false,
   };
 
   // If user must change password, redirect to the change-password page
