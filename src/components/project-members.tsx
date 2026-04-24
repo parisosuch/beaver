@@ -130,7 +130,7 @@ export default function ProjectMembers({
         {members.map((member) => (
           <div
             key={member.id}
-            className="flex items-center justify-between py-2 border-b last:border-0"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 border-b last:border-0 gap-2"
           >
             <span className="font-medium">@{member.userName}</span>
             <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function ProjectMembers({
                 }
                 disabled={member.userId === currentUserId}
               >
-                <SelectTrigger className="w-32 h-8 text-sm">
+                <SelectTrigger className="w-full sm:w-32 h-8 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

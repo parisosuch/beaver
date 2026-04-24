@@ -388,7 +388,7 @@ export default function EventFeed({
             onApplyFilters={handleApplyFilters}
           />
           <Select value={currentSort} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-[160px] gap-2">
+            <SelectTrigger className="w-full sm:w-[160px] gap-2">
               <ArrowUpDownIcon className="size-4 shrink-0" />
               <SelectValue />
             </SelectTrigger>

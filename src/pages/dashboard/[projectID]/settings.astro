@@ -27,8 +27,8 @@ const channels = await getChannels(parseInt(projectID!));
 
 const isOwner = userRole === "owner";
 
-const metaCss = "flex items-center w-full justify-between";
-const metaH3Css = "font-medium";
+const metaCss = "flex flex-col sm:flex-row sm:items-center w-full sm:justify-between gap-2";
+const metaH3Css = "font-medium shrink-0";
 ---
 
 <Layout projectID={projectID!}>

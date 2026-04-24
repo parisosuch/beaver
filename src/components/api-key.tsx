@@ -57,9 +57,9 @@ export default function APIKey({ project }: { project: Project }) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-2">
-        <div className="border px-3 py-1.5 rounded flex items-center gap-2">
-          <p className="font-mono text-sm tracking-wider">{apiKey}</p>
+      <div className="flex items-center gap-2 min-w-0 max-w-full">
+        <div className="border px-3 py-1.5 rounded flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+          <p className="font-mono text-sm truncate min-w-0">{apiKey}</p>
           <Tooltip>
             <TooltipTrigger asChild>
               <button

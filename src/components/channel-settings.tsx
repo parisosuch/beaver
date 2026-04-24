@@ -82,20 +82,22 @@ export default function ChannelSettings({
     <TooltipProvider delayDuration={300}>
       {clientChannels.map((channel) => (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen} key={channel.id}>
-          <div className="rounded border p-2 md:p-4 mt-4 flex justify-between items-center">
-            <div>
-              <div className="flex flex-row space-x-4 items-center">
+          <div className="rounded border p-3 md:p-4 mt-4 flex justify-between items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
                 <a
                   href={`/dashboard/${project.id}/channels/${channel.id}`}
-                  className="hover:text-black/50"
+                  className="hover:text-black/50 truncate"
                 >
                   <h3 className="font-medium text-lg"># {channel.name}</h3>
                 </a>
-                <p className="text-xs">
+                <p className="text-xs text-muted-foreground shrink-0">
                   {channel.createdAt?.toLocaleDateString()}
                 </p>
               </div>
-              <p className="font-light text-xs">{channel.description}</p>
+              <p className="font-light text-xs truncate">
+                {channel.description}
+              </p>
             </div>
             <div>
               <Tooltip>

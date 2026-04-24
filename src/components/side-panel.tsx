@@ -955,7 +955,7 @@ function SidePanelContent({
         <button
           onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
-          className="p-2 -ml-2 hover:bg-gray-100 rounded-md"
+          className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-white/8 rounded-md"
         >
           <MenuIcon size={20} />
         </button>
@@ -969,7 +969,7 @@ function SidePanelContent({
       )}
 
       <div
-        className={`md:hidden fixed top-0 left-0 z-50 h-screen w-[300px] bg-white border-r overflow-y-auto p-6 transition-transform duration-200 ${
+        className={`md:hidden fixed top-0 left-0 z-50 h-screen w-[300px] bg-background border-r overflow-y-auto p-6 transition-transform duration-200 ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -977,7 +977,7 @@ function SidePanelContent({
           <button
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
-            className="p-2 hover:bg-gray-100 rounded"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/8 rounded"
           >
             <XIcon size={20} />
           </button>
