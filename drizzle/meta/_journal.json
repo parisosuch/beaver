@@ -29,6 +29,13 @@
       "when": 1775705530353,
       "tag": "0003_user_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1775705530354,
+      "tag": "0004_project_roles",
+      "breakpoints": true
     }
   ]
 }

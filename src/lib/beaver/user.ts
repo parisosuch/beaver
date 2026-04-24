@@ -6,6 +6,7 @@ export type DatabaseUser = {
   id: number;
   userName: string;
   isAdmin: boolean;
+  canCreateProjects: boolean;
   password: string;
   mustChangePassword: boolean;
   tempPassword: string | null;
@@ -16,6 +17,7 @@ export type User = {
   id: number;
   userName: string;
   isAdmin: boolean;
+  canCreateProjects: boolean;
   mustChangePassword: boolean;
   tempPassword: string | null;
   createdAt: Date | null;
@@ -27,6 +29,7 @@ export async function getAllUsers(): Promise<User[]> {
       id: users.id,
       userName: users.userName,
       isAdmin: users.isAdmin,
+      canCreateProjects: users.canCreateProjects,
       mustChangePassword: users.mustChangePassword,
       tempPassword: users.tempPassword,
       createdAt: users.createdAt,
@@ -41,6 +44,7 @@ export async function getAdminUsers(): Promise<User[]> {
       id: users.id,
       userName: users.userName,
       isAdmin: users.isAdmin,
+      canCreateProjects: users.canCreateProjects,
       mustChangePassword: users.mustChangePassword,
       tempPassword: users.tempPassword,
       createdAt: users.createdAt,
@@ -91,6 +95,7 @@ export async function createUser(
       id: users.id,
       userName: users.userName,
       isAdmin: users.isAdmin,
+      canCreateProjects: users.canCreateProjects,
       mustChangePassword: users.mustChangePassword,
       tempPassword: users.tempPassword,
       createdAt: users.createdAt,
@@ -101,6 +106,7 @@ export async function createUser(
 
 export async function createUserAccount(
   userName: string,
+  canCreateProjects = false,
 ): Promise<User & { tempPassword: string }> {
   const tempPassword = generateTempPassword();
   const hashedPassword = await Bun.password.hash(tempPassword);
@@ -111,6 +117,7 @@ export async function createUserAccount(
       userName,
       password: hashedPassword,
       isAdmin: false,
+      canCreateProjects,
       mustChangePassword: true,
       tempPassword,
     })
@@ -118,12 +125,20 @@ export async function createUserAccount(
       id: users.id,
       userName: users.userName,
       isAdmin: users.isAdmin,
+      canCreateProjects: users.canCreateProjects,
       mustChangePassword: users.mustChangePassword,
       tempPassword: users.tempPassword,
       createdAt: users.createdAt,
     });
 
   return { ...user, tempPassword };
+}
+
+export async function setCanCreateProjects(
+  id: number,
+  canCreateProjects: boolean,
+): Promise<void> {
+  await db.update(users).set({ canCreateProjects }).where(eq(users.id, id));
 }
 
 export async function deleteUser(id: number): Promise<void> {

@@ -11,6 +11,7 @@ export interface JWTPayload {
   userId: number;
   userName: string;
   isAdmin: boolean;
+  canCreateProjects: boolean;
   mustChangePassword: boolean;
 }
 
@@ -37,6 +38,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
       userId: payload.userId as number,
       userName: payload.userName as string,
       isAdmin: payload.isAdmin as boolean,
+      canCreateProjects: (payload.canCreateProjects as boolean) ?? false,
       mustChangePassword: (payload.mustChangePassword as boolean) ?? false,
     };
   } catch {

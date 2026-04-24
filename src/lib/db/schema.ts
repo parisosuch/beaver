@@ -81,12 +81,32 @@ export const eventTags = sqliteTable("event_tags", {
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  canCreateProjects: integer("can_create_projects", { mode: "boolean" })
+    .notNull()
+    .default(false),
   userName: text("username").notNull(),
   password: text("password").notNull(),
   mustChangePassword: integer("must_change_password", { mode: "boolean" })
     .notNull()
     .default(false),
   tempPassword: text("temp_password"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
+// --- PROJECT MEMBERS ---
+export const projectMembers = sqliteTable("project_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  role: text("role", { enum: ["owner", "maintainer", "guest"] })
+    .notNull()
+    .default("guest"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
@@ -109,6 +129,7 @@ export const sessions = sqliteTable("sessions", {
 export const projectRelations = relations(projects, ({ many }) => ({
   channels: many(channels),
   channelGroups: many(channelGroups),
+  members: many(projectMembers),
 }));
 
 export const channelGroupRelations = relations(
@@ -152,6 +173,18 @@ export const eventTagRelations = relations(eventTags, ({ one }) => ({
 export const userRelations = relations(users, ({ many }) => ({
   projects: many(projects),
   sessions: many(sessions),
+  projectMemberships: many(projectMembers),
+}));
+
+export const projectMemberRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
 }));
 
 export const sessionRelations = relations(sessions, ({ one }) => ({

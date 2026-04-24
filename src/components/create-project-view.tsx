@@ -28,7 +28,7 @@ function CreateProjectForm() {
       const res = await fetch("/api/project", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: projectName, ownerId: user.id }),
+        body: JSON.stringify({ name: projectName }),
       });
 
       const data = await res.json();

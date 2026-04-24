@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { projects } from "../db/schema";
+import { projects, projectMembers } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 export type Project = {
@@ -7,6 +7,7 @@ export type Project = {
   name: string;
   apiKey: string;
   createdAt: Date | null;
+  ownerId: number;
 };
 
 export async function getProjects() {
@@ -20,12 +21,19 @@ export async function createProject(
   apiKey: string,
   ownerId: number,
 ) {
-  const res = await db
+  const [project] = await db
     .insert(projects)
     .values({ name, apiKey, ownerId })
     .returning();
 
-  return res[0];
+  // Creator is automatically an owner
+  await db.insert(projectMembers).values({
+    projectId: project.id,
+    userId: ownerId,
+    role: "owner",
+  });
+
+  return project;
 }
 
 export async function getProject(project_id: number) {

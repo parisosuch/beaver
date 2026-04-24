@@ -6,6 +6,7 @@ declare namespace App {
       id: number;
       userName: string;
       isAdmin: boolean;
+      canCreateProjects: boolean;
     };
   }
 }

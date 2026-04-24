@@ -1,15 +1,20 @@
 ---
 import "../styles/global.css";
 import { getProjects } from "../lib/beaver/project";
+import { getProjectsForUser } from "../lib/beaver/project-member";
 
-// Middleware handles auth check - if we reach here, user is authenticated
-// Get projects for the authenticated user and redirect to dashboard
-const projects = await getProjects();
+const user = Astro.locals.user!;
+
+const projects = user.isAdmin
+  ? await getProjects()
+  : await getProjectsForUser(user.id);
 
 if (projects.length === 0) {
-  // User is authenticated but has no projects - this shouldn't happen in normal flow
-  // but redirect to create a project (you may want to add a project creation page)
-  return Astro.redirect("/onboarding");
+  if (user.isAdmin || user.canCreateProjects) {
+    return Astro.redirect("/dashboard/create-project");
+  }
+  // Non-admin with no projects: show a placeholder (no projects assigned yet)
+  return Astro.redirect("/no-projects");
 } else {
   return Astro.redirect(`/dashboard/${projects[0].id}/feed`);
 }

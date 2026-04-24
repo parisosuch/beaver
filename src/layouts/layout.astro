@@ -4,6 +4,10 @@ import SidePanel from "@/components/side-panel";
 import { getProject, getProjects } from "@/lib/beaver/project";
 import { getChannels } from "@/lib/beaver/channel";
 import { getChannelGroups } from "@/lib/beaver/channel-group";
+import {
+  getProjectsForUser,
+  getUserProjectRole,
+} from "@/lib/beaver/project-member";
 import { ClientRouter } from "astro:transitions";
 
 interface Props {
@@ -11,12 +15,20 @@ interface Props {
 }
 
 const { projectID } = Astro.props;
+const user = Astro.locals.user!;
 
 const project = await getProject(parseInt(projectID));
 
-const projects = await getProjects();
+const projects = user.isAdmin
+  ? await getProjects()
+  : await getProjectsForUser(user.id);
+
 const channels = await getChannels(project.id);
 const channelGroupsData = await getChannelGroups(project.id);
+
+const userRole = user.isAdmin
+  ? "owner"
+  : await getUserProjectRole(project.id, user.id);
 ---
 
 <html lang="en">
@@ -49,6 +61,7 @@ const channelGroupsData = await getChannelGroups(project.id);
         currentChannels={channels}
         currentGroups={channelGroupsData}
         currentPath={Astro.url.pathname}
+        userRole={userRole ?? "guest"}
         transition:persist
       />
       <div class="flex-1 min-w-0">

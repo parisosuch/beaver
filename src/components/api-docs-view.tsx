@@ -133,6 +133,7 @@ function MethodBadge({ method }: { method: string }) {
 }
 
 export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
+  const displayKey = apiKey;
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const sections = [
@@ -253,12 +254,12 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 <Badge variant="warning">Keep this secret</Badge>
               </div>
               <code className="block font-mono text-amber-900 dark:text-amber-300 bg-white/60 dark:bg-white/10 px-4 py-3 rounded-lg text-sm break-all">
-                {apiKey}
+                {displayKey}
               </code>
             </div>
             <div className="bg-gray-900 rounded-xl p-4">
               <code className="text-gray-100 font-mono text-sm">
-                X-API-Key: {apiKey}
+                X-API-Key: {displayKey}
               </code>
             </div>
           </section>
@@ -460,7 +461,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 language="bash"
                 code={`curl -X POST ${baseUrl}/api/event \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: ${apiKey}" \\
+  -H "X-API-Key: ${displayKey}" \\
   -d '{
     "name": "User Signed Up",
     "channel": "signups",
@@ -562,7 +563,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 <CodeBlock
                   title="sendEvent.js"
                   language="javascript"
-                  code={`const API_KEY = '${apiKey}';
+                  code={`const API_KEY = '${displayKey}';
 
 async function sendEvent(eventData) {
   const response = await fetch('${baseUrl}/api/event', {
@@ -606,7 +607,7 @@ await sendEvent({
                   language="python"
                   code={`import requests
 
-API_KEY = '${apiKey}'
+API_KEY = '${displayKey}'
 
 def send_event(name, channel, description=None, icon=None, tags=None):
     response = requests.post(
@@ -651,7 +652,7 @@ import (
     "net/http"
 )
 
-const apiKey = "${apiKey}"
+const apiKey = "${displayKey}"
 
 type Event struct {
     Name        string            \`json:"name"\`
