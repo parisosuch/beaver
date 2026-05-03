@@ -22,7 +22,7 @@ export default defineConfig({
         name: "Beaver",
         short_name: "Beaver",
         description: "Real-time event tracking for your applications",
-        theme_color: "#000000",
+        theme_color: "#171717",
         background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
