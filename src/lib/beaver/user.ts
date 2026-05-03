@@ -1,10 +1,11 @@
 import { db } from "../db/db";
-import { users, sessions } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { users, sessions, projectMembers } from "../db/schema";
+import { eq, and } from "drizzle-orm";
 
 export type DatabaseUser = {
   id: number;
   userName: string;
+  email: string | null;
   isAdmin: boolean;
   canCreateProjects: boolean;
   password: string;
@@ -16,6 +17,7 @@ export type DatabaseUser = {
 export type User = {
   id: number;
   userName: string;
+  email: string | null;
   isAdmin: boolean;
   canCreateProjects: boolean;
   mustChangePassword: boolean;
@@ -23,34 +25,23 @@ export type User = {
   createdAt: Date | null;
 };
 
+const userSelect = {
+  id: users.id,
+  userName: users.userName,
+  email: users.email,
+  isAdmin: users.isAdmin,
+  canCreateProjects: users.canCreateProjects,
+  mustChangePassword: users.mustChangePassword,
+  tempPassword: users.tempPassword,
+  createdAt: users.createdAt,
+};
+
 export async function getAllUsers(): Promise<User[]> {
-  return await db
-    .select({
-      id: users.id,
-      userName: users.userName,
-      isAdmin: users.isAdmin,
-      canCreateProjects: users.canCreateProjects,
-      mustChangePassword: users.mustChangePassword,
-      tempPassword: users.tempPassword,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .orderBy(users.createdAt);
+  return await db.select(userSelect).from(users).orderBy(users.createdAt);
 }
 
 export async function getAdminUsers(): Promise<User[]> {
-  return await db
-    .select({
-      id: users.id,
-      userName: users.userName,
-      isAdmin: users.isAdmin,
-      canCreateProjects: users.canCreateProjects,
-      mustChangePassword: users.mustChangePassword,
-      tempPassword: users.tempPassword,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .where(eq(users.isAdmin, true));
+  return await db.select(userSelect).from(users).where(eq(users.isAdmin, true));
 }
 
 export async function getUserByUsername(
@@ -91,15 +82,7 @@ export async function createUser(
   const [user] = await db
     .insert(users)
     .values({ userName, password: hashedPassword, isAdmin })
-    .returning({
-      id: users.id,
-      userName: users.userName,
-      isAdmin: users.isAdmin,
-      canCreateProjects: users.canCreateProjects,
-      mustChangePassword: users.mustChangePassword,
-      tempPassword: users.tempPassword,
-      createdAt: users.createdAt,
-    });
+    .returning(userSelect);
 
   return user;
 }
@@ -121,15 +104,7 @@ export async function createUserAccount(
       mustChangePassword: true,
       tempPassword,
     })
-    .returning({
-      id: users.id,
-      userName: users.userName,
-      isAdmin: users.isAdmin,
-      canCreateProjects: users.canCreateProjects,
-      mustChangePassword: users.mustChangePassword,
-      tempPassword: users.tempPassword,
-      createdAt: users.createdAt,
-    });
+    .returning(userSelect);
 
   return { ...user, tempPassword };
 }
@@ -185,4 +160,44 @@ export async function changePassword(
 
   // Invalidate all sessions so user must re-login with new password
   await db.delete(sessions).where(eq(sessions.userId, id));
+}
+
+export async function updateUserEmail(
+  id: number,
+  email: string | null,
+): Promise<void> {
+  await db.update(users).set({ email }).where(eq(users.id, id));
+}
+
+export async function setProjectNotifications(
+  userId: number,
+  projectId: number,
+  enabled: boolean,
+): Promise<void> {
+  await db
+    .update(projectMembers)
+    .set({ notificationsEnabled: enabled })
+    .where(
+      and(
+        eq(projectMembers.userId, userId),
+        eq(projectMembers.projectId, projectId),
+      ),
+    );
+}
+
+export async function getNotificationEmails(
+  projectId: number,
+): Promise<string[]> {
+  const rows = await db
+    .select({ email: users.email })
+    .from(projectMembers)
+    .innerJoin(users, eq(projectMembers.userId, users.id))
+    .where(
+      and(
+        eq(projectMembers.projectId, projectId),
+        eq(projectMembers.notificationsEnabled, true),
+      ),
+    );
+
+  return rows.flatMap((r) => (r.email ? [r.email] : []));
 }

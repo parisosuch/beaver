@@ -1,4 +1,7 @@
 import { createEvent } from "@/lib/beaver/event";
+import { getProject } from "@/lib/beaver/project";
+import { getNotificationEmails } from "@/lib/beaver/user";
+import { sendEventNotification } from "@/lib/email/resend";
 import type { APIContext, APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }: APIContext) => {
@@ -19,7 +22,8 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
     }
 
     // extract body and verify contents
-    const { name, description, icon, channel, tags } = await request.json();
+    const { name, description, icon, channel, tags, notify } =
+      await request.json();
 
     if (!name) {
       return new Response(
@@ -70,6 +74,16 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       apiKey,
       tags: tagObj,
     });
+
+    if (notify === true) {
+      const emails = await getNotificationEmails(event.projectId);
+      if (emails.length > 0) {
+        const project = await getProject(event.projectId);
+        if (project) {
+          sendEventNotification(event, project.name, emails).catch(() => {});
+        }
+      }
+    }
 
     return new Response(JSON.stringify(event), {
       status: 200,

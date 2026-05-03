@@ -151,6 +151,10 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
       ],
     },
     {
+      id: "notifications",
+      title: "Notifications",
+    },
+    {
       id: "tags",
       title: "Tags",
       children: [
@@ -460,6 +464,31 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                       .
                     </td>
                   </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        notify
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      boolean
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge>Optional</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      If <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">true</code>, sends an email notification to project members who have opted in. Requires{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">RESEND_API_KEY</code>{" "}
+                      to be configured. See{" "}
+                      <a
+                        href="#notifications"
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Notifications
+                      </a>
+                      .
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -555,6 +584,74 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 }`}
               />
             </div>
+          </section>
+
+          {/* Notifications */}
+          <section id="notifications">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <span className="text-gray-400">#</span>
+              Notifications
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+              Beaver can send email notifications when an event is posted with{" "}
+              <code className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                "notify": true
+              </code>
+              . Emails are sent only to project members who have opted in via
+              their notification settings.
+            </p>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6 mb-6">
+              <p className="text-blue-800 dark:text-blue-300 font-semibold mb-3">
+                Setup
+              </p>
+              <ol className="text-blue-700 dark:text-blue-400 text-sm space-y-2 list-decimal list-inside">
+                <li>
+                  Sign up at{" "}
+                  <span className="font-mono">resend.com</span> and create an API key
+                </li>
+                <li>
+                  Set{" "}
+                  <code className="bg-white/60 dark:bg-white/10 px-1 rounded">
+                    RESEND_API_KEY
+                  </code>{" "}
+                  in your environment
+                </li>
+                <li>
+                  Optionally set{" "}
+                  <code className="bg-white/60 dark:bg-white/10 px-1 rounded">
+                    RESEND_FROM_EMAIL
+                  </code>{" "}
+                  (defaults to{" "}
+                  <code className="bg-white/60 dark:bg-white/10 px-1 rounded">
+                    notifications@beaver.app
+                  </code>
+                  )
+                </li>
+                <li>
+                  Project members add an email and enable notifications in{" "}
+                  <a
+                    href="settings"
+                    className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-200"
+                  >
+                    Settings → Notifications
+                  </a>
+                </li>
+              </ol>
+            </div>
+            <CodeBlock
+              title="Triggering a notification"
+              language="bash"
+              code={`curl -X POST ${baseUrl}/api/event \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '{
+    "name": "Deployment Failed",
+    "channel": "alerts",
+    "description": "Production deploy failed on step 3",
+    "icon": "🚨",
+    "notify": true
+  }'`}
+            />
           </section>
 
           {/* Tags */}
