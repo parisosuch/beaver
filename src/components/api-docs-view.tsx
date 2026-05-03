@@ -151,6 +151,14 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
       ],
     },
     {
+      id: "tags",
+      title: "Tags",
+      children: [
+        { id: "tag-type-inference", title: "Type Inference" },
+        { id: "tag-type-consistency", title: "Type Consistency" },
+      ],
+    },
+    {
       id: "code-examples",
       title: "Code Examples",
       children: [
@@ -441,7 +449,15 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                       <Badge>Optional</Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      Key-value pairs for additional metadata
+                      Key-value pairs for additional metadata. Types are
+                      inferred from the JSON value. See{" "}
+                      <a
+                        href="#tags"
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Tags
+                      </a>
+                      .
                     </td>
                   </tr>
                 </tbody>
@@ -539,6 +555,132 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 }`}
               />
             </div>
+          </section>
+
+          {/* Tags */}
+          <section id="tags">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <span className="text-gray-400">#</span>
+              Tags
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+              Tags are arbitrary key-value pairs that attach structured metadata
+              to an event. They power filtering in the dashboard — numeric
+              comparisons, boolean toggles, and string lookups all depend on the
+              stored type.
+            </p>
+
+            <h3
+              id="tag-type-inference"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            >
+              Type Inference
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              The API infers each tag's type from the JSON value you send. No
+              type annotation is required.
+            </p>
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      JSON value
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Stored type
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Filter UI
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">
+                        "premium"
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      string
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      Dropdown (≤ 20 distinct values) or free-text input
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">
+                        99.99
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      number
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      Numeric input with operator (=, &gt;, &lt;, between)
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">
+                        true
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      boolean
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      true / false dropdown
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <CodeBlock
+              language="json"
+              title="Example — mixed tag types"
+              code={`{
+  "name": "Purchase",
+  "channel": "sales",
+  "tags": {
+    "plan":     "premium",   // string
+    "amount":   99.99,       // number
+    "verified": true         // boolean
+  }
+}`}
+            />
+
+            <h3
+              id="tag-type-consistency"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-8 mb-4"
+            >
+              Type Consistency
+            </h3>
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5 mb-4">
+              <p className="text-amber-800 dark:text-amber-300 font-semibold mb-1">
+                Keep tag types consistent across events
+              </p>
+              <p className="text-amber-700 dark:text-amber-400 text-sm">
+                A tag key's type should be the same on every event. If{" "}
+                <code className="bg-amber-100 dark:bg-white/10 px-1 rounded">
+                  amount
+                </code>{" "}
+                is a number on one event and a string on another, the filter UI
+                will use the type it sees first. Numeric filters use{" "}
+                <code className="bg-amber-100 dark:bg-white/10 px-1 rounded">
+                  CAST(value AS REAL)
+                </code>{" "}
+                internally — rows with a non-numeric value for that key will
+                silently not match rather than returning an error.
+              </p>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
+              Type mismatches are treated as a caller error. Design your tag
+              schema upfront and send values of the same JSON type for a given
+              key on every event.
+            </p>
           </section>
 
           {/* Code Examples */}
