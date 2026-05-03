@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "migrate": "bun src/lib/db/migrate.ts",
-    "seed": "bun src/lib/db/seed.ts"
+    "seed": "bun src/lib/db/seed.ts",
+    "reset-admin": "bun src/scripts/reset-admin.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.0",

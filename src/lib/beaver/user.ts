@@ -40,6 +40,11 @@ export async function getAllUsers(): Promise<User[]> {
   return await db.select(userSelect).from(users).orderBy(users.createdAt);
 }
 
+export async function getUserById(id: number): Promise<DatabaseUser | null> {
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0] || null;
+}
+
 export async function getAdminUsers(): Promise<User[]> {
   return await db.select(userSelect).from(users).where(eq(users.isAdmin, true));
 }
@@ -160,6 +165,18 @@ export async function changePassword(
 
   // Invalidate all sessions so user must re-login with new password
   await db.delete(sessions).where(eq(sessions.userId, id));
+}
+
+export async function updatePassword(
+  id: number,
+  newPassword: string,
+): Promise<void> {
+  const hashedPassword = await Bun.password.hash(newPassword);
+
+  await db
+    .update(users)
+    .set({ password: hashedPassword, tempPassword: null, mustChangePassword: false })
+    .where(eq(users.id, id));
 }
 
 export async function updateUserEmail(
