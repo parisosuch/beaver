@@ -53,6 +53,27 @@ export async function getUserProjectRole(
   return rows[0]?.role ?? null;
 }
 
+export async function getProjectMembership(
+  projectId: number,
+  userId: number,
+): Promise<{ role: Role; notificationsEnabled: boolean } | null> {
+  const rows = await db
+    .select({
+      role: projectMembers.role,
+      notificationsEnabled: projectMembers.notificationsEnabled,
+    })
+    .from(projectMembers)
+    .where(
+      and(
+        eq(projectMembers.projectId, projectId),
+        eq(projectMembers.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
 export async function addProjectMember(
   projectId: number,
   userId: number,

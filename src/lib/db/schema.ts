@@ -128,6 +128,7 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(false),
   userName: text("username").notNull(),
+  email: text("email"),
   password: text("password").notNull(),
   mustChangePassword: integer("must_change_password", { mode: "boolean" })
     .notNull()
@@ -152,6 +153,9 @@ export const projectMembers = sqliteTable(
     role: text("role", { enum: ["owner", "maintainer", "guest"] })
       .notNull()
       .default("guest"),
+    notificationsEnabled: integer("notifications_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(unixepoch() * 1000)`)
       .notNull(),
