@@ -1,5 +1,5 @@
 import type { APIContext, APIRoute } from "astro";
-import { resetUserPassword } from "@/lib/beaver/user";
+import { resetUserPassword, getUserById } from "@/lib/beaver/user";
 
 export const POST: APIRoute = async (context: APIContext) => {
   if (!context.locals.user?.isAdmin) {
@@ -17,6 +17,14 @@ export const POST: APIRoute = async (context: APIContext) => {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    const target = await getUserById(id);
+    if (target?.isAdmin && target.id === context.locals.user?.id) {
+      return new Response(
+        JSON.stringify({ error: "Cannot reset your own password. Use Settings → Change Password instead." }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     const tempPassword = await resetUserPassword(id);

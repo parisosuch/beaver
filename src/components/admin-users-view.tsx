@@ -131,17 +131,19 @@ function UserActions({
           </TooltipContent>
         </Tooltip>
       )}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={() => onReset(user)}
-            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <RefreshCwIcon size={15} />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>Reset password</TooltipContent>
-      </Tooltip>
+      {!(user.id === currentUserId && user.isAdmin) && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => onReset(user)}
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RefreshCwIcon size={15} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Reset password</TooltipContent>
+        </Tooltip>
+      )}
       {user.id !== currentUserId && (
         <Tooltip>
           <TooltipTrigger asChild>
