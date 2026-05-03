@@ -1,5 +1,11 @@
 // src/db/schema.ts
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 // ---- PROJECTS ----
@@ -159,6 +165,27 @@ export const projectMembers = sqliteTable(
   }),
 );
 
+// --- CHANNEL READS ---
+export const channelReads = sqliteTable(
+  "channel_reads",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    lastReadAt: integer("last_read_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => ({
+    userChannelIdx: uniqueIndex("channel_reads_user_channel_idx").on(
+      table.userId,
+      table.channelId,
+    ),
+  }),
+);
+
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -238,5 +265,16 @@ export const sessionRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields: [sessions.userId],
     references: [users.id],
+  }),
+}));
+
+export const channelReadRelations = relations(channelReads, ({ one }) => ({
+  user: one(users, {
+    fields: [channelReads.userId],
+    references: [users.id],
+  }),
+  channel: one(channels, {
+    fields: [channelReads.channelId],
+    references: [channels.id],
   }),
 }));

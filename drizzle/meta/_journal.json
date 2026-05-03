@@ -43,6 +43,13 @@
       "when": 1776999388018,
       "tag": "0005_lively_robbie_robertson",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1777000235422,
+      "tag": "0006_mighty_dazzler",
+      "breakpoints": true
     }
   ]
 }

@@ -70,12 +70,14 @@ function SortableChannel({
   isActive,
   onNavigate,
   indent = false,
+  unreadCount = 0,
 }: {
   channel: Channel;
   projectId: number;
   isActive: boolean;
   onNavigate?: () => void;
   indent?: boolean;
+  unreadCount?: number;
 }) {
   const {
     attributes,
@@ -101,13 +103,18 @@ function SortableChannel({
         href={`/dashboard/${projectId}/channels/${channel.id}`}
         onClick={() => onNavigate?.()}
         draggable={false}
-        className={`flex text-lg items-center ${indent ? "pl-5 pr-3" : "px-3"} py-2 hover:font-medium cursor-grab active:cursor-grabbing ${
+        className={`flex text-lg items-center justify-between ${indent ? "pl-5 pr-3" : "px-3"} py-2 hover:font-medium cursor-grab active:cursor-grabbing ${
           isActive
             ? "bg-gray-100 dark:bg-white/8 rounded font-medium"
             : "hover:bg-gray-100 dark:hover:bg-white/8 hover:rounded"
         }`}
       >
-        # {channel.name}
+        <span className="truncate"># {channel.name}</span>
+        {unreadCount > 0 && !isActive && (
+          <span className="ml-2 shrink-0 text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-tight">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
       </a>
     </div>
   );
@@ -127,6 +134,7 @@ function SortableGroup({
   channelItems,
   dimChannels,
   canEdit,
+  unreadCounts,
 }: {
   group: ChannelGroupWithChannels;
   collapsed: boolean;
@@ -140,6 +148,7 @@ function SortableGroup({
   channelItems: UniqueIdentifier[];
   dimChannels?: boolean;
   canEdit: boolean;
+  unreadCounts: Record<number, number>;
 }) {
   const {
     attributes,
@@ -218,6 +227,7 @@ function SortableGroup({
                 isActive={isChannelActive(ch.id)}
                 onNavigate={onNavigate}
                 indent
+                unreadCount={unreadCounts[ch.id] ?? 0}
               />
             ))}
           </div>
@@ -287,6 +297,7 @@ function ChannelGroups({
   triggerCreate,
   onTriggerCreateDone,
   canEdit,
+  unreadCounts,
 }: {
   initialUngrouped: Channel[];
   initialGroups: ChannelGroupWithChannels[];
@@ -296,6 +307,7 @@ function ChannelGroups({
   triggerCreate: boolean;
   onTriggerCreateDone: () => void;
   canEdit: boolean;
+  unreadCounts: Record<number, number>;
 }) {
   const [ungrouped, setUngrouped] = useState<Channel[]>(initialUngrouped);
   const [groups, setGroups] =
@@ -630,6 +642,7 @@ function ChannelGroups({
             projectId={projectId}
             isActive={isChannelActive(ch.id)}
             onNavigate={onNavigate}
+            unreadCount={unreadCounts[ch.id] ?? 0}
           />
         ))}
       </SortableContext>
@@ -674,6 +687,7 @@ function ChannelGroups({
               channelItems={group.channels.map((c) => chId(c.id))}
               dimChannels={isDraggingGroup}
               canEdit={canEdit}
+              unreadCounts={unreadCounts}
             />
           );
         })}
@@ -727,7 +741,38 @@ function PanelContent({
 }) {
   const [projects] = useState<Project[]>(currentProjects);
   const [triggerCreateGroup, setTriggerCreateGroup] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
   const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch(`/api/unread?projectId=${currentProject.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCounts(data.counts);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 5_000);
+
+    const handleChannelRead = (e: CustomEvent<{ channelId: number }>) => {
+      setUnreadCounts((prev) => ({ ...prev, [e.detail.channelId]: 0 }));
+    };
+
+    window.addEventListener("channel:read", handleChannelRead as EventListener);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(
+        "channel:read",
+        handleChannelRead as EventListener,
+      );
+    };
+  }, [currentProject.id, pathname]);
 
   const canEdit = userRole === "owner" || userRole === "maintainer";
   const isOwner = userRole === "owner";
@@ -883,6 +928,7 @@ function PanelContent({
         triggerCreate={triggerCreateGroup}
         onTriggerCreateDone={() => setTriggerCreateGroup(false)}
         canEdit={canEdit}
+        unreadCounts={unreadCounts}
       />
 
       {/* Theme */}
