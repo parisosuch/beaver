@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
+import { createRunnableDevEnvironment } from "vite";
 
 import react from "@astrojs/react";
 import node from "@astrojs/node";
@@ -13,8 +14,13 @@ export default defineConfig({
   adapter: node({ mode: "standalone" }),
   vite: {
     plugins: [tailwindcss()],
-    ssr: {
-      external: ["bun:sqlite", "drizzle-orm/bun-sqlite"],
+    environments: {
+      ssr: {
+        dev: {
+          createEnvironment: (name, config) =>
+            createRunnableDevEnvironment(name, config),
+        },
+      },
     },
   },
   integrations: [

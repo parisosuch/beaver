@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { channels, events, eventTags } from "../db/schema";
+import { channels, events, eventTags, channelReads } from "../db/schema";
 import { eq, and, asc, max, inArray } from "drizzle-orm";
 
 export type Channel = {
@@ -80,6 +80,43 @@ export async function reorderChannels(
         .where(eq(channels.id, id)),
     ),
   );
+}
+
+export async function coalesceChannels(
+  sourceId: number,
+  targetId: number,
+  survivingName: string,
+) {
+  const [source, target] = await Promise.all([
+    db.select().from(channels).where(eq(channels.id, sourceId)).limit(1),
+    db.select().from(channels).where(eq(channels.id, targetId)).limit(1),
+  ]);
+
+  if (!source[0] || !target[0]) throw new Error("Channel not found.");
+  if (source[0].projectId !== target[0].projectId)
+    throw new Error("Channels must belong to the same project.");
+
+  // Move all events from source to target
+  await db
+    .update(events)
+    .set({ channelId: targetId })
+    .where(eq(events.channelId, sourceId));
+
+  // Drop source channel reads — avoid unique constraint conflicts on (userId, channelId)
+  await db.delete(channelReads).where(eq(channelReads.channelId, sourceId));
+
+  // Rename target if the surviving name differs
+  if (survivingName !== target[0].name) {
+    await db
+      .update(channels)
+      .set({ name: survivingName })
+      .where(eq(channels.id, targetId));
+  }
+
+  // Delete source (events already moved, no cascade needed)
+  await db.delete(channels).where(eq(channels.id, sourceId));
+
+  return { ...target[0], name: survivingName };
 }
 
 export async function deleteChannel(channelID: number) {
