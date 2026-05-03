@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  subHours,
-  subDays,
-  subWeeks,
-  subMonths,
-  subYears,
-  format,
-} from "date-fns";
-import { FilterIcon, XIcon } from "lucide-react";
+import { subHours, subDays, subWeeks, subMonths, subYears } from "date-fns";
+import { FilterIcon, PlusIcon, XIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -26,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { Input } from "./ui/input";
 import type { AvailableTag } from "@/lib/beaver/tags";
 import type { TagFilter } from "@/lib/beaver/event";
 
@@ -71,6 +65,23 @@ const timePresets = [
   },
 ];
 
+const numericOperators = [
+  { value: "eq", label: "=" },
+  { value: "gt", label: ">" },
+  { value: "lt", label: "<" },
+  { value: "between", label: "between" },
+] as const;
+
+function tagFilterLabel(tag: TagFilter): string {
+  if (tag.type === "number") {
+    const op = tag.operator ?? "eq";
+    if (op === "between") return `${tag.key}: ${tag.value} – ${tag.value2}`;
+    const sym = op === "gt" ? ">" : op === "lt" ? "<" : "=";
+    return `${tag.key} ${sym} ${tag.value}`;
+  }
+  return `${tag.key}: ${tag.value}`;
+}
+
 export default function EventFilterDialog({
   type,
   projectID,
@@ -90,7 +101,23 @@ export default function EventFilterDialog({
   const [tags, setTags] = useState<TagFilter[]>(currentTags);
   const [availableTags, setAvailableTags] = useState<AvailableTag[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
-  const [selectedTagKey, setSelectedTagKey] = useState<string>("");
+
+  // Tag input state
+  const [selectedKey, setSelectedKey] = useState("");
+  const [numericOperator, setNumericOperator] = useState<
+    "eq" | "gt" | "lt" | "between"
+  >("eq");
+  const [valueInput, setValueInput] = useState("");
+  const [value2Input, setValue2Input] = useState("");
+
+  const selectedTag = availableTags.find((t) => t.key === selectedKey);
+
+  const resetTagInput = () => {
+    setSelectedKey("");
+    setNumericOperator("eq");
+    setValueInput("");
+    setValue2Input("");
+  };
 
   // Sync with URL params when dialog opens
   useEffect(() => {
@@ -98,10 +125,17 @@ export default function EventFilterDialog({
       setStartDate(currentStartDate ? new Date(currentStartDate) : undefined);
       setEndDate(currentEndDate ? new Date(currentEndDate) : undefined);
       setTags(currentTags);
-      setSelectedTagKey("");
+      resetTagInput();
       fetchAvailableTags();
     }
   }, [open, currentStartDate, currentEndDate, currentTags]);
+
+  // Reset value inputs when key changes
+  useEffect(() => {
+    setNumericOperator("eq");
+    setValueInput("");
+    setValue2Input("");
+  }, [selectedKey]);
 
   const fetchAvailableTags = async () => {
     setLoadingTags(true);
@@ -137,11 +171,52 @@ export default function EventFilterDialog({
     }
   };
 
+  const addTag = (filter: TagFilter) => {
+    const duplicate = tags.some(
+      (t) =>
+        t.key === filter.key &&
+        t.value === filter.value &&
+        t.type === filter.type &&
+        (t as any).operator === (filter as any).operator,
+    );
+    if (!duplicate) setTags((prev) => [...prev, filter]);
+    resetTagInput();
+  };
+
+  // Auto-add for dropdown-based types (string with values, boolean)
+  const handleDropdownValueSelect = (value: string) => {
+    if (!selectedTag) return;
+    addTag({ key: selectedKey, type: selectedTag.type, value });
+  };
+
+  // Add for number or free-text string
+  const handleAddClick = () => {
+    if (!selectedTag || !valueInput.trim()) return;
+    if (selectedTag.type === "number") {
+      if (numericOperator === "between" && !value2Input.trim()) return;
+      addTag({
+        key: selectedKey,
+        type: "number",
+        operator: numericOperator,
+        value: valueInput.trim(),
+        ...(numericOperator === "between"
+          ? { value2: value2Input.trim() }
+          : {}),
+      });
+    } else {
+      addTag({
+        key: selectedKey,
+        type: selectedTag.type,
+        value: valueInput.trim(),
+      });
+    }
+  };
+
   const clearFilters = () => {
     setStartDate(undefined);
     setEndDate(undefined);
     setTags([]);
-    setSelectedTagKey("");
+    resetTagInput();
   };
 
   const handleApply = () => {
@@ -162,14 +237,10 @@ export default function EventFilterDialog({
   const filterCount =
     (currentStartDate || currentEndDate ? 1 : 0) + currentTags.length;
 
-  // Check if a preset matches current dates
   const getActivePreset = () => {
     if (!startDate || !endDate) return null;
-    // Simple check - not exact but good enough for UI feedback
     const now = new Date();
-    const diffMs = now.getTime() - startDate.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-
+    const diffHours = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60);
     if (diffHours <= 1.1) return "1h";
     if (diffHours <= 25) return "day";
     if (diffHours <= 169) return "week";
@@ -179,6 +250,16 @@ export default function EventFilterDialog({
   };
 
   const activePreset = getActivePreset();
+
+  const canAddNumeric =
+    selectedTag?.type === "number" &&
+    valueInput.trim() !== "" &&
+    (numericOperator !== "between" || value2Input.trim() !== "");
+
+  const canAddFreeText =
+    selectedTag?.type === "string" &&
+    selectedTag.values.length === 0 &&
+    valueInput.trim() !== "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -219,8 +300,6 @@ export default function EventFilterDialog({
                 </Button>
               ))}
             </div>
-
-            {/* Custom Date Range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="space-y-2">
                 <label className="text-sm text-muted-foreground">From</label>
@@ -251,68 +330,149 @@ export default function EventFilterDialog({
                 No tags available for this {type}
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Key dropdown */}
+              <div className="space-y-3">
+                {/* Key selector */}
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Key</label>
-                  <Select
-                    value={selectedTagKey}
-                    onValueChange={(value) => setSelectedTagKey(value)}
-                  >
+                  <Select value={selectedKey} onValueChange={setSelectedKey}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select key..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableTags.map((tagGroup) => (
-                        <SelectItem key={tagGroup.key} value={tagGroup.key}>
-                          {tagGroup.key}
+                      {availableTags.map((tag) => (
+                        <SelectItem key={tag.key} value={tag.key}>
+                          <span>{tag.key}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {tag.type}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Value dropdown */}
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Value</label>
-                  <Select
-                    value=""
-                    disabled={!selectedTagKey}
-                    onValueChange={(value) => {
-                      if (selectedTagKey && value) {
-                        // Add the tag filter if not already present
-                        const exists = tags.some(
-                          (t) => t.key === selectedTagKey && t.value === value,
-                        );
-                        if (!exists) {
-                          setTags([...tags, { key: selectedTagKey, value }]);
-                        }
-                        // Reset key selection
-                        setSelectedTagKey("");
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue
-                        placeholder={
-                          selectedTagKey
-                            ? "Select value..."
-                            : "Select key first"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedTagKey &&
-                        availableTags
-                          .find((t) => t.key === selectedTagKey)
-                          ?.values.map((value) => (
-                            <SelectItem key={value} value={value}>
-                              {value}
+                {/* Value input — varies by type */}
+                {selectedTag?.type === "boolean" && (
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">
+                      Value
+                    </label>
+                    <Select value="" onValueChange={handleDropdownValueSelect}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select value..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">true</SelectItem>
+                        <SelectItem value="false">false</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {selectedTag?.type === "string" &&
+                  selectedTag.values.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">
+                        Value
+                      </label>
+                      <Select
+                        value=""
+                        onValueChange={handleDropdownValueSelect}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select value..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedTag.values.map((v) => (
+                            <SelectItem key={v} value={v}>
+                              {v}
                             </SelectItem>
                           ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                {selectedTag?.type === "string" &&
+                  selectedTag.values.length === 0 && (
+                    <div className="flex gap-2">
+                      <div className="flex-1 space-y-2">
+                        <label className="text-sm text-muted-foreground">
+                          Value
+                        </label>
+                        <Input
+                          placeholder="Enter value..."
+                          value={valueInput}
+                          onChange={(e) => setValueInput(e.target.value)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleAddClick()
+                          }
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          size="sm"
+                          onClick={handleAddClick}
+                          disabled={!canAddFreeText}
+                        >
+                          <PlusIcon className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                {selectedTag?.type === "number" && (
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">
+                      Condition
+                    </label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={numericOperator}
+                        onValueChange={(v) =>
+                          setNumericOperator(v as typeof numericOperator)
+                        }
+                      >
+                        <SelectTrigger className="w-32 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {numericOperators.map((op) => (
+                            <SelectItem key={op.value} value={op.value}>
+                              {op.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        placeholder="Value"
+                        value={valueInput}
+                        onChange={(e) => setValueInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddClick()}
+                      />
+                      {numericOperator === "between" && (
+                        <Input
+                          type="number"
+                          placeholder="To"
+                          value={value2Input}
+                          onChange={(e) => setValue2Input(e.target.value)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleAddClick()
+                          }
+                        />
+                      )}
+                      <Button
+                        size="sm"
+                        className="shrink-0"
+                        onClick={handleAddClick}
+                        disabled={!canAddNumeric}
+                      >
+                        <PlusIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -324,7 +484,7 @@ export default function EventFilterDialog({
                     key={i}
                     className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-sm"
                   >
-                    {tag.key}: {tag.value}
+                    {tagFilterLabel(tag)}
                     <button
                       onClick={() => removeTag(i)}
                       className="ml-1 rounded hover:bg-secondary-foreground/10"

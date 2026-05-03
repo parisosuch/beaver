@@ -31,6 +31,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       userId: user.id,
       userName: user.userName,
       isAdmin: user.isAdmin,
+      canCreateProjects: user.canCreateProjects,
+      mustChangePassword: user.mustChangePassword,
     };
 
     const accessToken = await createAccessToken(payload);
