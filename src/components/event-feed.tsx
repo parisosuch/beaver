@@ -65,12 +65,15 @@ export default function EventFeed({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState(search ?? "");
+  const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
   const eventsRef = useRef<EventWithChannelName[]>([]);
   const loadingMoreRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const dividerRef = useRef<HTMLDivElement>(null);
+  const didScrollToDivider = useRef(false);
 
   // Parse tags from URL param
   const parsedTags: TagFilter[] = tags ? JSON.parse(tags) : [];
@@ -281,6 +284,10 @@ export default function EventFeed({
       establishStream(maxId);
     });
 
+    // Reset scroll flag and last read date when channel changes
+    didScrollToDivider.current = false;
+    setLastReadDate(null);
+
     // Cleanup: close EventSource when dependencies change or component unmounts
     return () => {
       if (eventSource) {
@@ -288,6 +295,45 @@ export default function EventFeed({
       }
     };
   }, [projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
+
+  // Mark channel as read on mount, capture previous lastReadAt for divider
+  useEffect(() => {
+    if (type !== "channel" || !channel) return;
+
+    fetch("/api/unread", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelId: channel.id }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.lastReadAt) {
+          setLastReadDate(new Date(data.lastReadAt));
+        }
+        // Tell the sidebar to clear this channel's badge
+        window.dispatchEvent(
+          new CustomEvent("channel:read", {
+            detail: { channelId: channel.id },
+          }),
+        );
+      })
+      .catch(() => {});
+  }, [channel?.id]);
+
+  // Scroll to the unread divider once after initial load
+  useEffect(() => {
+    if (
+      loading ||
+      didScrollToDivider.current ||
+      !lastReadDate ||
+      !dividerRef.current ||
+      !scrollContainerRef.current
+    )
+      return;
+
+    didScrollToDivider.current = true;
+    dividerRef.current.scrollIntoView({ behavior: "instant", block: "center" });
+  }, [loading, events]);
 
   // Infinite scroll effect
   useEffect(() => {
@@ -341,6 +387,9 @@ export default function EventFeed({
   };
 
   const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
+  const hasNewEvents =
+    lastReadDate != null &&
+    events.some((e) => new Date(e.createdAt) > lastReadDate);
 
   if (loading) {
     return (
@@ -466,18 +515,38 @@ export default function EventFeed({
               </h2>
             </div>
           ) : (
-            events.map((event) => (
-              <motion.div
-                key={event.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
-                <EventCard event={event} />
-              </motion.div>
-            ))
+            events.map((event, i) => {
+              const isFirstOld =
+                hasNewEvents &&
+                new Date(event.createdAt) <= lastReadDate! &&
+                (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
+
+              return (
+                <div key={event.id}>
+                  {isFirstOld && (
+                    <div
+                      ref={dividerRef}
+                      className="flex items-center gap-3 py-1"
+                    >
+                      <div className="flex-1 border-t border-primary/40" />
+                      <span className="text-xs font-medium text-primary/70 shrink-0">
+                        New
+                      </span>
+                      <div className="flex-1 border-t border-primary/40" />
+                    </div>
+                  )}
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    <EventCard event={event} />
+                  </motion.div>
+                </div>
+              );
+            })
           )}
           <div ref={bottomRef} style={{ height: "1px" }} />
         </div>
