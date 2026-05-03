@@ -33,6 +33,16 @@ import {
 
 type SortOption = `${SortField}_${SortOrder}`;
 
+function tagFilterLabel(tag: TagFilter): string {
+  if (tag.type === "number") {
+    const op = tag.operator ?? "eq";
+    if (op === "between") return `${tag.key}: ${tag.value} – ${tag.value2}`;
+    const sym = op === "gt" ? ">" : op === "lt" ? "<" : "=";
+    return `${tag.key} ${sym} ${tag.value}`;
+  }
+  return `${tag.key}: ${tag.value}`;
+}
+
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: "date_desc", label: "Newest first" },
   { value: "date_asc", label: "Oldest first" },
@@ -487,9 +497,7 @@ export default function EventFeed({
               key={i}
               className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm"
             >
-              <span className="font-medium">{tag.key}</span>
-              <span className="text-gray-400 dark:text-gray-500">=</span>
-              <span>{tag.value}</span>
+              <span>{tagFilterLabel(tag)}</span>
               <button
                 onClick={() => handleRemoveTag(i)}
                 className="ml-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 p-0.5"

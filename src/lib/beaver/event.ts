@@ -14,6 +14,7 @@ import {
   lte,
   exists,
   max,
+  sql,
 } from "drizzle-orm";
 import { getProject } from "./project";
 
@@ -57,7 +58,10 @@ export type EventWithChannelName = {
 
 export type TagFilter = {
   key: string;
+  type: "string" | "number" | "boolean";
   value: string;
+  operator?: "eq" | "gt" | "lt" | "between";
+  value2?: string;
 };
 
 export type SortField = "date" | "name";
@@ -74,6 +78,39 @@ type QueryOptions = {
   tags?: TagFilter[];
   sortBy?: SortField;
   sortOrder?: SortOrder;
+};
+
+const buildTagCondition = (tagFilter: TagFilter) => {
+  const base = [
+    eq(eventTags.eventId, events.id),
+    eq(eventTags.key, tagFilter.key),
+  ];
+
+  if (tagFilter.type === "number") {
+    const op = tagFilter.operator ?? "eq";
+    const v = parseFloat(tagFilter.value);
+    if (op === "gt") {
+      base.push(sql`CAST(${eventTags.value} AS REAL) > ${v}` as any);
+    } else if (op === "lt") {
+      base.push(sql`CAST(${eventTags.value} AS REAL) < ${v}` as any);
+    } else if (op === "between") {
+      const v2 = parseFloat(tagFilter.value2 ?? tagFilter.value);
+      base.push(
+        sql`CAST(${eventTags.value} AS REAL) BETWEEN ${v} AND ${v2}` as any,
+      );
+    } else {
+      base.push(sql`CAST(${eventTags.value} AS REAL) = ${v}` as any);
+    }
+  } else {
+    base.push(eq(eventTags.value, tagFilter.value));
+  }
+
+  return exists(
+    db
+      .select({ eventId: eventTags.eventId })
+      .from(eventTags)
+      .where(and(...base)),
+  );
 };
 
 // helper function to get tag primitive object from event tags
@@ -142,18 +179,7 @@ export async function getChannelEvents(
   // Tag filtering using EXISTS subquery
   if (options.tags && options.tags.length > 0) {
     for (const tagFilter of options.tags) {
-      const tagSubquery = db
-        .select({ eventId: eventTags.eventId })
-        .from(eventTags)
-        .where(
-          and(
-            eq(eventTags.eventId, events.id),
-            eq(eventTags.key, tagFilter.key),
-            eq(eventTags.value, tagFilter.value),
-          ),
-        );
-
-      conditions.push(exists(tagSubquery));
+      conditions.push(buildTagCondition(tagFilter));
     }
   }
 
@@ -172,7 +198,7 @@ export async function getChannelEvents(
       channelName: channels.name,
     })
     .from(events)
-    .leftJoin(channels, eq(events.channelId, channels.id))
+    .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
@@ -232,18 +258,7 @@ export async function getProjectEvents(
   // Tag filtering using EXISTS subquery
   if (options.tags && options.tags.length > 0) {
     for (const tagFilter of options.tags) {
-      const tagSubquery = db
-        .select({ eventId: eventTags.eventId })
-        .from(eventTags)
-        .where(
-          and(
-            eq(eventTags.eventId, events.id),
-            eq(eventTags.key, tagFilter.key),
-            eq(eventTags.value, tagFilter.value),
-          ),
-        );
-
-      conditions.push(exists(tagSubquery));
+      conditions.push(buildTagCondition(tagFilter));
     }
   }
 
@@ -262,7 +277,7 @@ export async function getProjectEvents(
       channelName: channels.name,
     })
     .from(events)
-    .leftJoin(
+    .innerJoin(
       channels,
       and(
         eq(events.channelId, channels.id),
@@ -305,7 +320,7 @@ export async function getEvent(
       channelName: channels.name,
     })
     .from(events)
-    .leftJoin(channels, eq(events.channelId, channels.id))
+    .innerJoin(channels, eq(events.channelId, channels.id))
     .where(eq(events.id, eventId))
     .limit(1);
 
