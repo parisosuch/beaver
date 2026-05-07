@@ -61,6 +61,17 @@ function clearStoredTokens(): void {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
+// Decode a JWT payload without verifying the signature (client-side only)
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    // 30-second buffer so we refresh slightly before actual expiry
+    return Date.now() >= payload.exp * 1000 - 30_000;
+  } catch {
+    return true;
+  }
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -161,8 +172,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Validate session on mount
   useEffect(() => {
     const validateSession = async () => {
-      // Always attempt to refresh — even without localStorage tokens,
-      // the httpOnly refresh_token cookie may still be valid
+      const stored = getStoredTokens();
+
+      // If we have a non-expired access token, restore state from localStorage
+      // without hitting the refresh endpoint. Calling refresh on every mount
+      // rotates the session token, and if the user navigates before the response
+      // returns the middleware sees the now-deleted old session and redirects to
+      // /login.
+      if (stored?.accessToken && !isTokenExpired(stored.accessToken)) {
+        setAuth(stored.user, stored.accessToken, stored.refreshToken);
+        return;
+      }
+
+      // Token is expired or missing — refresh using the httpOnly cookie as
+      // fallback so even a cleared localStorage still recovers the session.
       const success = await refreshAccessToken();
 
       if (!success) {
@@ -177,7 +200,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     validateSession();
-  }, [refreshAccessToken]);
+  }, [refreshAccessToken, setAuth]);
 
   return (
     <UserContext.Provider
