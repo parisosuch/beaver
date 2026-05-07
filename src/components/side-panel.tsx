@@ -1015,7 +1015,7 @@ function SidePanelContent({
       )}
 
       <div
-        className={`md:hidden fixed top-0 left-0 z-50 h-screen w-[300px] bg-background border-r overflow-y-auto p-6 transition-transform duration-200 ${
+        className={`md:hidden fixed top-0 left-0 z-50 h-screen w-full bg-background overflow-y-auto p-6 transition-transform duration-200 ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
