@@ -10,4 +10,6 @@ import { mkdirSync } from "fs";
 const dbPath = resolve(process.cwd(), "data", "beaver.sqlite");
 mkdirSync(dirname(dbPath), { recursive: true });
 const sqlite = new Database(dbPath);
+sqlite.exec("PRAGMA journal_mode=WAL;");
+sqlite.exec("PRAGMA synchronous=NORMAL;");
 export const db = drizzle(sqlite, { schema });
