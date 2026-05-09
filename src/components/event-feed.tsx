@@ -86,14 +86,6 @@ export default function EventFeed({
   const trickleQueueRef = useRef<EventWithChannelName[]>([]);
   const trickleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Lazy-load framer-motion after initial paint so it stays out of the main bundle.
-  // AnimatePresence initial={false} prevents already-visible cards from re-animating
-  // when the module first loads.
-  const [fm, setFm] = useState<typeof import("framer-motion") | null>(null);
-  useEffect(() => {
-    import("framer-motion").then(setFm);
-  }, []);
-
   // Parse tags from URL param
   const parsedTags: TagFilter[] = tags ? JSON.parse(tags) : [];
 
@@ -554,19 +546,6 @@ export default function EventFeed({
                 new Date(event.createdAt) <= lastReadDate! &&
                 (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
 
-              const CardWrapper = fm ? fm.motion.div : "div";
-              const wrapperProps = fm
-                ? {
-                    layout: true as const,
-                    initial: { opacity: 0, y: 40 },
-                    animate: { opacity: 1, y: 0 },
-                    transition: { duration: 0.3, ease: "easeOut" as const },
-                  }
-                : {
-                    className:
-                      "animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out",
-                  };
-
               return (
                 <div key={event.id}>
                   {isFirstOld && (
@@ -581,18 +560,14 @@ export default function EventFeed({
                       <div className="flex-1 border-t border-primary/40" />
                     </div>
                   )}
-                  <CardWrapper {...wrapperProps}>
+                  <div className="animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out">
                     <EventCard event={event} />
-                  </CardWrapper>
+                  </div>
                 </div>
               );
             });
 
-            return fm ? (
-              <fm.AnimatePresence initial={false}>{cards}</fm.AnimatePresence>
-            ) : (
-              cards
-            );
+            return cards;
           })()}
           <div ref={bottomRef} style={{ height: "1px" }} />
         </div>
