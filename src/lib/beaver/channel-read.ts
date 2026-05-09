@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { channelReads, channels, events } from "../db/schema";
-import { eq, and, sql, count } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 // Mark a channel as read for a user. Returns the previous lastReadAt (or null
 // if the user has never read this channel before).
@@ -34,6 +34,10 @@ export async function markChannelRead(
 }
 
 // Returns unread event counts keyed by channel ID for all channels in a project.
+//
+// Uses a correlated subquery per channel so the planner can do a tight range
+// seek on events_channel_id_created_at_idx (channel_id = ?, created_at > ?)
+// rather than a full join + group-by over all events in the project.
 export async function getUnreadCounts(
   userId: number,
   projectId: number,
@@ -41,25 +45,21 @@ export async function getUnreadCounts(
   const rows = await db
     .select({
       channelId: channels.id,
-      unreadCount: count(events.id),
+      unreadCount: sql<number>`(
+        SELECT COUNT(*)
+        FROM ${events}
+        WHERE ${events.channelId} = ${channels.id}
+          AND ${events.createdAt} > COALESCE(
+            (SELECT ${channelReads.lastReadAt}
+             FROM ${channelReads}
+             WHERE ${channelReads.channelId} = ${channels.id}
+               AND ${channelReads.userId} = ${userId}),
+            0
+          )
+      )`,
     })
     .from(channels)
-    .leftJoin(
-      channelReads,
-      and(
-        eq(channelReads.channelId, channels.id),
-        eq(channelReads.userId, userId),
-      ),
-    )
-    .leftJoin(
-      events,
-      and(
-        eq(events.channelId, channels.id),
-        sql`${events.createdAt} > COALESCE(${channelReads.lastReadAt}, 0)`,
-      ),
-    )
-    .where(eq(channels.projectId, projectId))
-    .groupBy(channels.id);
+    .where(eq(channels.projectId, projectId));
 
   return Object.fromEntries(rows.map((r) => [r.channelId, r.unreadCount]));
 }
