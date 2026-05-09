@@ -11,19 +11,10 @@ const TOKEN_STORAGE_KEY = "beaver_tokens";
 
 interface AuthResponse {
   user: User;
-  accessToken: string;
-  refreshToken: string;
 }
 
 function storeTokens(data: AuthResponse): void {
-  localStorage.setItem(
-    TOKEN_STORAGE_KEY,
-    JSON.stringify({
-      user: data.user,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-    }),
-  );
+  localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({ user: data.user }));
 }
 
 interface AdminAccountProps {

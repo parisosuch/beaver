@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
 import { getUserByUsername, verifyPassword } from "../../../lib/beaver/user";
 import {
-  createAccessToken,
   createRefreshToken,
   getRefreshTokenExpiryDate,
 } from "../../../lib/auth/jwt";
@@ -43,13 +42,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       mustChangePassword: user.mustChangePassword,
     };
 
-    const accessToken = await createAccessToken(payload);
     const refreshToken = await createRefreshToken(payload);
     const expiresAt = getRefreshTokenExpiryDate();
 
     await createSession(user.id, refreshToken, expiresAt);
 
-    // Set refresh token as HTTP-only cookie
     cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -60,8 +57,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     return new Response(
       JSON.stringify({
-        accessToken,
-        refreshToken,
         user: {
           id: user.id,
           userName: user.userName,

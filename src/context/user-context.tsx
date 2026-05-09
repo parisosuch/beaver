@@ -18,8 +18,6 @@ export interface User {
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -27,73 +25,45 @@ interface AuthState {
 interface UserContextType extends AuthState {
   signIn: (username: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User) => void;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
 
 const TOKEN_STORAGE_KEY = "beaver_tokens";
 
-interface StoredTokens {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
-function getStoredTokens(): StoredTokens | null {
+function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
   const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
   if (!stored) return null;
   try {
-    return JSON.parse(stored);
+    return JSON.parse(stored).user ?? null;
   } catch {
     return null;
   }
 }
 
-function storeTokens(tokens: StoredTokens): void {
+function storeUser(user: User): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
+  localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({ user }));
 }
 
-function clearStoredTokens(): void {
+function clearStoredUser(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_STORAGE_KEY);
-}
-
-// Decode a JWT payload without verifying the signature (client-side only)
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    // 30-second buffer so we refresh slightly before actual expiry
-    return Date.now() >= payload.exp * 1000 - 30_000;
-  } catch {
-    return true;
-  }
 }
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    accessToken: null,
-    refreshToken: null,
     isLoading: true,
     isAuthenticated: false,
   });
 
-  const setAuth = useCallback(
-    (user: User, accessToken: string, refreshToken: string) => {
-      storeTokens({ user, accessToken, refreshToken });
-      setState({
-        user,
-        accessToken,
-        refreshToken,
-        isLoading: false,
-        isAuthenticated: true,
-      });
-    },
-    [],
-  );
+  const setAuth = useCallback((user: User) => {
+    storeUser(user);
+    setState({ user, isLoading: false, isAuthenticated: true });
+  }, []);
 
   const signIn = useCallback(
     async (username: string, password: string): Promise<boolean> => {
@@ -103,13 +73,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password }),
         });
-
-        if (!res.ok) {
-          return false;
-        }
-
+        if (!res.ok) return false;
         const data = await res.json();
-        setAuth(data.user, data.accessToken, data.refreshToken);
+        setAuth(data.user);
         return true;
       } catch {
         return false;
@@ -120,97 +86,45 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      if (state.refreshToken) {
-        await fetch("/api/auth/signout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken: state.refreshToken }),
-        });
-      }
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
     } catch {
       // Ignore errors during sign out
     } finally {
-      clearStoredTokens();
-      setState({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
+      clearStoredUser();
+      setState({ user: null, isLoading: false, isAuthenticated: false });
     }
-  }, [state.refreshToken]);
+  }, []);
 
-  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
-    const stored = getStoredTokens();
-
-    try {
-      // Send refresh token from localStorage if available,
-      // otherwise the server will fall back to the httpOnly cookie
-      const res = await fetch("/api/auth/refresh", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: stored?.refreshToken
-          ? JSON.stringify({ refreshToken: stored.refreshToken })
-          : "{}",
-      });
-
-      if (!res.ok) {
-        clearStoredTokens();
-        return false;
-      }
-
-      const data = await res.json();
-      setAuth(data.user, data.accessToken, data.refreshToken);
-      return true;
-    } catch {
-      clearStoredTokens();
-      return false;
-    }
-  }, [setAuth]);
-
-  // Validate session on mount
   useEffect(() => {
     const validateSession = async () => {
-      const stored = getStoredTokens();
-
-      // If we have a non-expired access token, restore state from localStorage
-      // without hitting the refresh endpoint. Calling refresh on every mount
-      // rotates the session token, and if the user navigates before the response
-      // returns the middleware sees the now-deleted old session and redirects to
-      // /login.
-      if (stored?.accessToken && !isTokenExpired(stored.accessToken)) {
-        setAuth(stored.user, stored.accessToken, stored.refreshToken);
+      // If the middleware let this page through, the session cookie is valid.
+      // Restore user identity from localStorage to avoid any network call.
+      const stored = getStoredUser();
+      if (stored) {
+        setAuth(stored);
         return;
       }
 
-      // Token is expired or missing — refresh using the httpOnly cookie as
-      // fallback so even a cleared localStorage still recovers the session.
-      const success = await refreshAccessToken();
-
-      if (!success) {
-        setState({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
+      // Fresh tab: localStorage is empty. Ask the server who we are using the
+      // httpOnly cookie — read-only, no session rotation.
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        setAuth(data.user);
+      } else {
+        setState({ user: null, isLoading: false, isAuthenticated: false });
       }
     };
 
     validateSession();
-  }, [refreshAccessToken, setAuth]);
+  }, [setAuth]);
 
   return (
-    <UserContext.Provider
-      value={{
-        ...state,
-        signIn,
-        signOut,
-        setAuth,
-      }}
-    >
+    <UserContext.Provider value={{ ...state, signIn, signOut, setAuth }}>
       {children}
     </UserContext.Provider>
   );
