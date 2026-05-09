@@ -15,6 +15,7 @@ const fetchMaxEventId = async (): Promise<number> => {
   }
 };
 import { useEffect, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
 import { Input } from "./ui/input";
 import { SearchIcon, XIcon, ArrowUpDownIcon } from "lucide-react";
@@ -31,6 +32,10 @@ import {
 } from "./ui/select";
 
 type SortOption = `${SortField}_${SortOrder}`;
+
+type Row =
+  | { kind: "event"; event: EventWithChannelName; isNew: boolean }
+  | { kind: "divider" };
 
 function tagFilterLabel(tag: TagFilter): string {
   if (tag.type === "number") {
@@ -77,11 +82,10 @@ export default function EventFeed({
   const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
+  const newEventIdsRef = useRef<Set<number>>(new Set());
   const eventsRef = useRef<EventWithChannelName[]>([]);
   const loadingMoreRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const dividerRef = useRef<HTMLDivElement>(null);
   const didScrollToDivider = useRef(false);
   const trickleQueueRef = useRef<EventWithChannelName[]>([]);
   const trickleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -188,13 +192,11 @@ export default function EventFeed({
       endpoint += `&search=${encodeURIComponent(search)}`;
     }
 
-    // Add filter params
     endpoint += buildApiFilterParams();
 
     try {
       const res = await fetch(endpoint);
       const batch = await res.json();
-
       return batch as EventWithChannelName[];
     } catch (err) {
       console.error(err);
@@ -202,7 +204,6 @@ export default function EventFeed({
     }
   };
 
-  // Handle filter changes - navigate to new URL
   const handleApplyFilters = (
     newStartDate: string | null,
     newEndDate: string | null,
@@ -217,56 +218,42 @@ export default function EventFeed({
     );
   };
 
-  // Remove a specific tag filter
   const handleRemoveTag = (index: number) => {
     const newTags = parsedTags.filter((_, i) => i !== index);
     navigate(buildFilterUrl({ tags: newTags.length > 0 ? newTags : null }));
   };
 
-  // Remove time filter
   const handleRemoveTimeFilter = () => {
     navigate(buildFilterUrl({ startDate: null, endDate: null }));
   };
 
-  // Initial load use effect
+  // Initial load + SSE setup
   useEffect(() => {
     let eventSource: EventSource | null = null;
 
-    // Reset state when dependencies change
     setEvents([]);
     setLoading(true);
     eventIdsRef.current.clear();
+    newEventIdsRef.current.clear();
     trickleQueueRef.current = [];
     if (trickleTimerRef.current) {
       clearTimeout(trickleTimerRef.current);
       trickleTimerRef.current = null;
     }
 
-    // Establish SSE connection for real-time updates (only for default sort)
     const isDefaultSort =
       !sortBy || (sortBy === "date" && (!sortOrder || sortOrder === "desc"));
 
     const establishStream = (maxId: number) => {
-      // SSE only makes sense for default sort (newest first) since new events
-      // are prepended to the top. For other sorts, real-time updates would
-      // break the sort order.
-      if (!isDefaultSort || maxId === 0) {
-        return;
-      }
+      if (!isDefaultSort || maxId === 0) return;
 
       let endpoint = "/api/events";
-
       if (channel) {
         endpoint += `/channel/${channel.id}/event-stream?afterId=${maxId}`;
       } else {
         endpoint += `/project/${projectID}/event-stream?afterId=${maxId}`;
       }
-
-      if (search) {
-        endpoint += `&search=${encodeURIComponent(search)}`;
-      }
-
-      // Add filter params
+      if (search) endpoint += `&search=${encodeURIComponent(search)}`;
       endpoint += buildApiFilterParams();
 
       eventSource = new EventSource(endpoint);
@@ -277,20 +264,19 @@ export default function EventFeed({
           return;
         }
         const next = trickleQueueRef.current.shift()!;
+        newEventIdsRef.current.add(next.id);
         setEvents((prev) => [next, ...prev]);
         trickleTimerRef.current = setTimeout(drainQueue, 150);
       };
 
       eventSource.addEventListener("message", (event) => {
         const newEvents: EventWithChannelName[] = JSON.parse(event.data);
-
-        const newUniqueEvents = newEvents.filter(
-          (newEvent) => !eventIdsRef.current.has(newEvent.id),
+        const unique = newEvents.filter(
+          (e) => !eventIdsRef.current.has(e.id),
         );
-
-        if (newUniqueEvents.length > 0) {
-          newUniqueEvents.forEach((e) => eventIdsRef.current.add(e.id));
-          trickleQueueRef.current.push(...newUniqueEvents);
+        if (unique.length > 0) {
+          unique.forEach((e) => eventIdsRef.current.add(e.id));
+          trickleQueueRef.current.push(...unique);
           if (!trickleTimerRef.current) drainQueue();
         }
       });
@@ -300,7 +286,6 @@ export default function EventFeed({
       };
     };
 
-    // Fetch events and max ID in parallel
     Promise.all([getEvents(), fetchMaxEventId()]).then(([res, maxId]) => {
       res.forEach((event) => eventIdsRef.current.add(event.id));
       setEvents(res);
@@ -308,11 +293,9 @@ export default function EventFeed({
       establishStream(maxId);
     });
 
-    // Reset scroll flag and last read date when channel changes
     didScrollToDivider.current = false;
     setLastReadDate(null);
 
-    // Cleanup: close EventSource when dependencies change or component unmounts
     return () => {
       if (eventSource) eventSource.close();
       trickleQueueRef.current = [];
@@ -323,7 +306,7 @@ export default function EventFeed({
     };
   }, [projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
 
-  // Mark channel as read on mount, capture previous lastReadAt for divider
+  // Mark channel as read, capture lastReadAt for divider
   useEffect(() => {
     if (type !== "channel" || !channel) return;
 
@@ -334,89 +317,82 @@ export default function EventFeed({
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.lastReadAt) {
-          setLastReadDate(new Date(data.lastReadAt));
-        }
-        // Tell the sidebar to clear this channel's badge
+        if (data.lastReadAt) setLastReadDate(new Date(data.lastReadAt));
         window.dispatchEvent(
-          new CustomEvent("channel:read", {
-            detail: { channelId: channel.id },
-          }),
+          new CustomEvent("channel:read", { detail: { channelId: channel.id } }),
         );
       })
       .catch(() => {});
   }, [channel?.id]);
 
-  // Scroll to the unread divider once after initial load
-  useEffect(() => {
-    if (
-      loading ||
-      didScrollToDivider.current ||
-      !lastReadDate ||
-      !dividerRef.current ||
-      !scrollContainerRef.current
-    )
-      return;
+  const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
+  const hasNewEvents =
+    lastReadDate != null &&
+    events.some((e) => new Date(e.createdAt) > lastReadDate);
 
+  // Build flat rows array (events interleaved with optional divider)
+  const rows: Row[] = [];
+  let dividerRowIndex = -1;
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    const isFirstOld =
+      hasNewEvents &&
+      new Date(event.createdAt) <= lastReadDate! &&
+      (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
+
+    if (isFirstOld) {
+      dividerRowIndex = rows.length;
+      rows.push({ kind: "divider" });
+    }
+    rows.push({
+      kind: "event",
+      event,
+      isNew: newEventIdsRef.current.has(event.id),
+    });
+  }
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: (i) => (rows[i]?.kind === "divider" ? 32 : 112),
+    overscan: 5,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  // Scroll to unread divider once after initial load
+  useEffect(() => {
+    if (loading || didScrollToDivider.current || dividerRowIndex === -1) return;
     didScrollToDivider.current = true;
-    dividerRef.current.scrollIntoView({ behavior: "instant", block: "center" });
-  }, [loading, events]);
+    virtualizer.scrollToIndex(dividerRowIndex, { align: "center" });
+  }, [loading, dividerRowIndex]);
 
-  // Infinite scroll effect
+  // Infinite scroll: load more when virtualizer approaches the end
   useEffect(() => {
-    if (loading || !bottomRef.current || !scrollContainerRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        // Use refs to avoid stale closures and prevent infinite loops
-        if (
-          entry.isIntersecting &&
-          !loadingMoreRef.current &&
-          eventsRef.current.length > 0
-        ) {
-          setLoadingMore(true);
-          getEvents().then((res) => {
-            if (res.length > 0) {
-              setEvents((prev) => [...prev, ...res]);
-            }
-            setLoadingMore(false);
-          });
+    if (loading || virtualItems.length === 0) return;
+    const lastItem = virtualItems[virtualItems.length - 1];
+    if (
+      lastItem.index >= rows.length - 5 &&
+      !loadingMoreRef.current &&
+      eventsRef.current.length > 0
+    ) {
+      setLoadingMore(true);
+      getEvents().then((res) => {
+        if (res.length > 0) {
+          res.forEach((e) => eventIdsRef.current.add(e.id));
+          setEvents((prev) => [...prev, ...res]);
         }
-      },
-      {
-        root: scrollContainerRef.current,
-        rootMargin: "200px",
-        threshold: 0.1,
-      },
-    );
+        setLoadingMore(false);
+      });
+    }
+  }, [virtualItems, loading]);
 
-    observer.observe(bottomRef.current);
-    return () => observer.disconnect();
-  }, [
-    loading,
-    projectID,
-    channel,
-    search,
-    startDate,
-    endDate,
-    tags,
-    sortBy,
-    sortOrder,
-  ]);
-
-  // Format time filter for display
   const formatTimeFilter = () => {
     if (!startDate && !endDate) return null;
     const start = startDate ? new Date(startDate).toLocaleDateString() : "?";
     const end = endDate ? new Date(endDate).toLocaleDateString() : "?";
     return `${start} - ${end}`;
   };
-
-  const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
-  const hasNewEvents =
-    lastReadDate != null &&
-    events.some((e) => new Date(e.createdAt) > lastReadDate);
 
   if (loading) {
     return (
@@ -529,48 +505,69 @@ export default function EventFeed({
       {/* Scrollable events */}
       <div
         ref={scrollContainerRef}
-        className="w-full flex justify-center max-h-screen overflow-y-auto scroll-smooth"
+        className="w-full flex-1 overflow-y-auto scroll-smooth"
       >
-        <div className="p-4 md:p-8 w-full lg:w-1/2 space-y-4">
-          {events.length === 0 ? (
-            <div className="w-full text-center">
-              <h2 className="text-2xl">
-                Looks like this {type === "project" ? "project" : "channel"} has
-                no events!
-              </h2>
-            </div>
-          ) : (() => {
-            const cards = events.map((event, i) => {
-              const isFirstOld =
-                hasNewEvents &&
-                new Date(event.createdAt) <= lastReadDate! &&
-                (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
-
-              return (
-                <div key={event.id}>
-                  {isFirstOld && (
-                    <div
-                      ref={dividerRef}
-                      className="flex items-center gap-3 py-1"
-                    >
-                      <div className="flex-1 border-t border-primary/40" />
-                      <span className="text-xs font-medium text-primary/70 shrink-0">
-                        New
-                      </span>
-                      <div className="flex-1 border-t border-primary/40" />
-                    </div>
-                  )}
-                  <div className="animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out">
-                    <EventCard event={event} />
+        {events.length === 0 ? (
+          <div className="w-full text-center pt-8">
+            <h2 className="text-2xl">
+              Looks like this {type === "project" ? "project" : "channel"} has
+              no events!
+            </h2>
+          </div>
+        ) : (
+          <div className="px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto">
+            <div
+              style={{
+                height: virtualizer.getTotalSize(),
+                position: "relative",
+              }}
+            >
+              {virtualItems.map((virtualRow) => {
+                const row = rows[virtualRow.index];
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                      paddingBottom: "16px",
+                    }}
+                  >
+                    {row.kind === "divider" ? (
+                      <div className="flex items-center gap-3 py-1">
+                        <div className="flex-1 border-t border-primary/40" />
+                        <span className="text-xs font-medium text-primary/70 shrink-0">
+                          New
+                        </span>
+                        <div className="flex-1 border-t border-primary/40" />
+                      </div>
+                    ) : (
+                      <div
+                        className={
+                          row.isNew
+                            ? "animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out"
+                            : undefined
+                        }
+                      >
+                        <EventCard event={row.event} />
+                      </div>
+                    )}
                   </div>
-                </div>
-              );
-            });
-
-            return cards;
-          })()}
-          <div ref={bottomRef} style={{ height: "1px" }} />
-        </div>
+                );
+              })}
+            </div>
+            {loadingMore && (
+              <p className="text-center text-sm text-muted-foreground py-4">
+                Loading...
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
