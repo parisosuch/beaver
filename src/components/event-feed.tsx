@@ -83,6 +83,16 @@ export default function EventFeed({
   const bottomRef = useRef<HTMLDivElement>(null);
   const dividerRef = useRef<HTMLDivElement>(null);
   const didScrollToDivider = useRef(false);
+  const trickleQueueRef = useRef<EventWithChannelName[]>([]);
+  const trickleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Lazy-load framer-motion after initial paint so it stays out of the main bundle.
+  // AnimatePresence initial={false} prevents already-visible cards from re-animating
+  // when the module first loads.
+  const [fm, setFm] = useState<typeof import("framer-motion") | null>(null);
+  useEffect(() => {
+    import("framer-motion").then(setFm);
+  }, []);
 
   // Parse tags from URL param
   const parsedTags: TagFilter[] = tags ? JSON.parse(tags) : [];
@@ -234,6 +244,11 @@ export default function EventFeed({
     setEvents([]);
     setLoading(true);
     eventIdsRef.current.clear();
+    trickleQueueRef.current = [];
+    if (trickleTimerRef.current) {
+      clearTimeout(trickleTimerRef.current);
+      trickleTimerRef.current = null;
+    }
 
     // Establish SSE connection for real-time updates (only for default sort)
     const isDefaultSort =
@@ -264,6 +279,16 @@ export default function EventFeed({
 
       eventSource = new EventSource(endpoint);
 
+      const drainQueue = () => {
+        if (trickleQueueRef.current.length === 0) {
+          trickleTimerRef.current = null;
+          return;
+        }
+        const next = trickleQueueRef.current.shift()!;
+        setEvents((prev) => [next, ...prev]);
+        trickleTimerRef.current = setTimeout(drainQueue, 150);
+      };
+
       eventSource.addEventListener("message", (event) => {
         const newEvents: EventWithChannelName[] = JSON.parse(event.data);
 
@@ -272,11 +297,9 @@ export default function EventFeed({
         );
 
         if (newUniqueEvents.length > 0) {
-          setEvents((prevEvents) => [...newUniqueEvents, ...prevEvents]);
-
-          newUniqueEvents.forEach((event) => {
-            eventIdsRef.current.add(event.id);
-          });
+          newUniqueEvents.forEach((e) => eventIdsRef.current.add(e.id));
+          trickleQueueRef.current.push(...newUniqueEvents);
+          if (!trickleTimerRef.current) drainQueue();
         }
       });
 
@@ -299,8 +322,11 @@ export default function EventFeed({
 
     // Cleanup: close EventSource when dependencies change or component unmounts
     return () => {
-      if (eventSource) {
-        eventSource.close();
+      if (eventSource) eventSource.close();
+      trickleQueueRef.current = [];
+      if (trickleTimerRef.current) {
+        clearTimeout(trickleTimerRef.current);
+        trickleTimerRef.current = null;
       }
     };
   }, [projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
@@ -521,12 +547,25 @@ export default function EventFeed({
                 no events!
               </h2>
             </div>
-          ) : (
-            events.map((event, i) => {
+          ) : (() => {
+            const cards = events.map((event, i) => {
               const isFirstOld =
                 hasNewEvents &&
                 new Date(event.createdAt) <= lastReadDate! &&
                 (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
+
+              const CardWrapper = fm ? fm.motion.div : "div";
+              const wrapperProps = fm
+                ? {
+                    layout: true as const,
+                    initial: { opacity: 0, y: 40 },
+                    animate: { opacity: 1, y: 0 },
+                    transition: { duration: 0.3, ease: "easeOut" as const },
+                  }
+                : {
+                    className:
+                      "animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out",
+                  };
 
               return (
                 <div key={event.id}>
@@ -542,13 +581,19 @@ export default function EventFeed({
                       <div className="flex-1 border-t border-primary/40" />
                     </div>
                   )}
-                  <div className="animate-in fade-in slide-in-from-bottom-5 duration-300 ease-out">
+                  <CardWrapper {...wrapperProps}>
                     <EventCard event={event} />
-                  </div>
+                  </CardWrapper>
                 </div>
               );
-            })
-          )}
+            });
+
+            return fm ? (
+              <fm.AnimatePresence initial={false}>{cards}</fm.AnimatePresence>
+            ) : (
+              cards
+            );
+          })()}
           <div ref={bottomRef} style={{ height: "1px" }} />
         </div>
       </div>
