@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
 import {
   verifyToken,
-  createAccessToken,
   createRefreshToken,
   getRefreshTokenExpiryDate,
 } from "../../../lib/auth/jwt";
@@ -64,7 +63,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Delete old session
     await deleteSession(refreshToken);
 
-    // Create new tokens
     const newPayload = {
       userId: payload.userId,
       userName: payload.userName,
@@ -73,14 +71,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       mustChangePassword: payload.mustChangePassword,
     };
 
-    const newAccessToken = await createAccessToken(newPayload);
     const newRefreshToken = await createRefreshToken(newPayload);
     const expiresAt = getRefreshTokenExpiryDate();
 
-    // Create new session
     await createSession(payload.userId, newRefreshToken, expiresAt);
 
-    // Set new refresh token cookie
     cookies.set("refresh_token", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -91,7 +86,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     return new Response(
       JSON.stringify({
-        accessToken: newAccessToken,
         refreshToken: newRefreshToken,
         user: {
           id: payload.userId,
