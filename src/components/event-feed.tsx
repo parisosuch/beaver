@@ -16,7 +16,6 @@ const fetchMaxEventId = async (): Promise<number> => {
 };
 import { useEffect, useRef, useState } from "react";
 import EventCard from "./event-card";
-import { motion } from "framer-motion";
 import { Input } from "./ui/input";
 import { SearchIcon, XIcon, ArrowUpDownIcon } from "lucide-react";
 import { Button } from "./ui/button";
@@ -543,15 +542,9 @@ export default function EventFeed({
                       <div className="flex-1 border-t border-primary/40" />
                     </div>
                   )}
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                  >
+                  <div className="animate-in fade-in slide-in-from-bottom-5 duration-300 ease-out">
                     <EventCard event={event} />
-                  </motion.div>
+                  </div>
                 </div>
               );
             })
