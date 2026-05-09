@@ -356,6 +356,8 @@ export default function EventFeed({
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: (i) => (rows[i]?.kind === "divider" ? 32 : 112),
     overscan: 5,
+    getItemKey: (i) =>
+      rows[i]?.kind === "divider" ? "divider" : rows[i]?.kind === "event" ? rows[i].event.id : i,
   });
 
   const virtualItems = virtualizer.getVirtualItems();
