@@ -1,9 +1,9 @@
 import type { EventWithChannelName } from "@/lib/beaver/event";
 import { Card } from "./ui/card";
 import { getEventTime } from "@/lib/utils";
-import { useRef } from "react";
+import { memo, useRef } from "react";
 
-export default function EventCard({ event }: { event: EventWithChannelName }) {
+const EventCard = memo(function EventCard({ event }: { event: EventWithChannelName }) {
   const eventUrl = `/dashboard/${event.projectId}/events/${event.id}`;
   const prefetched = useRef(false);
 
@@ -35,4 +35,6 @@ export default function EventCard({ event }: { event: EventWithChannelName }) {
       </Card>
     </a>
   );
-}
+});
+
+export default EventCard;
