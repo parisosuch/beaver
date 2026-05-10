@@ -85,6 +85,7 @@ export default function EventFeed({
   const newEventIdsRef = useRef<Set<number>>(new Set());
   const eventsRef = useRef<EventWithChannelName[]>([]);
   const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const didScrollToDivider = useRef(false);
   const trickleQueueRef = useRef<EventWithChannelName[]>([]);
@@ -235,6 +236,7 @@ export default function EventFeed({
     setLoading(true);
     eventIdsRef.current.clear();
     newEventIdsRef.current.clear();
+    hasMoreRef.current = true;
     trickleQueueRef.current = [];
     if (trickleTimerRef.current) {
       clearTimeout(trickleTimerRef.current);
@@ -376,6 +378,7 @@ export default function EventFeed({
     if (
       lastItem.index >= rows.length - 5 &&
       !loadingMoreRef.current &&
+      hasMoreRef.current &&
       eventsRef.current.length > 0
     ) {
       setLoadingMore(true);
@@ -383,6 +386,8 @@ export default function EventFeed({
         if (res.length > 0) {
           res.forEach((e) => eventIdsRef.current.add(e.id));
           setEvents((prev) => [...prev, ...res]);
+        } else {
+          hasMoreRef.current = false;
         }
         setLoadingMore(false);
       });
