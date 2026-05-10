@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { events, channels, eventTags } from "../db/schema";
+import { events, channels, eventTags, channelReads } from "../db/schema";
 import {
   eq,
   and,
@@ -208,12 +208,15 @@ export async function getChannelEvents(
     options.sortBy === "name" ? events.name : events.createdAt;
 
   const readExpr = userId !== undefined
-    ? sql<boolean>`EXISTS (
-        SELECT 1 FROM channel_reads
-        WHERE channel_reads.channel_id = ${events.channelId}
-          AND channel_reads.user_id = ${userId}
-          AND channel_reads.last_read_at >= ${events.createdAt}
-      )`
+    ? exists(
+        db.select({ _: sql`1` }).from(channelReads).where(
+          and(
+            eq(channelReads.channelId, events.channelId),
+            eq(channelReads.userId, userId),
+            gte(channelReads.lastReadAt, events.createdAt),
+          ),
+        ),
+      )
     : sql<boolean>`0`;
 
   const eventData = await db
@@ -308,12 +311,15 @@ export async function getProjectEvents(
     options.sortBy === "name" ? events.name : events.createdAt;
 
   const readExpr = userId !== undefined
-    ? sql<boolean>`EXISTS (
-        SELECT 1 FROM channel_reads
-        WHERE channel_reads.channel_id = ${events.channelId}
-          AND channel_reads.user_id = ${userId}
-          AND channel_reads.last_read_at >= ${events.createdAt}
-      )`
+    ? exists(
+        db.select({ _: sql`1` }).from(channelReads).where(
+          and(
+            eq(channelReads.channelId, events.channelId),
+            eq(channelReads.userId, userId),
+            gte(channelReads.lastReadAt, events.createdAt),
+          ),
+        ),
+      )
     : sql<boolean>`0`;
 
   const eventData = await db
@@ -354,12 +360,15 @@ export async function getEvent(
   userId?: number,
 ): Promise<EventWithChannelName | null> {
   const readExpr = userId !== undefined
-    ? sql<boolean>`EXISTS (
-        SELECT 1 FROM channel_reads
-        WHERE channel_reads.channel_id = ${events.channelId}
-          AND channel_reads.user_id = ${userId}
-          AND channel_reads.last_read_at >= ${events.createdAt}
-      )`
+    ? exists(
+        db.select({ _: sql`1` }).from(channelReads).where(
+          and(
+            eq(channelReads.channelId, events.channelId),
+            eq(channelReads.userId, userId),
+            gte(channelReads.lastReadAt, events.createdAt),
+          ),
+        ),
+      )
     : sql<boolean>`0`;
 
   const eventData = await db

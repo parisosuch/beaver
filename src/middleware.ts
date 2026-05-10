@@ -6,10 +6,10 @@ import { getProjectsForUser } from "./lib/beaver/project-member";
 import { logRequest, logError } from "./lib/logger";
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["/login", "/onboarding"];
+const PUBLIC_ROUTES = ["/login", "/onboarding", "/api/event"];
 
-// API routes that don't require authentication
-const PUBLIC_API_ROUTES = ["/api/auth/", "/api/event", "/api/admin"];
+// API routes that don't require authentication (prefix-matched)
+const PUBLIC_API_ROUTES = ["/api/auth/", "/api/admin"];
 
 // Routes that authed users should be redirected away from
 const AUTH_REDIRECT_ROUTES = ["/login", "/onboarding"];
