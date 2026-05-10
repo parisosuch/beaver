@@ -184,8 +184,17 @@ export default function EventFeed({
       endpoint += `/project/${projectID}?limit=20`;
     }
 
-    if (eventsRef.current.length > 0) {
-      endpoint += `&offset=${eventsRef.current.length}`;
+    const lastEvent = eventsRef.current[eventsRef.current.length - 1];
+    if (lastEvent) {
+      const field = sortBy ?? "date";
+      const order = sortOrder ?? "desc";
+      if (field === "name") {
+        endpoint += `&cursorName=${encodeURIComponent(lastEvent.name)}&cursorId=${lastEvent.id}`;
+      } else if (order === "asc") {
+        endpoint += `&afterId=${lastEvent.id}`;
+      } else {
+        endpoint += `&beforeId=${lastEvent.id}`;
+      }
     }
 
     if (search) {
