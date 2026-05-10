@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
 import { Input } from "./ui/input";
-import { SearchIcon, XIcon, ArrowUpDownIcon } from "lucide-react";
+import { SearchIcon, XIcon, ArrowUpDownIcon, DownloadIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
@@ -30,6 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 type SortOption = `${SortField}_${SortOrder}`;
 
@@ -418,6 +424,21 @@ export default function EventFeed({
     }
   }, [virtualItems, loading]);
 
+  const handleExport = (format: "json" | "csv") => {
+    const base =
+      type === "channel"
+        ? `/api/events/channel/${channel!.id}/export`
+        : `/api/events/project/${projectID}/export`;
+    const params = new URLSearchParams({ format });
+    if (search) params.set("search", search);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    if (tags) params.set("tags", tags);
+    if (sortBy) params.set("sortBy", sortBy);
+    if (sortOrder) params.set("sortOrder", sortOrder);
+    window.location.href = `${base}?${params.toString()}`;
+  };
+
   const formatTimeFilter = () => {
     if (!startDate && !endDate) return null;
     const start = startDate ? new Date(startDate).toLocaleDateString() : "?";
@@ -460,34 +481,52 @@ export default function EventFeed({
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <EventFilterDialog
-            type={type}
-            projectID={projectID}
-            channelID={channel?.id}
-            currentStartDate={startDate ?? null}
-            currentEndDate={endDate ?? null}
-            currentTags={parsedTags}
-            onApplyFilters={handleApplyFilters}
-          />
-          <Select value={currentSort} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-full sm:w-[160px] gap-2">
-              <ArrowUpDownIcon className="size-4 shrink-0" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2 items-center w-full sm:w-auto">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2 items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <DownloadIcon className="size-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport("json")}>
+                  Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("csv")}>
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <EventFilterDialog
+              type={type}
+              projectID={projectID}
+              channelID={channel?.id}
+              currentStartDate={startDate ?? null}
+              currentEndDate={endDate ?? null}
+              currentTags={parsedTags}
+              onApplyFilters={handleApplyFilters}
+            />
+            <Select value={currentSort} onValueChange={handleSortChange}>
+              <SelectTrigger className="w-full sm:w-[160px] gap-2">
+                <ArrowUpDownIcon className="size-4 shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2 items-center">
             <Input
               placeholder="Search..."
               type="text"
-              className="flex-1 sm:w-auto"
+              className="flex-1"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
