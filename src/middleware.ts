@@ -67,8 +67,10 @@ async function getAuthedRedirect(
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
+  const isApi = pathname.startsWith("/api/");
 
-  if (pathname.startsWith("/api/") || pathname === "/api/event") {
+  // Wraps next() with request logging for API routes
+  const nextWithLogging = async () => {
     const start = Date.now();
     try {
       const response = await next();
@@ -78,7 +80,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       logError(context.request.method, pathname, Date.now() - start, err);
       throw err;
     }
-  }
+  };
 
   // For login/onboarding, redirect authed users to dashboard
   if (AUTH_REDIRECT_ROUTES.includes(pathname)) {
@@ -91,7 +93,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Allow other public routes (API routes)
   if (isPublicRoute(pathname)) {
-    return next();
+    return isApi ? nextWithLogging() : next();
   }
 
   // Check if admin user exists
@@ -148,11 +150,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(CHANGE_PASSWORD_ROUTE);
   }
 
-  const response = await next();
+  if (isApi) {
+    return nextWithLogging();
+  }
 
+  const response = await next();
   // Prevent caching of protected pages to ensure auth is checked on every request
   // This is important when using View Transitions/prefetching
   response.headers.set("Cache-Control", "no-store, must-revalidate");
-
   return response;
 });
