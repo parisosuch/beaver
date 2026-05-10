@@ -71,8 +71,7 @@ type QueryOptions = {
   search: string | null;
   afterId?: number;
   beforeId?: number;
-  cursorName?: string;
-  cursorId?: number;
+  offset?: number;
   limit?: number;
   startDate?: Date;
   endDate?: Date;
@@ -163,26 +162,9 @@ export async function getChannelEvents(
     conditions.push(gt(events.id, options.afterId));
   }
 
-  if (options.beforeId) {
+  // Only use cursor pagination for default sort (date desc)
+  if (options.beforeId && !options.offset) {
     conditions.push(lt(events.id, options.beforeId));
-  }
-
-  if (options.cursorName !== undefined && options.cursorId !== undefined) {
-    if (options.sortOrder === "asc") {
-      conditions.push(
-        or(
-          gt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), gt(events.id, options.cursorId)),
-        ),
-      );
-    } else {
-      conditions.push(
-        or(
-          lt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), lt(events.id, options.cursorId)),
-        ),
-      );
-    }
   }
 
   // Date range filtering
@@ -205,7 +187,7 @@ export async function getChannelEvents(
   const orderColumn =
     options.sortBy === "name" ? events.name : events.createdAt;
 
-  const eventData = await db
+  let query = db
     .select({
       id: events.id,
       name: events.name,
@@ -220,6 +202,12 @@ export async function getChannelEvents(
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
+
+  if (options.offset) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  const eventData = await query;
   const eventIds = eventData.map((event) => event.id);
 
   const fetchedTags = await getEventTags(eventIds);
@@ -253,26 +241,9 @@ export async function getProjectEvents(
     conditions.push(gt(events.id, options.afterId));
   }
 
-  if (options.beforeId) {
+  // Only use cursor pagination for default sort (date desc)
+  if (options.beforeId && !options.offset) {
     conditions.push(lt(events.id, options.beforeId));
-  }
-
-  if (options.cursorName !== undefined && options.cursorId !== undefined) {
-    if (options.sortOrder === "asc") {
-      conditions.push(
-        or(
-          gt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), gt(events.id, options.cursorId)),
-        ),
-      );
-    } else {
-      conditions.push(
-        or(
-          lt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), lt(events.id, options.cursorId)),
-        ),
-      );
-    }
   }
 
   // Date range filtering
@@ -295,7 +266,7 @@ export async function getProjectEvents(
   const orderColumn =
     options.sortBy === "name" ? events.name : events.createdAt;
 
-  const eventData = await db
+  let query = db
     .select({
       id: events.id,
       name: events.name,
@@ -316,6 +287,12 @@ export async function getProjectEvents(
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
+
+  if (options.offset) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  const eventData = await query;
 
   const eventIds = eventData.map((event) => event.id);
 

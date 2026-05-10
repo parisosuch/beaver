@@ -89,16 +89,6 @@ export const events = sqliteTable(
       table.projectId,
       table.createdAt,
     ),
-    channelNameIdIdx: index("events_channel_id_name_id_idx").on(
-      table.channelId,
-      table.name,
-      table.id,
-    ),
-    projectNameIdIdx: index("events_project_id_name_id_idx").on(
-      table.projectId,
-      table.name,
-      table.id,
-    ),
   }),
 );
 
