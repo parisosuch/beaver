@@ -9,9 +9,11 @@ import {
 export async function GET({
   params,
   url,
+  locals,
 }: {
   params: { channelID: string };
   url: URL;
+  locals: App.Locals;
 }) {
   try {
     const { channelID } = params;
@@ -72,7 +74,7 @@ export async function GET({
       tags,
       sortBy: sortBy ?? undefined,
       sortOrder: sortOrder ?? undefined,
-    });
+    }, locals.user?.id);
 
     return new Response(JSON.stringify(events), {
       headers: { "Content-Type": "application/json" },

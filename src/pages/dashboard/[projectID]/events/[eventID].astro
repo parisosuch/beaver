@@ -5,7 +5,7 @@ import { getEvent } from "@/lib/beaver/event";
 
 const { projectID, eventID } = Astro.params;
 
-const event = await getEvent(parseInt(eventID!));
+const event = await getEvent(parseInt(eventID!), Astro.locals.user?.id);
 
 if (!event) {
   return Astro.redirect(`/dashboard/${projectID}/feed`);

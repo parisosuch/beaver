@@ -324,17 +324,32 @@ export default function EventFeed({
     fetch("/api/unread", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelId: channel.id }),
+      body: JSON.stringify({ channelName: channel.name, projectId: channel.projectId }),
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.lastReadAt) setLastReadDate(new Date(data.lastReadAt));
         window.dispatchEvent(
-          new CustomEvent("channel:read", { detail: { channelId: channel.id } }),
+          new CustomEvent("channel:read", {
+            detail: { channelId: data.channelId, channelName: channel.name },
+          }),
         );
       })
       .catch(() => {});
   }, [channel?.id]);
+
+  // Clear unread dots when a channel is marked as read
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ channelName: string }>) => {
+      setEvents((prev) =>
+        prev.map((ev) =>
+          ev.channelName === e.detail.channelName ? { ...ev, read: true } : ev,
+        ),
+      );
+    };
+    window.addEventListener("channel:read", handler as EventListener);
+    return () => window.removeEventListener("channel:read", handler as EventListener);
+  }, []);
 
   const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
   const hasNewEvents =
