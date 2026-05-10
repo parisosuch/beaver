@@ -8,8 +8,8 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import { ArrowLeftIcon } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowLeftIcon, BookmarkIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 function TagBadge({
   tagKey,
@@ -36,6 +36,23 @@ export default function EventDetail({
   event: EventWithChannelName;
 }) {
   const tags = Object.entries(event.tags);
+  const [bookmarked, setBookmarked] = useState(event.bookmarked);
+  const [bookmarking, setBookmarking] = useState(false);
+
+  const handleBookmark = async () => {
+    setBookmarking(true);
+    try {
+      const res = await fetch("/api/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event.id }),
+      });
+      const data = await res.json();
+      if (res.ok) setBookmarked(data.bookmarked);
+    } finally {
+      setBookmarking(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/unread", {
@@ -68,18 +85,32 @@ export default function EventDetail({
         </Button>
         <Card>
           <CardHeader>
-            <div className="flex items-center space-x-4">
-              <div className="bg-gray-100 dark:bg-white/10 p-3 rounded-md">
-                <p className="text-2xl">{event.icon ? event.icon : "🪵"}</p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                <div className="bg-gray-100 dark:bg-white/10 p-3 rounded-md">
+                  <p className="text-2xl">{event.icon ? event.icon : "🪵"}</p>
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">{event.name}</CardTitle>
+                  <CardDescription className="flex items-center gap-2 mt-1">
+                    <span># {event.channelName}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span>{getEventTime(new Date(event.createdAt))}</span>
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-2xl">{event.name}</CardTitle>
-                <CardDescription className="flex items-center gap-2 mt-1">
-                  <span># {event.channelName}</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span>{getEventTime(new Date(event.createdAt))}</span>
-                </CardDescription>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBookmark}
+                disabled={bookmarking}
+                className="shrink-0"
+              >
+                <BookmarkIcon
+                  className={bookmarked ? "fill-current" : ""}
+                  size={18}
+                />
+              </Button>
             </div>
           </CardHeader>
 
