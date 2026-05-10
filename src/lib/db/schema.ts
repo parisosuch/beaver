@@ -200,6 +200,29 @@ export const channelReads = sqliteTable(
   }),
 );
 
+// --- BOOKMARKS ---
+export const bookmarks = sqliteTable(
+  "bookmarks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    userEventIdx: uniqueIndex("bookmarks_user_event_idx").on(
+      table.userId,
+      table.eventId,
+    ),
+  }),
+);
+
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),

@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import {
+  BookmarkIcon,
   BookOpenIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -785,6 +786,7 @@ function PanelContent({
 
   const project = currentProject;
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
+  const isBookmarksActive = () => pathname === `/dashboard/${project.id}/bookmarks`;
   const isSettingsActive = () =>
     pathname === `/dashboard/${project.id}/settings`;
   const isApiDocsActive = () =>
@@ -863,6 +865,14 @@ function PanelContent({
         >
           <InboxIcon size={20} />
           <p>Feed</p>
+        </a>
+        <a
+          className={isBookmarksActive() ? activeNavCss : navCss}
+          href={`/dashboard/${project.id}/bookmarks`}
+          onClick={() => onNavigate?.()}
+        >
+          <BookmarkIcon size={20} />
+          <p>Bookmarks</p>
         </a>
         {canEdit && (
           <a

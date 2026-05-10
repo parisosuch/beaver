@@ -1,6 +1,7 @@
 import type { EventWithChannelName } from "@/lib/beaver/event";
 import { Card } from "./ui/card";
 import { getEventTime } from "@/lib/utils";
+import { BookmarkIcon } from "lucide-react";
 import { memo, useRef } from "react";
 
 const EventCard = memo(function EventCard({ event }: { event: EventWithChannelName }) {
@@ -31,9 +32,14 @@ const EventCard = memo(function EventCard({ event }: { event: EventWithChannelNa
               <p>{getEventTime(new Date(event.createdAt))}</p>
             </div>
           </div>
-          {!event.read && (
-            <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {event.bookmarked && (
+              <BookmarkIcon size={14} className="fill-current text-muted-foreground" />
+            )}
+            {!event.read && (
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+            )}
+          </div>
         </div>
       </Card>
     </a>

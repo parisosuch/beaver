@@ -1,0 +1,27 @@
+---
+import Layout from "@/layouts/layout.astro";
+import BookmarksFeed from "@/components/bookmarks-feed";
+import { getChannels } from "@/lib/beaver/channel";
+
+const { projectID } = Astro.params;
+const channels = await getChannels(parseInt(projectID!));
+
+const search = Astro.url.searchParams.get("search");
+const startDate = Astro.url.searchParams.get("startDate");
+const endDate = Astro.url.searchParams.get("endDate");
+const tags = Astro.url.searchParams.get("tags");
+const channelId = Astro.url.searchParams.get("channelId");
+---
+
+<Layout projectID={projectID!}>
+  <BookmarksFeed
+    client:load
+    projectID={parseInt(projectID!)}
+    channels={channels}
+    search={search}
+    startDate={startDate}
+    endDate={endDate}
+    tags={tags}
+    channelId={channelId}
+  />
+</Layout>

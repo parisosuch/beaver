@@ -1,5 +1,6 @@
 import { db } from "../db/db";
-import { events, channels, eventTags, channelReads } from "../db/schema";
+import { events, channels, eventTags, channelReads, bookmarks } from "../db/schema";
+import { getEventTags } from "./event-tags";
 import {
   eq,
   and,
@@ -55,6 +56,7 @@ export type EventWithChannelName = {
   createdAt: Date;
   tags: TagPrimitive;
   read: boolean;
+  bookmarked: boolean;
 };
 
 export type TagFilter = {
@@ -115,33 +117,6 @@ const buildTagCondition = (tagFilter: TagFilter) => {
   );
 };
 
-// helper function to get tag primitive object from event tags
-const getEventTags = async (
-  ids: number[],
-): Promise<Record<number, TagPrimitive>> => {
-  // batch fetch all tags for these events
-  const allTags = await db
-    .select()
-    .from(eventTags)
-    .where(inArray(eventTags.eventId, ids));
-
-  // group tags by eventId and convert to TagPrimitive
-  const tagsByEventId: Record<number, TagPrimitive> = {};
-
-  for (const tag of allTags) {
-    if (!tagsByEventId[tag.eventId]) tagsByEventId[tag.eventId] = {};
-
-    if (tag.type === "number") {
-      tagsByEventId[tag.eventId][tag.key] = Number(tag.value);
-    } else if (tag.type === "boolean") {
-      tagsByEventId[tag.eventId][tag.key] = tag.value === "true";
-    } else {
-      tagsByEventId[tag.eventId][tag.key] = tag.value;
-    }
-  }
-
-  return tagsByEventId;
-};
 
 export async function getChannelEvents(
   channelId: number,
@@ -219,6 +194,14 @@ export async function getChannelEvents(
       )
     : sql<boolean>`0`;
 
+  const bookmarkedExpr = userId !== undefined
+    ? exists(
+        db.select({ _: sql`1` }).from(bookmarks).where(
+          and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId)),
+        ),
+      )
+    : sql<boolean>`0`;
+
   const eventData = await db
     .select({
       id: events.id,
@@ -229,6 +212,7 @@ export async function getChannelEvents(
       createdAt: events.createdAt,
       channelName: channels.name,
       read: readExpr,
+      bookmarked: bookmarkedExpr,
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
@@ -243,6 +227,7 @@ export async function getChannelEvents(
     ...event,
     tags: fetchedTags[event.id] || {},
     read: Boolean(event.read),
+    bookmarked: Boolean(event.bookmarked),
   }));
 }
 
@@ -322,6 +307,14 @@ export async function getProjectEvents(
       )
     : sql<boolean>`0`;
 
+  const bookmarkedExpr = userId !== undefined
+    ? exists(
+        db.select({ _: sql`1` }).from(bookmarks).where(
+          and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId)),
+        ),
+      )
+    : sql<boolean>`0`;
+
   const eventData = await db
     .select({
       id: events.id,
@@ -332,6 +325,7 @@ export async function getProjectEvents(
       createdAt: events.createdAt,
       channelName: channels.name,
       read: readExpr,
+      bookmarked: bookmarkedExpr,
     })
     .from(events)
     .innerJoin(
@@ -352,6 +346,7 @@ export async function getProjectEvents(
     ...event,
     tags: fetchedTags[event.id] || {},
     read: Boolean(event.read),
+    bookmarked: Boolean(event.bookmarked),
   })) as EventWithChannelName[];
 }
 
@@ -371,6 +366,14 @@ export async function getEvent(
       )
     : sql<boolean>`0`;
 
+  const bookmarkedExpr = userId !== undefined
+    ? exists(
+        db.select({ _: sql`1` }).from(bookmarks).where(
+          and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId)),
+        ),
+      )
+    : sql<boolean>`0`;
+
   const eventData = await db
     .select({
       id: events.id,
@@ -381,6 +384,7 @@ export async function getEvent(
       createdAt: events.createdAt,
       channelName: channels.name,
       read: readExpr,
+      bookmarked: bookmarkedExpr,
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
@@ -398,6 +402,7 @@ export async function getEvent(
     ...event,
     tags: tags[event.id] || {},
     read: Boolean(event.read),
+    bookmarked: Boolean(event.bookmarked),
   };
 }
 
@@ -447,7 +452,7 @@ export async function exportChannelEvents(
     .orderBy(orderFn(orderColumn));
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
-  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false }));
+  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false, bookmarked: false }));
 }
 
 export async function exportProjectEvents(
@@ -474,7 +479,7 @@ export async function exportProjectEvents(
     .orderBy(orderFn(orderColumn));
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
-  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false }));
+  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false, bookmarked: false }));
 }
 
 export async function createEvent({
@@ -539,6 +544,7 @@ export async function createEvent({
       channelName: channelsRes[0].name,
       createdAt: event.createdAt,
       read: false,
+      bookmarked: false,
     };
   }
 
@@ -552,5 +558,6 @@ export async function createEvent({
     channelName: channelsRes[0].name,
     createdAt: event.createdAt,
     read: false,
+    bookmarked: false,
   };
 }
