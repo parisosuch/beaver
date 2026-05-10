@@ -401,6 +401,82 @@ export async function getEvent(
   };
 }
 
+type ExportOptions = {
+  search?: string | null;
+  startDate?: Date;
+  endDate?: Date;
+  tags?: TagFilter[];
+  sortBy?: SortField;
+  sortOrder?: SortOrder;
+};
+
+function buildExportConditions(base: any[], options: ExportOptions) {
+  if (options.search) {
+    const terms = options.search.split(" ").map((w) => `%${w}%`);
+    base.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
+  }
+  if (options.startDate) base.push(gte(events.createdAt, options.startDate));
+  if (options.endDate) base.push(lte(events.createdAt, options.endDate));
+  if (options.tags?.length) {
+    for (const tagFilter of options.tags) base.push(buildTagCondition(tagFilter));
+  }
+  return base;
+}
+
+export async function exportChannelEvents(
+  channelId: number,
+  options: ExportOptions,
+): Promise<EventWithChannelName[]> {
+  const conditions = buildExportConditions([eq(events.channelId, channelId)], options);
+  const orderFn = options.sortOrder === "asc" ? asc : desc;
+  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+
+  const eventData = await db
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      icon: events.icon,
+      projectId: events.projectId,
+      createdAt: events.createdAt,
+      channelName: channels.name,
+    })
+    .from(events)
+    .innerJoin(channels, eq(events.channelId, channels.id))
+    .where(and(...conditions))
+    .orderBy(orderFn(orderColumn));
+
+  const fetchedTags = await getEventTags(eventData.map((e) => e.id));
+  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false }));
+}
+
+export async function exportProjectEvents(
+  projectId: number,
+  options: ExportOptions,
+): Promise<EventWithChannelName[]> {
+  const conditions = buildExportConditions([eq(events.projectId, projectId)], options);
+  const orderFn = options.sortOrder === "asc" ? asc : desc;
+  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+
+  const eventData = await db
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      icon: events.icon,
+      projectId: events.projectId,
+      createdAt: events.createdAt,
+      channelName: channels.name,
+    })
+    .from(events)
+    .innerJoin(channels, eq(events.channelId, channels.id))
+    .where(and(...conditions))
+    .orderBy(orderFn(orderColumn));
+
+  const fetchedTags = await getEventTags(eventData.map((e) => e.id));
+  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false }));
+}
+
 export async function createEvent({
   name,
   description,
