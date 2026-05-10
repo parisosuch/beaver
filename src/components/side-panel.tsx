@@ -623,6 +623,7 @@ function ChannelGroups({
 
   return (
     <DndContext
+      id="side-panel-dnd"
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
