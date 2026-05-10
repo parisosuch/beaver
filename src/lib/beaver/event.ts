@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { events, channels, eventTags, channelReads } from "../db/schema";
+import { events, channels, eventTags } from "../db/schema";
 import {
   eq,
   and,
@@ -207,9 +207,14 @@ export async function getChannelEvents(
   const orderColumn =
     options.sortBy === "name" ? events.name : events.createdAt;
 
-  const readJoin = userId !== undefined
-    ? and(eq(channelReads.channelId, events.channelId), eq(channelReads.userId, userId))
-    : sql`false`;
+  const readExpr = userId !== undefined
+    ? sql<boolean>`EXISTS (
+        SELECT 1 FROM channel_reads
+        WHERE channel_reads.channel_id = ${events.channelId}
+          AND channel_reads.user_id = ${userId}
+          AND channel_reads.last_read_at >= ${events.createdAt}
+      )`
+    : sql<boolean>`0`;
 
   const eventData = await db
     .select({
@@ -220,11 +225,10 @@ export async function getChannelEvents(
       projectId: events.projectId,
       createdAt: events.createdAt,
       channelName: channels.name,
-      lastReadAt: channelReads.lastReadAt,
+      read: readExpr,
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
-    .leftJoin(channelReads, readJoin)
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
@@ -232,10 +236,10 @@ export async function getChannelEvents(
   const eventIds = eventData.map((event) => event.id);
   const fetchedTags = await getEventTags(eventIds);
 
-  return eventData.map(({ lastReadAt, ...event }) => ({
+  return eventData.map((event) => ({
     ...event,
     tags: fetchedTags[event.id] || {},
-    read: lastReadAt !== null && event.createdAt <= lastReadAt,
+    read: Boolean(event.read),
   }));
 }
 
@@ -303,9 +307,14 @@ export async function getProjectEvents(
   const orderColumn =
     options.sortBy === "name" ? events.name : events.createdAt;
 
-  const readJoin = userId !== undefined
-    ? and(eq(channelReads.channelId, events.channelId), eq(channelReads.userId, userId))
-    : sql`false`;
+  const readExpr = userId !== undefined
+    ? sql<boolean>`EXISTS (
+        SELECT 1 FROM channel_reads
+        WHERE channel_reads.channel_id = ${events.channelId}
+          AND channel_reads.user_id = ${userId}
+          AND channel_reads.last_read_at >= ${events.createdAt}
+      )`
+    : sql<boolean>`0`;
 
   const eventData = await db
     .select({
@@ -316,7 +325,7 @@ export async function getProjectEvents(
       projectId: events.projectId,
       createdAt: events.createdAt,
       channelName: channels.name,
-      lastReadAt: channelReads.lastReadAt,
+      read: readExpr,
     })
     .from(events)
     .innerJoin(
@@ -326,7 +335,6 @@ export async function getProjectEvents(
         eq(events.projectId, channels.projectId),
       ),
     )
-    .leftJoin(channelReads, readJoin)
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
@@ -334,10 +342,10 @@ export async function getProjectEvents(
   const eventIds = eventData.map((event) => event.id);
   const fetchedTags = await getEventTags(eventIds);
 
-  return eventData.map(({ lastReadAt, ...event }) => ({
+  return eventData.map((event) => ({
     ...event,
     tags: fetchedTags[event.id] || {},
-    read: lastReadAt !== null && event.createdAt <= lastReadAt,
+    read: Boolean(event.read),
   })) as EventWithChannelName[];
 }
 
@@ -345,9 +353,14 @@ export async function getEvent(
   eventId: number,
   userId?: number,
 ): Promise<EventWithChannelName | null> {
-  const readJoin = userId !== undefined
-    ? and(eq(channelReads.channelId, events.channelId), eq(channelReads.userId, userId))
-    : sql`false`;
+  const readExpr = userId !== undefined
+    ? sql<boolean>`EXISTS (
+        SELECT 1 FROM channel_reads
+        WHERE channel_reads.channel_id = ${events.channelId}
+          AND channel_reads.user_id = ${userId}
+          AND channel_reads.last_read_at >= ${events.createdAt}
+      )`
+    : sql<boolean>`0`;
 
   const eventData = await db
     .select({
@@ -358,11 +371,10 @@ export async function getEvent(
       projectId: events.projectId,
       createdAt: events.createdAt,
       channelName: channels.name,
-      lastReadAt: channelReads.lastReadAt,
+      read: readExpr,
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
-    .leftJoin(channelReads, readJoin)
     .where(eq(events.id, eventId))
     .limit(1);
 
@@ -370,13 +382,13 @@ export async function getEvent(
     return null;
   }
 
-  const { lastReadAt, ...event } = eventData[0];
+  const event = eventData[0];
   const tags = await getEventTags([event.id]);
 
   return {
     ...event,
     tags: tags[event.id] || {},
-    read: lastReadAt !== null && event.createdAt <= lastReadAt,
+    read: Boolean(event.read),
   };
 }
 
