@@ -3,6 +3,7 @@ import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
 import { getProjectsForUser } from "./lib/beaver/project-member";
+import { logRequest, logError } from "./lib/logger";
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ["/login", "/onboarding"];
@@ -66,6 +67,18 @@ async function getAuthedRedirect(
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
+
+  if (pathname.startsWith("/api/") || pathname === "/api/event") {
+    const start = Date.now();
+    try {
+      const response = await next();
+      logRequest(context.request.method, pathname, response.status, Date.now() - start);
+      return response;
+    } catch (err) {
+      logError(context.request.method, pathname, Date.now() - start, err);
+      throw err;
+    }
+  }
 
   // For login/onboarding, redirect authed users to dashboard
   if (AUTH_REDIRECT_ROUTES.includes(pathname)) {
