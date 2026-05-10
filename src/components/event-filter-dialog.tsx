@@ -323,7 +323,7 @@ export default function EventFilterDialog({
                 <label className="text-sm text-muted-foreground">From</label>
                 <DatePicker
                   date={startDate}
-                  onSelect={setStartDate}
+                  onSelect={(d) => setStartDate(d ? startOfDay(d) : undefined)}
                   placeholder="Start date"
                 />
               </div>
@@ -331,7 +331,7 @@ export default function EventFilterDialog({
                 <label className="text-sm text-muted-foreground">To</label>
                 <DatePicker
                   date={endDate}
-                  onSelect={setEndDate}
+                  onSelect={(d) => setEndDate(d ? endOfDay(d) : undefined)}
                   placeholder="End date"
                 />
               </div>
