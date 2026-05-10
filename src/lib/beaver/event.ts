@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { events, channels, eventTags } from "../db/schema";
+import { events, channels, eventTags, channelReads } from "../db/schema";
 import {
   eq,
   and,
@@ -54,6 +54,7 @@ export type EventWithChannelName = {
   channelName: string;
   createdAt: Date;
   tags: TagPrimitive;
+  read: boolean;
 };
 
 export type TagFilter = {
@@ -145,6 +146,7 @@ const getEventTags = async (
 export async function getChannelEvents(
   channelId: number,
   options: QueryOptions,
+  userId?: number,
 ): Promise<EventWithChannelName[]> {
   // initial where clause
   const conditions: any[] = [eq(events.channelId, channelId)];
@@ -205,6 +207,10 @@ export async function getChannelEvents(
   const orderColumn =
     options.sortBy === "name" ? events.name : events.createdAt;
 
+  const readJoin = userId !== undefined
+    ? and(eq(channelReads.channelId, events.channelId), eq(channelReads.userId, userId))
+    : sql`false`;
+
   const eventData = await db
     .select({
       id: events.id,
@@ -214,27 +220,29 @@ export async function getChannelEvents(
       projectId: events.projectId,
       createdAt: events.createdAt,
       channelName: channels.name,
+      lastReadAt: channelReads.lastReadAt,
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
+    .leftJoin(channelReads, readJoin)
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
-  const eventIds = eventData.map((event) => event.id);
 
+  const eventIds = eventData.map((event) => event.id);
   const fetchedTags = await getEventTags(eventIds);
 
-  const eventsRes = eventData.map((event) => ({
+  return eventData.map(({ lastReadAt, ...event }) => ({
     ...event,
     tags: fetchedTags[event.id] || {},
+    read: lastReadAt !== null && event.createdAt <= lastReadAt,
   }));
-
-  return eventsRes;
 }
 
 export async function getProjectEvents(
   projectId: number,
   options: QueryOptions,
+  userId?: number,
 ): Promise<EventWithChannelName[]> {
   // initial where clause
   const conditions: any[] = [eq(events.projectId, projectId)];
@@ -295,6 +303,10 @@ export async function getProjectEvents(
   const orderColumn =
     options.sortBy === "name" ? events.name : events.createdAt;
 
+  const readJoin = userId !== undefined
+    ? and(eq(channelReads.channelId, events.channelId), eq(channelReads.userId, userId))
+    : sql`false`;
+
   const eventData = await db
     .select({
       id: events.id,
@@ -304,6 +316,7 @@ export async function getProjectEvents(
       projectId: events.projectId,
       createdAt: events.createdAt,
       channelName: channels.name,
+      lastReadAt: channelReads.lastReadAt,
     })
     .from(events)
     .innerJoin(
@@ -313,25 +326,29 @@ export async function getProjectEvents(
         eq(events.projectId, channels.projectId),
       ),
     )
+    .leftJoin(channelReads, readJoin)
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
     .limit(options.limit ?? 100);
 
   const eventIds = eventData.map((event) => event.id);
-
   const fetchedTags = await getEventTags(eventIds);
 
-  const eventsRes = eventData.map((event) => ({
+  return eventData.map(({ lastReadAt, ...event }) => ({
     ...event,
     tags: fetchedTags[event.id] || {},
-  }));
-
-  return eventsRes as EventWithChannelName[];
+    read: lastReadAt !== null && event.createdAt <= lastReadAt,
+  })) as EventWithChannelName[];
 }
 
 export async function getEvent(
   eventId: number,
+  userId?: number,
 ): Promise<EventWithChannelName | null> {
+  const readJoin = userId !== undefined
+    ? and(eq(channelReads.channelId, events.channelId), eq(channelReads.userId, userId))
+    : sql`false`;
+
   const eventData = await db
     .select({
       id: events.id,
@@ -341,9 +358,11 @@ export async function getEvent(
       projectId: events.projectId,
       createdAt: events.createdAt,
       channelName: channels.name,
+      lastReadAt: channelReads.lastReadAt,
     })
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
+    .leftJoin(channelReads, readJoin)
     .where(eq(events.id, eventId))
     .limit(1);
 
@@ -351,12 +370,13 @@ export async function getEvent(
     return null;
   }
 
-  const event = eventData[0];
+  const { lastReadAt, ...event } = eventData[0];
   const tags = await getEventTags([event.id]);
 
   return {
     ...event,
     tags: tags[event.id] || {},
+    read: lastReadAt !== null && event.createdAt <= lastReadAt,
   };
 }
 
@@ -421,6 +441,7 @@ export async function createEvent({
       projectId: project.id,
       channelName: channelsRes[0].name,
       createdAt: event.createdAt,
+      read: false,
     };
   }
 
@@ -433,5 +454,6 @@ export async function createEvent({
     projectId: project.id,
     channelName: channelsRes[0].name,
     createdAt: event.createdAt,
+    read: false,
   };
 }

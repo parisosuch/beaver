@@ -9,6 +9,7 @@ import {
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
 import { ArrowLeftIcon } from "lucide-react";
+import { useEffect } from "react";
 
 function TagBadge({
   tagKey,
@@ -35,6 +36,20 @@ export default function EventDetail({
   event: EventWithChannelName;
 }) {
   const tags = Object.entries(event.tags);
+
+  useEffect(() => {
+    fetch("/api/unread", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelName: event.channelName, projectId: event.projectId }),
+    }).then((res) => res.json()).then((data) => {
+      window.dispatchEvent(
+        new CustomEvent("channel:read", {
+          detail: { channelId: data.channelId, channelName: event.channelName },
+        }),
+      );
+    }).catch(() => {});
+  }, [event.id]);
 
   const handleBack = () => {
     if (window.history.length > 1) {
