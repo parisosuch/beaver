@@ -19,12 +19,22 @@ export async function GET({
 
     let limit;
     let beforeId;
+    let afterId;
+    let cursorName: string | undefined;
+    let cursorId: number | undefined;
 
     if (url.searchParams.get("limit")) {
       limit = parseInt(url.searchParams.get("limit")!);
     }
     if (url.searchParams.get("beforeId")) {
       beforeId = parseInt(url.searchParams.get("beforeId")!);
+    }
+    if (url.searchParams.get("afterId")) {
+      afterId = parseInt(url.searchParams.get("afterId")!);
+    }
+    if (url.searchParams.get("cursorName") && url.searchParams.get("cursorId")) {
+      cursorName = url.searchParams.get("cursorName")!;
+      cursorId = parseInt(url.searchParams.get("cursorId")!);
     }
 
     // Date range params
@@ -47,11 +57,6 @@ export async function GET({
       }
     }
 
-    let offset;
-    if (url.searchParams.get("offset")) {
-      offset = parseInt(url.searchParams.get("offset")!);
-    }
-
     const sortBy = url.searchParams.get("sortBy") as SortField | null;
     const sortOrder = url.searchParams.get("sortOrder") as SortOrder | null;
 
@@ -59,7 +64,9 @@ export async function GET({
       search,
       limit,
       beforeId,
-      offset,
+      afterId,
+      cursorName,
+      cursorId,
       startDate,
       endDate,
       tags,
