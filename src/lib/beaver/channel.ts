@@ -119,6 +119,44 @@ export async function coalesceChannels(
   return { ...target[0], name: survivingName };
 }
 
+export async function updateChannel(
+  channelId: number,
+  updates: { name?: string; description?: string | null },
+) {
+  const channel = await db.select().from(channels).where(eq(channels.id, channelId)).limit(1);
+  if (!channel[0]) throw new Error("Channel not found.");
+
+  if (updates.name !== undefined) {
+    if (updates.name.length > 16) {
+      throw new Error("Channel name cannot be longer than 16 characters.");
+    }
+    const existing = await db
+      .select({ id: channels.id })
+      .from(channels)
+      .where(
+        and(
+          eq(channels.projectId, channel[0].projectId),
+          eq(channels.name, updates.name),
+        ),
+      )
+      .limit(1);
+    if (existing.length > 0 && existing[0].id !== channelId) {
+      throw new Error("Channel with name already exists for this project.");
+    }
+  }
+
+  const [updated] = await db
+    .update(channels)
+    .set({
+      ...(updates.name !== undefined ? { name: updates.name } : {}),
+      ...(updates.description !== undefined ? { description: updates.description } : {}),
+    })
+    .where(eq(channels.id, channelId))
+    .returning();
+
+  return updated;
+}
+
 export async function deleteChannel(channelID: number) {
   // Delete event tags for all events in this channel
   const channelEvents = await db

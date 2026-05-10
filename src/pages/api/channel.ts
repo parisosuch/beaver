@@ -3,6 +3,7 @@ import {
   deleteChannel,
   getChannels,
   reorderChannels,
+  updateChannel,
 } from "@/lib/beaver/channel";
 import type { APIContext, APIRoute } from "astro";
 
@@ -117,6 +118,38 @@ export const PATCH: APIRoute = async ({ request }) => {
         status: 500,
         headers: { "Content-Type": "application/json" },
       },
+    );
+  }
+};
+
+export const PUT: APIRoute = async ({ request }) => {
+  try {
+    const { channelId, name, description } = await request.json();
+
+    if (!channelId) {
+      return new Response(JSON.stringify({ error: "channelId is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const channel = await updateChannel(parseInt(channelId), { name, description });
+
+    return new Response(JSON.stringify(channel), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.error(err);
+    return new Response(
+      JSON.stringify({ error: "An unkown error has occurred." }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 };

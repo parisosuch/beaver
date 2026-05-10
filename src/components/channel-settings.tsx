@@ -16,7 +16,7 @@ import {
 } from "./ui/select";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { GitMergeIcon, Trash2Icon } from "lucide-react";
+import { GitMergeIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Label } from "./ui/label";
 import type { Project } from "@/lib/beaver/project";
@@ -41,6 +41,53 @@ export default function ChannelSettings({
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+
+  // Edit state
+  const [editTarget, setEditTarget] = useState<Channel | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const [editNameWarningAcked, setEditNameWarningAcked] = useState(false);
+
+  const nameChanged = editTarget !== null && editName.trim() !== editTarget.name;
+  const nameTaken =
+    nameChanged &&
+    clientChannels.some(
+      (c) => c.id !== editTarget?.id && c.name === editName.trim(),
+    );
+
+  const handleEditConfirm = async () => {
+    if (!editTarget) return;
+    setEditing(true);
+    setEditError("");
+    try {
+      const res = await fetch("/api/channel", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channelId: editTarget.id,
+          name: editName.trim() || undefined,
+          description: editDescription.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || "Failed to update channel.");
+        return;
+      }
+      setChannels((prev) =>
+        prev.map((c) => (c.id === editTarget.id ? { ...c, name: data.name, description: data.description } : c)),
+      );
+      window.dispatchEvent(
+        new CustomEvent("channel:updated", { detail: { id: data.id, name: data.name, description: data.description } }),
+      );
+      setEditTarget(null);
+    } finally {
+      setEditing(false);
+    }
+  };
 
   // Merge state
   const [mergeSource, setMergeSource] = useState<Channel | null>(null);
@@ -158,6 +205,23 @@ export default function ChannelSettings({
             <p className="font-light text-xs truncate">{channel.description}</p>
           </div>
           <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => {
+                    setEditTarget(channel);
+                    setEditName(channel.name);
+                    setEditDescription(channel.description ?? "");
+                    setEditError("");
+                    setEditNameWarningAcked(false);
+                  }}
+                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <PencilIcon size={15} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Edit channel</TooltipContent>
+            </Tooltip>
             {clientChannels.length > 1 && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -195,6 +259,85 @@ export default function ChannelSettings({
           </div>
         </div>
       ))}
+
+      {/* Edit dialog */}
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditTarget(null);
+            setEditError("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit channel</DialogTitle>
+            <DialogDescription>
+              Update the name or description for{" "}
+              <span className="font-bold"># {editTarget?.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 mt-1">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                maxLength={16}
+                onChange={(e) => {
+                setEditName(e.target.value.replace(" ", "-"));
+                setEditNameWarningAcked(false);
+              }}
+              />
+              {nameTaken && (
+                <p className="text-xs text-destructive">
+                  A channel with this name already exists.
+                </p>
+              )}
+              {nameChanged && !nameTaken && (
+                <label className="flex items-start gap-2 cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={editNameWarningAcked}
+                    onChange={(e) => setEditNameWarningAcked(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                  />
+                  <span className="text-xs text-amber-600">
+                    I understand that changing the channel name may break existing integrations that use this channel name to send events.
+                  </span>
+                </label>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                value={editDescription}
+                placeholder="Optional description"
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+            </div>
+
+            {editError && (
+              <p className="text-sm text-destructive">{editError}</p>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => setEditTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!editName.trim() || nameTaken || (nameChanged && !editNameWarningAcked) || editing}
+                onClick={handleEditConfirm}
+              >
+                {editing ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete dialog */}
       <Dialog
