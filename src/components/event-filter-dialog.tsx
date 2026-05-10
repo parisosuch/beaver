@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
-import { subHours, subDays, subWeeks, subMonths, subYears } from "date-fns";
+import {
+  subHours,
+  subDays,
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
 import { FilterIcon, PlusIcon, XIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -44,24 +55,29 @@ const timePresets = [
     getDates: () => ({ start: subHours(new Date(), 1), end: new Date() }),
   },
   {
-    label: "Last day",
+    label: "Today",
+    value: "today" as const,
+    getDates: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }),
+  },
+  {
+    label: "Yesterday",
     value: "day" as const,
-    getDates: () => ({ start: subDays(new Date(), 1), end: new Date() }),
+    getDates: () => ({ start: startOfDay(subDays(new Date(), 1)), end: endOfDay(subDays(new Date(), 1)) }),
   },
   {
-    label: "Last week",
+    label: "This week",
     value: "week" as const,
-    getDates: () => ({ start: subWeeks(new Date(), 1), end: new Date() }),
+    getDates: () => ({ start: startOfWeek(new Date()), end: endOfWeek(new Date()) }),
   },
   {
-    label: "Last month",
+    label: "This month",
     value: "month" as const,
-    getDates: () => ({ start: subMonths(new Date(), 1), end: new Date() }),
+    getDates: () => ({ start: startOfMonth(new Date()), end: endOfMonth(new Date()) }),
   },
   {
-    label: "Last year",
+    label: "This year",
     value: "year" as const,
-    getDates: () => ({ start: subYears(new Date(), 1), end: new Date() }),
+    getDates: () => ({ start: startOfYear(new Date()), end: endOfYear(new Date()) }),
   },
 ];
 
@@ -239,13 +255,15 @@ export default function EventFilterDialog({
 
   const getActivePreset = () => {
     if (!startDate || !endDate) return null;
-    const now = new Date();
-    const diffHours = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-    if (diffHours <= 1.1) return "1h";
-    if (diffHours <= 25) return "day";
-    if (diffHours <= 169) return "week";
-    if (diffHours <= 745) return "month";
-    if (diffHours <= 8785) return "year";
+    for (const preset of timePresets) {
+      const { start, end } = preset.getDates();
+      if (
+        Math.abs(startDate.getTime() - start.getTime()) < 60_000 &&
+        Math.abs(endDate.getTime() - end.getTime()) < 60_000
+      ) {
+        return preset.value;
+      }
+    }
     return null;
   };
 
