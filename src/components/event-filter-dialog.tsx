@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   subHours,
+  subDays,
   startOfDay,
   endOfDay,
   startOfWeek,
@@ -55,8 +56,13 @@ const timePresets = [
   },
   {
     label: "Today",
-    value: "day" as const,
+    value: "today" as const,
     getDates: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }),
+  },
+  {
+    label: "Yesterday",
+    value: "day" as const,
+    getDates: () => ({ start: startOfDay(subDays(new Date(), 1)), end: endOfDay(subDays(new Date(), 1)) }),
   },
   {
     label: "This week",
