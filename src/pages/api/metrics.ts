@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
     }
 
     const metric = await createMetric(parseInt(projectId), {
-      name: name.trim(),
+      name: name.trim().toLowerCase().replace(/\s+/g, "-"),
       description: description?.trim() || undefined,
       unit: unit?.trim() || undefined,
       type,
@@ -65,7 +65,7 @@ export const PUT: APIRoute = async ({ request }: APIContext) => {
     if (!metricId) return json({ error: "metricId is required." }, 400);
 
     const metric = await updateMetric(parseInt(metricId), {
-      name: name?.trim() || undefined,
+      name: name ? name.trim().toLowerCase().replace(/\s+/g, "-") : undefined,
       description: description?.trim() || undefined,
       unit: unit?.trim() || undefined,
     });
