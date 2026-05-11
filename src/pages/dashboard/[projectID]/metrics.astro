@@ -1,0 +1,26 @@
+---
+import Layout from "@/layouts/layout.astro";
+import MetricsOverview from "@/components/metrics-overview";
+import { getMetrics, getMetricSparklines } from "@/lib/beaver/metric";
+import { getProject } from "@/lib/beaver/project";
+import { subDays } from "date-fns";
+
+const { projectID } = Astro.params;
+const project = await getProject(parseInt(projectID!));
+const metrics = await getMetrics(parseInt(projectID!));
+
+const timeseriesIds = metrics
+  .filter((m) => m.type === "timeseries")
+  .map((m) => m.id);
+
+const sparklines = await getMetricSparklines(timeseriesIds, subDays(new Date(), 7));
+---
+
+<Layout projectID={projectID!}>
+  <MetricsOverview
+    client:load
+    metrics={metrics}
+    sparklines={sparklines}
+    projectId={project.id}
+  />
+</Layout>

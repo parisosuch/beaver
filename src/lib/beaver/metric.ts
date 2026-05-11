@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { metrics, metricValues } from "../db/schema";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
 export type MetricType = "gauge" | "counter" | "timeseries";
 export type ChartType = "line" | "bar";
@@ -231,6 +231,30 @@ export async function appendTimeseries(
     value,
     timestamp: timestamp ?? new Date(),
   });
+}
+
+export async function getMetricSparklines(
+  metricIds: number[],
+  from: Date,
+): Promise<Record<number, { value: number; timestamp: Date }[]>> {
+  if (metricIds.length === 0) return {};
+
+  const rows = await db
+    .select({
+      metricId: metricValues.metricId,
+      value: metricValues.value,
+      timestamp: metricValues.timestamp,
+    })
+    .from(metricValues)
+    .where(and(inArray(metricValues.metricId, metricIds), gte(metricValues.timestamp, from)))
+    .orderBy(metricValues.metricId, metricValues.timestamp);
+
+  const result: Record<number, { value: number; timestamp: Date }[]> = {};
+  for (const row of rows) {
+    if (!result[row.metricId]) result[row.metricId] = [];
+    result[row.metricId].push({ value: row.value, timestamp: row.timestamp as Date });
+  }
+  return result;
 }
 
 export async function getMetricValues(
