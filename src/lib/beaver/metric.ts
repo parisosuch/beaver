@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { metrics, metricValues, projects } from "../db/schema";
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 
 export type MetricType = "gauge" | "counter" | "timeseries";
 export type ChartType = "line" | "bar";
@@ -63,30 +63,35 @@ export async function createMetric(
 }
 
 export async function getMetrics(projectId: number): Promise<MetricWithValue[]> {
+  const ranked = db
+    .select({
+      metricId: metricValues.metricId,
+      value: metricValues.value,
+      timestamp: metricValues.timestamp,
+      rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${metricValues.metricId} ORDER BY ${metricValues.timestamp} DESC)`.as("rn"),
+    })
+    .from(metricValues)
+    .as("ranked");
+
   const rows = await db
-    .select()
+    .select({
+      id: metrics.id,
+      projectId: metrics.projectId,
+      name: metrics.name,
+      description: metrics.description,
+      unit: metrics.unit,
+      type: metrics.type,
+      chartType: metrics.chartType,
+      createdAt: metrics.createdAt,
+      currentValue: ranked.value,
+      lastUpdatedAt: ranked.timestamp,
+    })
     .from(metrics)
+    .leftJoin(ranked, and(eq(ranked.metricId, metrics.id), eq(ranked.rn, 1)))
     .where(eq(metrics.projectId, projectId))
     .orderBy(metrics.createdAt);
 
-  const result: MetricWithValue[] = [];
-
-  for (const row of rows) {
-    const [latest] = await db
-      .select()
-      .from(metricValues)
-      .where(eq(metricValues.metricId, row.id))
-      .orderBy(desc(metricValues.timestamp))
-      .limit(1);
-
-    result.push({
-      ...(row as Metric),
-      currentValue: latest?.value ?? null,
-      lastUpdatedAt: latest?.timestamp ?? null,
-    });
-  }
-
-  return result;
+  return rows as MetricWithValue[];
 }
 
 export async function getMetric(metricId: number): Promise<MetricWithValue | undefined> {
