@@ -2,12 +2,14 @@
 import APIKey from "@/components/api-key";
 import ChangePasswordForm from "@/components/change-password-form";
 import ChannelSettings from "@/components/channel-settings";
+import MetricSettings from "@/components/metric-settings";
 import ProjectDangerZone from "@/components/project-danger-zone";
 import ProjectRename from "@/components/project-rename";
 import ProjectMembers from "@/components/project-members";
 import NotificationSettings from "@/components/notification-settings";
 import Layout from "@/layouts/layout.astro";
 import { getChannels } from "@/lib/beaver/channel";
+import { getMetrics } from "@/lib/beaver/metric";
 import { getProject } from "@/lib/beaver/project";
 import { getUserProjectRole, getProjectMembership } from "@/lib/beaver/project-member";
 import { getUserByUsername } from "@/lib/beaver/user";
@@ -27,6 +29,7 @@ if (userRole === "guest" || userRole === null) {
 }
 
 const channels = await getChannels(parseInt(projectID!));
+const metrics = await getMetrics(parseInt(projectID!));
 const dbUser = await getUserByUsername(user.userName);
 const membership = await getProjectMembership(project.id, user.id);
 
@@ -75,6 +78,10 @@ const metaH3Css = "font-medium shrink-0";
           />
         </div>
       )}
+      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
+        <h2 class="font-mono">Metrics</h2>
+        <MetricSettings client:load metrics={metrics} projectId={project.id} />
+      </div>
       <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
         <h2 class="font-mono mb-4">Account</h2>
         <h3 class="font-medium mb-3">Change Password</h3>
