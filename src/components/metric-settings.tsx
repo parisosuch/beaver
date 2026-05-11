@@ -271,7 +271,7 @@ export default function MetricSettings({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 mt-1">
+          <div className="flex flex-col gap-4 mt-1 overflow-y-auto max-h-[65dvh] pr-1">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="create-name">Name</Label>
               <Input
