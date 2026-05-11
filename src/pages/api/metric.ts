@@ -1,10 +1,10 @@
 import {
   appendTimeseries,
   getMetricByName,
-  getProjectByApiKey,
   incrementCounter,
   setGauge,
 } from "@/lib/beaver/metric";
+import { getProjectByApiKey } from "@/lib/beaver/project";
 import type { APIContext, APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }: APIContext) => {
@@ -35,7 +35,13 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       );
     }
 
-    const ts = timestamp ? new Date(timestamp) : undefined;
+    let ts: Date | undefined;
+    if (timestamp !== undefined) {
+      ts = new Date(timestamp);
+      if (isNaN(ts.getTime())) {
+        return json({ error: "timestamp is not a valid ISO 8601 date." }, 400);
+      }
+    }
 
     if (metric.type === "gauge") {
       if (value === undefined || value === null) {

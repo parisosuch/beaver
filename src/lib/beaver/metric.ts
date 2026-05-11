@@ -1,6 +1,6 @@
 import { db } from "../db/db";
-import { metrics, metricValues, projects } from "../db/schema";
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { metrics, metricValues } from "../db/schema";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 
 export type MetricType = "gauge" | "counter" | "timeseries";
 export type ChartType = "line" | "bar";
@@ -95,25 +95,34 @@ export async function getMetrics(projectId: number): Promise<MetricWithValue[]> 
 }
 
 export async function getMetric(metricId: number): Promise<MetricWithValue | undefined> {
+  const ranked = db
+    .select({
+      metricId: metricValues.metricId,
+      value: metricValues.value,
+      timestamp: metricValues.timestamp,
+      rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${metricValues.metricId} ORDER BY ${metricValues.timestamp} DESC)`.as("rn"),
+    })
+    .from(metricValues)
+    .as("ranked");
+
   const [row] = await db
-    .select()
+    .select({
+      id: metrics.id,
+      projectId: metrics.projectId,
+      name: metrics.name,
+      description: metrics.description,
+      unit: metrics.unit,
+      type: metrics.type,
+      chartType: metrics.chartType,
+      createdAt: metrics.createdAt,
+      currentValue: ranked.value,
+      lastUpdatedAt: ranked.timestamp,
+    })
     .from(metrics)
+    .leftJoin(ranked, and(eq(ranked.metricId, metrics.id), eq(ranked.rn, 1)))
     .where(eq(metrics.id, metricId));
 
-  if (!row) return undefined;
-
-  const [latest] = await db
-    .select()
-    .from(metricValues)
-    .where(eq(metricValues.metricId, metricId))
-    .orderBy(desc(metricValues.timestamp))
-    .limit(1);
-
-  return {
-    ...(row as Metric),
-    currentValue: latest?.value ?? null,
-    lastUpdatedAt: latest?.timestamp ?? null,
-  };
+  return row as MetricWithValue | undefined;
 }
 
 export async function getMetricByName(
@@ -140,6 +149,24 @@ export async function updateMetric(
     unit?: string;
   },
 ): Promise<Metric> {
+  if (name !== undefined) {
+    const [current] = await db
+      .select({ projectId: metrics.projectId })
+      .from(metrics)
+      .where(eq(metrics.id, metricId));
+
+    if (current) {
+      const conflict = await db
+        .select({ id: metrics.id })
+        .from(metrics)
+        .where(and(eq(metrics.projectId, current.projectId), eq(metrics.name, name)));
+
+      if (conflict.length > 0 && conflict[0].id !== metricId) {
+        throw new Error(`A metric named "${name}" already exists in this project.`);
+      }
+    }
+  }
+
   const [updated] = await db
     .update(metrics)
     .set({ name, description, unit })
@@ -234,11 +261,3 @@ export async function getMetricValues(
   return (await query) as MetricValue[];
 }
 
-export async function getProjectByApiKey(apiKey: string) {
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.apiKey, apiKey));
-
-  return project;
-}
