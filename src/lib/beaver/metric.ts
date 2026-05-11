@@ -155,27 +155,43 @@ export async function deleteMetric(metricId: number): Promise<void> {
 
 export async function setGauge(metricId: number, value: number): Promise<void> {
   const now = new Date();
-  await db.delete(metricValues).where(eq(metricValues.metricId, metricId));
-  await db.insert(metricValues).values({ metricId, value, timestamp: now });
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(metricValues)
+      .set({ value, timestamp: now })
+      .where(eq(metricValues.metricId, metricId))
+      .returning();
+
+    if (updated.length === 0) {
+      await tx.insert(metricValues).values({ metricId, value, timestamp: now });
+    }
+  });
 }
 
 export async function incrementCounter(
   metricId: number,
   amount: number,
 ): Promise<number> {
-  const [existing] = await db
-    .select()
-    .from(metricValues)
-    .where(eq(metricValues.metricId, metricId));
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(metricValues)
+      .where(eq(metricValues.metricId, metricId));
 
-  const current = existing?.value ?? 0;
-  const next = current + amount;
-  const now = new Date();
+    const next = (existing?.value ?? 0) + amount;
+    const now = new Date();
 
-  await db.delete(metricValues).where(eq(metricValues.metricId, metricId));
-  await db.insert(metricValues).values({ metricId, value: next, timestamp: now });
+    if (existing) {
+      await tx
+        .update(metricValues)
+        .set({ value: next, timestamp: now })
+        .where(eq(metricValues.metricId, metricId));
+    } else {
+      await tx.insert(metricValues).values({ metricId, value: next, timestamp: now });
+    }
 
-  return next;
+    return next;
+  });
 }
 
 export async function appendTimeseries(
