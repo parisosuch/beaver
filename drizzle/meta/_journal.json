@@ -71,6 +71,13 @@
       "when": 1778450824873,
       "tag": "0009_short_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1746921600000,
+      "tag": "0010_metrics",
+      "breakpoints": true
     }
   ]
 }

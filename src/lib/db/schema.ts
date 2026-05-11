@@ -3,6 +3,7 @@ import {
   sqliteTable,
   text,
   integer,
+  real,
   index,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
@@ -223,6 +224,55 @@ export const bookmarks = sqliteTable(
   }),
 );
 
+// --- METRICS ---
+export const metrics = sqliteTable(
+  "metrics",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    unit: text("unit"),
+    type: text("type", {
+      enum: ["gauge", "counter", "timeseries"],
+    }).notNull(),
+    chartType: text("chart_type", { enum: ["line", "bar"] }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    projectNameIdx: uniqueIndex("metrics_project_id_name_idx").on(
+      table.projectId,
+      table.name,
+    ),
+  }),
+);
+
+// --- METRIC VALUES ---
+export const metricValues = sqliteTable(
+  "metric_values",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    metricId: integer("metric_id")
+      .notNull()
+      .references(() => metrics.id, { onDelete: "cascade" }),
+    value: real("value").notNull(),
+    timestamp: integer("timestamp", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    metricTimestampIdx: index("metric_values_metric_id_timestamp_idx").on(
+      table.metricId,
+      table.timestamp,
+    ),
+  }),
+);
+
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -313,5 +363,20 @@ export const channelReadRelations = relations(channelReads, ({ one }) => ({
   channel: one(channels, {
     fields: [channelReads.channelId],
     references: [channels.id],
+  }),
+}));
+
+export const metricRelations = relations(metrics, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [metrics.projectId],
+    references: [projects.id],
+  }),
+  values: many(metricValues),
+}));
+
+export const metricValueRelations = relations(metricValues, ({ one }) => ({
+  metric: one(metrics, {
+    fields: [metricValues.metricId],
+    references: [metrics.id],
   }),
 }));
