@@ -19,10 +19,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!refreshToken) {
-      return new Response(
-        JSON.stringify({ error: "Refresh token is required" }),
-        { status: 400 },
-      );
+      return new Response(JSON.stringify({ error: "Refresh token is required" }), { status: 400 });
     }
 
     const payload = await verifyToken(refreshToken);
@@ -39,15 +36,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Clear the cookie
     cookies.delete("refresh_token", { path: "/" });
 
-    return new Response(
-      JSON.stringify({ message: "Signed out successfully" }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
+    return new Response(JSON.stringify({ message: "Signed out successfully" }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
   } catch (error) {
     console.error("Sign out error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {

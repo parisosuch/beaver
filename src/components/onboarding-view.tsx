@@ -40,9 +40,7 @@ const CreateAdminAccount = ({
 }: AdminAccountProps) => (
   <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div className="flex flex-1 flex-col h-full justify-center">
-      <CardTitle className="text-2xl md:text-3xl">
-        Create admin account
-      </CardTitle>
+      <CardTitle className="text-2xl md:text-3xl">Create admin account</CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="admin-username">Username</Label>
         <Input
@@ -60,8 +58,7 @@ const CreateAdminAccount = ({
         <Label htmlFor="admin-password">Password</Label>
         <div>
           <p className="text-sm text-gray-500">
-            8 characters long, 1 upper case, 1 lowercase, 1 number, and 1
-            special character.
+            8 characters long, 1 upper case, 1 lowercase, 1 number, and 1 special character.
           </p>
         </div>
         <Input
@@ -85,11 +82,9 @@ const CreateAdminAccount = ({
           }}
         />
       </div>
-      {password !== "" &&
-        confirmPassword !== "" &&
-        password !== confirmPassword && (
-          <p className="mt-2 text-sm text-red-600">Passwords do not match.</p>
-        )}
+      {password !== "" && confirmPassword !== "" && password !== confirmPassword && (
+        <p className="mt-2 text-sm text-red-600">Passwords do not match.</p>
+      )}
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
     <div className="mt-4 w-full flex justify-end">
@@ -107,17 +102,10 @@ interface ProjectProps {
   onCreate: () => void;
 }
 
-const CreateProject = ({
-  projectName,
-  setProjectName,
-  onBack,
-  onCreate,
-}: ProjectProps) => (
+const CreateProject = ({ projectName, setProjectName, onBack, onCreate }: ProjectProps) => (
   <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div>
-      <CardTitle className="text-2xl md:text-3xl">
-        Create your first project
-      </CardTitle>
+      <CardTitle className="text-2xl md:text-3xl">Create your first project</CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="project-name">Project name</Label>
         <Input
@@ -244,15 +232,11 @@ function OnboardingView() {
                 return;
               }
               if (!/[A-Z]/.test(password)) {
-                setError(
-                  "Password must contain at least one uppercase letter.",
-                );
+                setError("Password must contain at least one uppercase letter.");
                 return;
               }
               if (!/[a-z]/.test(password)) {
-                setError(
-                  "Password must contain at least one lowercase letter.",
-                );
+                setError("Password must contain at least one lowercase letter.");
                 return;
               }
               if (!/[0-9]/.test(password)) {
@@ -260,9 +244,7 @@ function OnboardingView() {
                 return;
               }
               if (!/[^A-Za-z0-9]/.test(password)) {
-                setError(
-                  "Password must contain at least one special character.",
-                );
+                setError("Password must contain at least one special character.");
                 return;
               }
               setOnboardingPart(1);

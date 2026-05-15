@@ -52,9 +52,8 @@ export default function ChangePasswordView({ userName }: { userName: string }) {
           <p className="text-sm font-mono text-muted-foreground">Welcome</p>
           <h1 className="text-2xl font-semibold">Set your password</h1>
           <p className="text-sm text-muted-foreground">
-            Hi <span className="font-medium text-foreground">@{userName}</span>,
-            your account was created with a temporary password. Please set a new
-            one to continue.
+            Hi <span className="font-medium text-foreground">@{userName}</span>, your account was
+            created with a temporary password. Please set a new one to continue.
           </p>
         </CardHeader>
         <CardContent>

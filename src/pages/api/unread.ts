@@ -35,10 +35,9 @@ export async function POST({ locals, request }: APIContext) {
 
   const { channelName, projectId } = await request.json();
   if (!channelName || !projectId) {
-    return new Response(
-      JSON.stringify({ error: "channelName and projectId are required" }),
-      { status: 400 },
-    );
+    return new Response(JSON.stringify({ error: "channelName and projectId are required" }), {
+      status: 400,
+    });
   }
 
   const channelRow = await db

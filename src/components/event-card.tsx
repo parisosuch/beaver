@@ -36,9 +36,7 @@ const EventCard = memo(function EventCard({ event }: { event: EventWithChannelNa
             {event.bookmarked && (
               <BookmarkIcon size={14} className="fill-current text-muted-foreground" />
             )}
-            {!event.read && (
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-            )}
+            {!event.read && <div className="w-2 h-2 rounded-full bg-blue-500" />}
           </div>
         </div>
       </Card>

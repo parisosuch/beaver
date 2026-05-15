@@ -17,8 +17,7 @@ export default defineConfig({
     environments: {
       ssr: {
         dev: {
-          createEnvironment: (name, config) =>
-            createRunnableDevEnvironment(name, config),
+          createEnvironment: (name, config) => createRunnableDevEnvironment(name, config),
         },
       },
     },

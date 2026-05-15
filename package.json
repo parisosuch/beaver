@@ -1,7 +1,7 @@
 {
   "name": "beaver",
-  "type": "module",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "format": "oxfmt",
     "format:check": "oxfmt --check",

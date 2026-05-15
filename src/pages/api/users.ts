@@ -49,10 +49,7 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    const user = await createUserAccount(
-      userName.trim(),
-      canCreateProjects ?? false,
-    );
+    const user = await createUserAccount(userName.trim(), canCreateProjects ?? false);
     return new Response(JSON.stringify(user), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -89,10 +86,10 @@ export const PATCH: APIRoute = async (context) => {
     if (isAdmin !== undefined) {
       // Prevent admin from removing their own admin status
       if (id === context.locals.user?.id && !isAdmin) {
-        return new Response(
-          JSON.stringify({ error: "You cannot remove your own admin status." }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ error: "You cannot remove your own admin status." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
       }
       await setUserAdmin(id, isAdmin);
     }
@@ -128,10 +125,10 @@ export const DELETE: APIRoute = async (context) => {
     }
 
     if (id === context.locals.user?.id) {
-      return new Response(
-        JSON.stringify({ error: "You cannot delete your own account." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "You cannot delete your own account." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     await deleteUser(id);

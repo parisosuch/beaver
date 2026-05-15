@@ -43,16 +43,10 @@ function CodeBlock({ code, language = "bash", title }: CodeBlockProps) {
             <TerminalIcon size={14} className="text-gray-400" />
             <span className="text-sm font-medium text-gray-300">{title}</span>
           </div>
-          <span className="text-xs text-gray-500 uppercase tracking-wider">
-            {language}
-          </span>
+          <span className="text-xs text-gray-500 uppercase tracking-wider">{language}</span>
         </div>
       )}
-      <Highlight
-        theme={themes.nightOwl}
-        code={code.trim()}
-        language={prismLanguage}
-      >
+      <Highlight theme={themes.nightOwl} code={code.trim()} language={prismLanguage}>
         {({ style, tokens, getLineProps, getTokenProps }) => (
           <pre
             className="p-4 overflow-x-auto text-sm leading-relaxed"
@@ -222,15 +216,12 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Overview
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
-              The Beaver API allows you to send events from your applications to
-              track important activities. Events are organized by channels
-              within your project.
+              The Beaver API allows you to send events from your applications to track important
+              activities. Events are organized by channels within your project.
             </p>
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                  Base URL
-                </span>
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">Base URL</span>
               </div>
               <code className="text-lg font-mono text-blue-900 dark:text-blue-300 bg-white/60 dark:bg-white/10 px-3 py-1.5 rounded-lg">
                 {baseUrl}/api
@@ -270,9 +261,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               </code>
             </div>
             <div className="bg-gray-900 rounded-xl p-4">
-              <code className="text-gray-100 font-mono text-sm">
-                X-API-Key: {displayKey}
-              </code>
+              <code className="text-gray-100 font-mono text-sm">X-API-Key: {displayKey}</code>
             </div>
           </section>
 
@@ -289,9 +278,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             {/* Endpoint */}
             <div className="flex items-center gap-4 p-4 bg-gray-900 rounded-xl mb-8">
               <MethodBadge method="POST" />
-              <code className="text-gray-100 font-mono text-lg">
-                /api/event
-              </code>
+              <code className="text-gray-100 font-mono text-lg">/api/event</code>
             </div>
 
             {/* Request Headers */}
@@ -382,9 +369,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         name
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      string
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
@@ -398,9 +383,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         channel
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      string
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Yes</Badge>
                     </td>
@@ -414,9 +397,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         description
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      string
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
@@ -430,9 +411,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         icon
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      string
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
@@ -446,19 +425,14 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         tags
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      object
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">object</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      Key-value pairs for additional metadata. Types are
-                      inferred from the JSON value. See{" "}
-                      <a
-                        href="#tags"
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
-                      >
+                      Key-value pairs for additional metadata. Types are inferred from the JSON
+                      value. See{" "}
+                      <a href="#tags" className="text-blue-600 dark:text-blue-400 hover:underline">
                         Tags
                       </a>
                       .
@@ -470,15 +444,16 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         notify
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      boolean
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">boolean</td>
                     <td className="px-4 py-3">
                       <Badge>Optional</Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      If <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">true</code>, sends an email notification to project members who have opted in. Requires{" "}
-                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">RESEND_API_KEY</code>{" "}
+                      If <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">true</code>,
+                      sends an email notification to project members who have opted in. Requires{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">
+                        RESEND_API_KEY
+                      </code>{" "}
                       to be configured. See{" "}
                       <a
                         href="#notifications"
@@ -597,23 +572,18 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               <code className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
                 "notify": true
               </code>
-              . Emails are sent only to project members who have opted in via
-              their notification settings.
+              . Emails are sent only to project members who have opted in via their notification
+              settings.
             </p>
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6 mb-6">
-              <p className="text-blue-800 dark:text-blue-300 font-semibold mb-3">
-                Setup
-              </p>
+              <p className="text-blue-800 dark:text-blue-300 font-semibold mb-3">Setup</p>
               <ol className="text-blue-700 dark:text-blue-400 text-sm space-y-2 list-decimal list-inside">
                 <li>
-                  Sign up at{" "}
-                  <span className="font-mono">resend.com</span> and create an API key
+                  Sign up at <span className="font-mono">resend.com</span> and create an API key
                 </li>
                 <li>
                   Set{" "}
-                  <code className="bg-white/60 dark:bg-white/10 px-1 rounded">
-                    RESEND_API_KEY
-                  </code>{" "}
+                  <code className="bg-white/60 dark:bg-white/10 px-1 rounded">RESEND_API_KEY</code>{" "}
                   in your environment
                 </li>
                 <li>
@@ -661,10 +631,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Tags
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
-              Tags are arbitrary key-value pairs that attach structured metadata
-              to an event. They power filtering in the dashboard — numeric
-              comparisons, boolean toggles, and string lookups all depend on the
-              stored type.
+              Tags are arbitrary key-value pairs that attach structured metadata to an event. They
+              power filtering in the dashboard — numeric comparisons, boolean toggles, and string
+              lookups all depend on the stored type.
             </p>
 
             <h3
@@ -674,8 +643,8 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Type Inference
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              The API infers each tag's type from the JSON value you send. No
-              type annotation is required.
+              The API infers each tag's type from the JSON value you send. No type annotation is
+              required.
             </p>
             <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
               <table className="w-full">
@@ -699,9 +668,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         "premium"
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      string
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       Dropdown (≤ 20 distinct values) or free-text input
                     </td>
@@ -712,9 +679,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         99.99
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      number
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       Numeric input with operator (=, &gt;, &lt;, between)
                     </td>
@@ -725,9 +690,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                         true
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      boolean
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">boolean</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       true / false dropdown
                     </td>
@@ -761,22 +724,19 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               </p>
               <p className="text-amber-700 dark:text-amber-400 text-sm">
                 A tag key's type should be the same on every event. If{" "}
-                <code className="bg-amber-100 dark:bg-white/10 px-1 rounded">
-                  amount
-                </code>{" "}
-                is a number on one event and a string on another, the filter UI
-                will use the type it sees first. Numeric filters use{" "}
+                <code className="bg-amber-100 dark:bg-white/10 px-1 rounded">amount</code> is a
+                number on one event and a string on another, the filter UI will use the type it sees
+                first. Numeric filters use{" "}
                 <code className="bg-amber-100 dark:bg-white/10 px-1 rounded">
                   CAST(value AS REAL)
                 </code>{" "}
-                internally — rows with a non-numeric value for that key will
-                silently not match rather than returning an error.
+                internally — rows with a non-numeric value for that key will silently not match
+                rather than returning an error.
               </p>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Type mismatches are treated as a caller error. Design your tag
-              schema upfront and send values of the same JSON type for a given
-              key on every event.
+              Type mismatches are treated as a caller error. Design your tag schema upfront and send
+              values of the same JSON type for a given key on every event.
             </p>
           </section>
 
@@ -787,8 +747,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Code Examples
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
-              Copy and paste these examples into your project to get started
-              quickly.
+              Copy and paste these examples into your project to get started quickly.
             </p>
 
             <div className="space-y-8">

@@ -62,19 +62,23 @@ export async function GET({
     const sortBy = url.searchParams.get("sortBy") as SortField | null;
     const sortOrder = url.searchParams.get("sortOrder") as SortOrder | null;
 
-    const events = await getChannelEvents(parseInt(channelID), {
-      search,
-      limit,
-      beforeId,
-      afterId,
-      cursorName,
-      cursorId,
-      startDate,
-      endDate,
-      tags,
-      sortBy: sortBy ?? undefined,
-      sortOrder: sortOrder ?? undefined,
-    }, locals.user?.id);
+    const events = await getChannelEvents(
+      parseInt(channelID),
+      {
+        search,
+        limit,
+        beforeId,
+        afterId,
+        cursorName,
+        cursorId,
+        startDate,
+        endDate,
+        tags,
+        sortBy: sortBy ?? undefined,
+        sortOrder: sortOrder ?? undefined,
+      },
+      locals.user?.id,
+    );
 
     return new Response(JSON.stringify(events), {
       headers: { "Content-Type": "application/json" },
@@ -87,12 +91,9 @@ export async function GET({
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

@@ -17,11 +17,7 @@ if (!values.username) {
   process.exit(1);
 }
 
-const [user] = await db
-  .select()
-  .from(users)
-  .where(eq(users.userName, values.username))
-  .limit(1);
+const [user] = await db.select().from(users).where(eq(users.userName, values.username)).limit(1);
 
 if (!user) {
   console.error(`Error: user "${values.username}" not found.`);
@@ -29,7 +25,9 @@ if (!user) {
 }
 
 if (!user.isAdmin) {
-  console.error(`Error: "${values.username}" is not an admin. Use the admin panel to reset non-admin passwords.`);
+  console.error(
+    `Error: "${values.username}" is not an admin. Use the admin panel to reset non-admin passwords.`,
+  );
   process.exit(1);
 }
 

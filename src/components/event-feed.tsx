@@ -1,9 +1,4 @@
-import type {
-  EventWithChannelName,
-  TagFilter,
-  SortField,
-  SortOrder,
-} from "@/lib/beaver/event";
+import type { EventWithChannelName, TagFilter, SortField, SortOrder } from "@/lib/beaver/event";
 
 const fetchMaxEventId = async (): Promise<number> => {
   try {
@@ -23,13 +18,7 @@ import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
 import EventFilterDialog from "./event-filter-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,9 +28,7 @@ import {
 
 type SortOption = `${SortField}_${SortOrder}`;
 
-type Row =
-  | { kind: "event"; event: EventWithChannelName; isNew: boolean }
-  | { kind: "divider" };
+type Row = { kind: "event"; event: EventWithChannelName; isNew: boolean } | { kind: "divider" };
 
 function tagFilterLabel(tag: TagFilter): string {
   if (tag.type === "number") {
@@ -123,23 +110,17 @@ export default function EventFeed({
   }) => {
     const params = new URLSearchParams();
 
-    const newSearch =
-      overrides.search !== undefined ? overrides.search : search;
-    const newStartDate =
-      overrides.startDate !== undefined ? overrides.startDate : startDate;
-    const newEndDate =
-      overrides.endDate !== undefined ? overrides.endDate : endDate;
+    const newSearch = overrides.search !== undefined ? overrides.search : search;
+    const newStartDate = overrides.startDate !== undefined ? overrides.startDate : startDate;
+    const newEndDate = overrides.endDate !== undefined ? overrides.endDate : endDate;
     const newTags = overrides.tags !== undefined ? overrides.tags : parsedTags;
-    const newSortBy =
-      overrides.sortBy !== undefined ? overrides.sortBy : sortBy;
-    const newSortOrder =
-      overrides.sortOrder !== undefined ? overrides.sortOrder : sortOrder;
+    const newSortBy = overrides.sortBy !== undefined ? overrides.sortBy : sortBy;
+    const newSortOrder = overrides.sortOrder !== undefined ? overrides.sortOrder : sortOrder;
 
     if (newSearch) params.set("search", newSearch);
     if (newStartDate) params.set("startDate", newStartDate);
     if (newEndDate) params.set("endDate", newEndDate);
-    if (newTags && newTags.length > 0)
-      params.set("tags", JSON.stringify(newTags));
+    if (newTags && newTags.length > 0) params.set("tags", JSON.stringify(newTags));
     if (newSortBy) params.set("sortBy", newSortBy);
     if (newSortOrder) params.set("sortOrder", newSortOrder);
 
@@ -258,8 +239,7 @@ export default function EventFeed({
       trickleTimerRef.current = null;
     }
 
-    const isDefaultSort =
-      !sortBy || (sortBy === "date" && (!sortOrder || sortOrder === "desc"));
+    const isDefaultSort = !sortBy || (sortBy === "date" && (!sortOrder || sortOrder === "desc"));
 
     const establishStream = (maxId: number) => {
       if (!isDefaultSort || maxId === 0) return;
@@ -288,9 +268,7 @@ export default function EventFeed({
 
       eventSource.addEventListener("message", (event) => {
         const newEvents: EventWithChannelName[] = JSON.parse(event.data);
-        const unique = newEvents.filter(
-          (e) => !eventIdsRef.current.has(e.id),
-        );
+        const unique = newEvents.filter((e) => !eventIdsRef.current.has(e.id));
         if (unique.length > 0) {
           unique.forEach((e) => eventIdsRef.current.add(e.id));
           trickleQueueRef.current.push(...unique);
@@ -348,9 +326,7 @@ export default function EventFeed({
   useEffect(() => {
     const handler = (e: CustomEvent<{ channelName: string }>) => {
       setEvents((prev) =>
-        prev.map((ev) =>
-          ev.channelName === e.detail.channelName ? { ...ev, read: true } : ev,
-        ),
+        prev.map((ev) => (ev.channelName === e.detail.channelName ? { ...ev, read: true } : ev)),
       );
     };
     window.addEventListener("channel:read", handler as EventListener);
@@ -359,8 +335,7 @@ export default function EventFeed({
 
   const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
   const hasNewEvents =
-    lastReadDate != null &&
-    events.some((e) => new Date(e.createdAt) > lastReadDate);
+    lastReadDate != null && events.some((e) => new Date(e.createdAt) > lastReadDate);
 
   // Build flat rows array (events interleaved with optional divider)
   const rows: Row[] = [];
@@ -476,9 +451,7 @@ export default function EventFeed({
             {type === "project" ? "Feed" : `# ${channel?.name}`}
           </h1>
           {type === "channel" && channel?.description && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {channel.description}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{channel.description}</p>
           )}
         </div>
         <div className="flex flex-col gap-2">
@@ -541,9 +514,7 @@ export default function EventFeed({
       {/* Active filters display */}
       {hasActiveFilters && (
         <div className="px-4 md:px-8 py-3 border-b bg-gray-50 dark:bg-white/5 flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Active filters:
-          </span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
           {(startDate || endDate) && (
             <div className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm">
               {formatTimeFilter()}
@@ -573,15 +544,11 @@ export default function EventFeed({
       )}
 
       {/* Scrollable events */}
-      <div
-        ref={scrollContainerRef}
-        className="w-full flex-1 overflow-y-auto scroll-smooth"
-      >
+      <div ref={scrollContainerRef} className="w-full flex-1 overflow-y-auto scroll-smooth">
         {events.length === 0 ? (
           <div className="w-full text-center pt-8">
             <h2 className="text-2xl">
-              Looks like this {type === "project" ? "project" : "channel"} has
-              no events!
+              Looks like this {type === "project" ? "project" : "channel"} has no events!
             </h2>
           </div>
         ) : (
@@ -611,9 +578,7 @@ export default function EventFeed({
                     {row.kind === "divider" ? (
                       <div className="flex items-center gap-3 py-1">
                         <div className="flex-1 border-t border-primary/40" />
-                        <span className="text-xs font-medium text-primary/70 shrink-0">
-                          New
-                        </span>
+                        <span className="text-xs font-medium text-primary/70 shrink-0">New</span>
                         <div className="flex-1 border-t border-primary/40" />
                       </div>
                     ) : (
@@ -632,9 +597,7 @@ export default function EventFeed({
               })}
             </div>
             {loadingMore && (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                Loading...
-              </p>
+              <p className="text-center text-sm text-muted-foreground py-4">Loading...</p>
             )}
           </div>
         )}

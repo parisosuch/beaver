@@ -32,10 +32,7 @@ export const GET: APIRoute = async (context: APIContext) => {
   }
 
   try {
-    const [members, allUsers] = await Promise.all([
-      getProjectMembers(projectId),
-      getAllUsers(),
-    ]);
+    const [members, allUsers] = await Promise.all([getProjectMembers(projectId), getAllUsers()]);
 
     const memberUserIds = new Set(members.map((m) => m.userId));
     const nonMembers = allUsers.filter((u) => !memberUserIds.has(u.id));
@@ -64,16 +61,13 @@ export const POST: APIRoute = async (context: APIContext) => {
     const { projectId, userId, role } = await context.request.json();
 
     if (!projectId || !userId || !role) {
-      return new Response(
-        JSON.stringify({ error: "projectId, userId, and role are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "projectId, userId, and role are required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const userRole = await getUserProjectRole(
-      projectId,
-      context.locals.user.id,
-    );
+    const userRole = await getUserProjectRole(projectId, context.locals.user.id);
     if (!canManage(userRole, context.locals.user.isAdmin)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -87,8 +81,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to add member.";
+    const message = err instanceof Error ? err.message : "Failed to add member.";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -108,16 +101,13 @@ export const PATCH: APIRoute = async (context: APIContext) => {
     const { projectId, userId, role } = await context.request.json();
 
     if (!projectId || !userId || !role) {
-      return new Response(
-        JSON.stringify({ error: "projectId, userId, and role are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "projectId, userId, and role are required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const userRole = await getUserProjectRole(
-      projectId,
-      context.locals.user.id,
-    );
+    const userRole = await getUserProjectRole(projectId, context.locals.user.id);
     if (!canManage(userRole, context.locals.user.isAdmin)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -131,8 +121,7 @@ export const PATCH: APIRoute = async (context: APIContext) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to update role.";
+    const message = err instanceof Error ? err.message : "Failed to update role.";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -152,16 +141,13 @@ export const DELETE: APIRoute = async (context: APIContext) => {
     const { projectId, userId } = await context.request.json();
 
     if (!projectId || !userId) {
-      return new Response(
-        JSON.stringify({ error: "projectId and userId are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "projectId and userId are required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const userRole = await getUserProjectRole(
-      projectId,
-      context.locals.user.id,
-    );
+    const userRole = await getUserProjectRole(projectId, context.locals.user.id);
     if (!canManage(userRole, context.locals.user.isAdmin)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -175,8 +161,7 @@ export const DELETE: APIRoute = async (context: APIContext) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to remove member.";
+    const message = err instanceof Error ? err.message : "Failed to remove member.";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

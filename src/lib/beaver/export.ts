@@ -11,7 +11,9 @@ export function parseExportOptions(url: URL) {
   if (url.searchParams.get("startDate")) startDate = new Date(url.searchParams.get("startDate")!);
   if (url.searchParams.get("endDate")) endDate = new Date(url.searchParams.get("endDate")!);
   if (url.searchParams.get("tags")) {
-    try { tags = JSON.parse(url.searchParams.get("tags")!); } catch {}
+    try {
+      tags = JSON.parse(url.searchParams.get("tags")!);
+    } catch {}
   }
 
   return {

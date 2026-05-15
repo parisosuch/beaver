@@ -16,15 +16,8 @@ export async function getProjects() {
   return res;
 }
 
-export async function createProject(
-  name: string,
-  apiKey: string,
-  ownerId: number,
-) {
-  const [project] = await db
-    .insert(projects)
-    .values({ name, apiKey, ownerId })
-    .returning();
+export async function createProject(name: string, apiKey: string, ownerId: number) {
+  const [project] = await db.insert(projects).values({ name, apiKey, ownerId }).returning();
 
   // Creator is automatically an owner
   await db.insert(projectMembers).values({
@@ -37,47 +30,31 @@ export async function createProject(
 }
 
 export async function getProject(project_id: number) {
-  const res = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.id, project_id));
+  const res = await db.select().from(projects).where(eq(projects.id, project_id));
 
   return res[0];
 }
 
 export async function getProjectsByOwner(ownerId: number) {
-  const res = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.ownerId, ownerId));
+  const res = await db.select().from(projects).where(eq(projects.ownerId, ownerId));
 
   return res;
 }
 
 export async function renameProject(projectId: number, name: string) {
-  const res = await db
-    .update(projects)
-    .set({ name })
-    .where(eq(projects.id, projectId))
-    .returning();
+  const res = await db.update(projects).set({ name }).where(eq(projects.id, projectId)).returning();
 
   return res[0];
 }
 
 export async function deleteProject(projectId: number) {
-  const res = await db
-    .delete(projects)
-    .where(eq(projects.id, projectId))
-    .returning();
+  const res = await db.delete(projects).where(eq(projects.id, projectId)).returning();
 
   return res[0];
 }
 
 export async function rotateApiKey(projectId: number): Promise<string> {
   const newKey = crypto.randomUUID();
-  await db
-    .update(projects)
-    .set({ apiKey: newKey })
-    .where(eq(projects.id, projectId));
+  await db.update(projects).set({ apiKey: newKey }).where(eq(projects.id, projectId));
   return newKey;
 }

@@ -23,13 +23,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   BookmarkIcon,
   BookOpenIcon,
@@ -58,8 +52,7 @@ import {
 // ─── ID helpers ───────────────────────────────────────────────────────────────
 const grpId = (id: number) => `grp-${id}` as UniqueIdentifier;
 const chId = (id: number) => `ch-${id}` as UniqueIdentifier;
-const parseGrpId = (uid: UniqueIdentifier) =>
-  parseInt((uid as string).slice(4));
+const parseGrpId = (uid: UniqueIdentifier) => parseInt((uid as string).slice(4));
 const parseChId = (uid: UniqueIdentifier) => parseInt((uid as string).slice(3));
 const isGrp = (uid: UniqueIdentifier) => (uid as string).startsWith("grp-");
 const isCh = (uid: UniqueIdentifier) => (uid as string).startsWith("ch-");
@@ -80,14 +73,9 @@ function SortableChannel({
   indent?: boolean;
   unreadCount?: number;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: chId(channel.id) });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: chId(channel.id),
+  });
 
   return (
     <div
@@ -151,17 +139,12 @@ function SortableGroup({
   canEdit: boolean;
   unreadCounts: Record<number, number>;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: grpId(group.id), disabled: !canEdit });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: grpId(group.id),
+    disabled: !canEdit,
+  });
 
-  const isChannelActive = (id: number) =>
-    pathname === `/dashboard/${projectId}/channels/${id}`;
+  const isChannelActive = (id: number) => pathname === `/dashboard/${projectId}/channels/${id}`;
 
   const headerButton = (
     <button
@@ -192,13 +175,9 @@ function SortableGroup({
         <ContextMenu>
           <ContextMenuTrigger asChild>{headerButton}</ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onSelect={() => onRename(group.id)}>
-              Rename
-            </ContextMenuItem>
+            <ContextMenuItem onSelect={() => onRename(group.id)}>Rename</ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem onSelect={onNewGroup}>
-              Add New Group
-            </ContextMenuItem>
+            <ContextMenuItem onSelect={onNewGroup}>Add New Group</ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
               onSelect={() => onDelete(group.id)}
@@ -213,13 +192,8 @@ function SortableGroup({
       )}
 
       {!collapsed && (
-        <SortableContext
-          items={channelItems}
-          strategy={verticalListSortingStrategy}
-        >
-          <div
-            className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}
-          >
+        <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
+          <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
             {group.channels.map((ch) => (
               <SortableChannel
                 key={ch.id}
@@ -311,8 +285,7 @@ function ChannelGroups({
   unreadCounts: Record<number, number>;
 }) {
   const [ungrouped, setUngrouped] = useState<Channel[]>(initialUngrouped);
-  const [groups, setGroups] =
-    useState<ChannelGroupWithChannels[]>(initialGroups);
+  const [groups, setGroups] = useState<ChannelGroupWithChannels[]>(initialGroups);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -597,10 +570,7 @@ function ChannelGroups({
   const handleDeleteGroup = async (id: number) => {
     const group = groupsRef.current.find((g) => g.id === id);
     if (group) {
-      setUngrouped((prev) => [
-        ...prev,
-        ...group.channels.map((c) => ({ ...c, groupId: null })),
-      ]);
+      setUngrouped((prev) => [...prev, ...group.channels.map((c) => ({ ...c, groupId: null }))]);
     }
     setGroups((prev) => prev.filter((g) => g.id !== id));
     await fetch("/api/channel-group", {
@@ -613,14 +583,10 @@ function ChannelGroups({
   // ── Derived ────────────────────────────────────────────────────────────────
   const ungroupedItems = ungrouped.map((c) => chId(c.id));
   const groupItems = groups.map((g) => grpId(g.id));
-  const activeChannel =
-    activeId && isCh(activeId) ? getChannel(activeId) : null;
+  const activeChannel = activeId && isCh(activeId) ? getChannel(activeId) : null;
   const activeGroup =
-    activeId && isGrp(activeId)
-      ? groups.find((g) => grpId(g.id) === activeId)
-      : null;
-  const isChannelActive = (id: number) =>
-    pathname === `/dashboard/${projectId}/channels/${id}`;
+    activeId && isGrp(activeId) ? groups.find((g) => grpId(g.id) === activeId) : null;
+  const isChannelActive = (id: number) => pathname === `/dashboard/${projectId}/channels/${id}`;
 
   return (
     <DndContext
@@ -633,10 +599,7 @@ function ChannelGroups({
       onDragCancel={handleDragCancel}
     >
       {/* Ungrouped channels */}
-      <SortableContext
-        items={ungroupedItems}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={ungroupedItems} strategy={verticalListSortingStrategy}>
         {ungrouped.map((ch) => (
           <SortableChannel
             key={ch.id}
@@ -650,10 +613,7 @@ function ChannelGroups({
       </SortableContext>
 
       {/* Groups */}
-      <SortableContext
-        items={groupItems}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={groupItems} strategy={verticalListSortingStrategy}>
         {groups.map((group) => {
           if (renamingGroupId === group.id) {
             return (
@@ -769,10 +729,7 @@ function PanelContent({
     window.addEventListener("channel:read", handleChannelRead as EventListener);
     return () => {
       clearInterval(interval);
-      window.removeEventListener(
-        "channel:read",
-        handleChannelRead as EventListener,
-      );
+      window.removeEventListener("channel:read", handleChannelRead as EventListener);
     };
   }, [currentProject.id, pathname]);
 
@@ -787,15 +744,12 @@ function PanelContent({
   const project = currentProject;
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
   const isBookmarksActive = () => pathname === `/dashboard/${project.id}/bookmarks`;
-  const isSettingsActive = () =>
-    pathname === `/dashboard/${project.id}/settings`;
-  const isApiDocsActive = () =>
-    pathname === `/dashboard/${project.id}/api-docs`;
+  const isSettingsActive = () => pathname === `/dashboard/${project.id}/settings`;
+  const isApiDocsActive = () => pathname === `/dashboard/${project.id}/api-docs`;
 
   const navCss =
     "flex px-3 py-2 space-x-2 items-center hover:bg-gray-100 dark:hover:bg-white/8 hover:cursor-pointer hover:font-medium rounded ";
-  const activeNavCss =
-    navCss + "bg-gray-100 dark:bg-white/8 font-medium rounded-md";
+  const activeNavCss = navCss + "bg-gray-100 dark:bg-white/8 font-medium rounded-md";
 
   const ungroupedChannels = currentChannels.filter((c) => !c.groupId);
 
@@ -805,9 +759,7 @@ function PanelContent({
       <div className="mt-4 space-y-2">
         <h1 className="text-sm font-mono">User</h1>
         <PopoverTrigger asChild>
-          <p className="font-semibold hover:underline hover:cursor-pointer">
-            @{user?.userName}
-          </p>
+          <p className="font-semibold hover:underline hover:cursor-pointer">@{user?.userName}</p>
         </PopoverTrigger>
         <PopoverContent>
           <Button
@@ -826,10 +778,7 @@ function PanelContent({
         <h1 className="text-sm font-mono">Project</h1>
         {(user?.isAdmin || user?.canCreateProjects) && (
           <a href="/dashboard/create-project">
-            <PlusIcon
-              size={20}
-              className="hover:cursor-pointer hover:text-black/50"
-            />
+            <PlusIcon size={20} className="hover:cursor-pointer hover:text-black/50" />
           </a>
         )}
       </div>
@@ -1039,10 +988,7 @@ function SidePanelContent({
             <XIcon size={20} />
           </button>
         </div>
-        <PanelContent
-          {...sharedProps}
-          onNavigate={() => setDrawerOpen(false)}
-        />
+        <PanelContent {...sharedProps} onNavigate={() => setDrawerOpen(false)} />
       </div>
 
       {/* Desktop */}

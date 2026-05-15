@@ -21,10 +21,10 @@ export const POST: APIRoute = async (context: APIContext) => {
     }
 
     if (newPassword.length < 8) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Password must be at least 8 characters." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const dbUser = await getUserByUsername(user.userName);
@@ -37,10 +37,10 @@ export const POST: APIRoute = async (context: APIContext) => {
 
     const valid = await verifyPassword(currentPassword, dbUser.password);
     if (!valid) {
-      return new Response(
-        JSON.stringify({ error: "Current password is incorrect." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Current password is incorrect." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     await updatePassword(user.id, newPassword);
