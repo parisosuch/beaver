@@ -7,25 +7,14 @@ import {
   DialogTitle,
   DialogClose,
 } from "./ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { GitMergeIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Label } from "./ui/label";
 import type { Project } from "@/lib/beaver/project";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 export default function ChannelSettings({
   channels,
@@ -54,9 +43,7 @@ export default function ChannelSettings({
   const nameChanged = editTarget !== null && editName.trim() !== editTarget.name;
   const nameTaken =
     nameChanged &&
-    clientChannels.some(
-      (c) => c.id !== editTarget?.id && c.name === editName.trim(),
-    );
+    clientChannels.some((c) => c.id !== editTarget?.id && c.name === editName.trim());
 
   const handleEditConfirm = async () => {
     if (!editTarget) return;
@@ -78,10 +65,14 @@ export default function ChannelSettings({
         return;
       }
       setChannels((prev) =>
-        prev.map((c) => (c.id === editTarget.id ? { ...c, name: data.name, description: data.description } : c)),
+        prev.map((c) =>
+          c.id === editTarget.id ? { ...c, name: data.name, description: data.description } : c,
+        ),
       );
       window.dispatchEvent(
-        new CustomEvent("channel:updated", { detail: { id: data.id, name: data.name, description: data.description } }),
+        new CustomEvent("channel:updated", {
+          detail: { id: data.id, name: data.name, description: data.description },
+        }),
       );
       setEditTarget(null);
     } finally {
@@ -101,9 +92,9 @@ export default function ChannelSettings({
 
   const survivingName =
     nameChoice === "source"
-      ? mergeSource?.name ?? ""
+      ? (mergeSource?.name ?? "")
       : nameChoice === "target"
-        ? mergeTarget?.name ?? ""
+        ? (mergeTarget?.name ?? "")
         : customName.trim();
 
   const handleDeleteConfirm = async () => {
@@ -120,9 +111,7 @@ export default function ChannelSettings({
         return;
       }
       setChannels((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-      window.dispatchEvent(
-        new CustomEvent("channel:deleted", { detail: { id: deleteTarget.id } }),
-      );
+      window.dispatchEvent(new CustomEvent("channel:deleted", { detail: { id: deleteTarget.id } }));
       setDeleteTarget(null);
       setDeleteConfirmName("");
     } finally {
@@ -155,9 +144,7 @@ export default function ChannelSettings({
           .filter((c) => c.id !== mergeSource.id)
           .map((c) => (c.id === mergeTarget.id ? { ...c, name: data.name } : c)),
       );
-      window.dispatchEvent(
-        new CustomEvent("channel:deleted", { detail: { id: mergeSource.id } }),
-      );
+      window.dispatchEvent(new CustomEvent("channel:deleted", { detail: { id: mergeSource.id } }));
       setMergeSource(null);
       setMergeTargetId("");
       setNameChoice("target");
@@ -287,14 +274,12 @@ export default function ChannelSettings({
                 value={editName}
                 maxLength={16}
                 onChange={(e) => {
-                setEditName(e.target.value.replace(" ", "-"));
-                setEditNameWarningAcked(false);
-              }}
+                  setEditName(e.target.value.replace(" ", "-"));
+                  setEditNameWarningAcked(false);
+                }}
               />
               {nameTaken && (
-                <p className="text-xs text-destructive">
-                  A channel with this name already exists.
-                </p>
+                <p className="text-xs text-destructive">A channel with this name already exists.</p>
               )}
               {nameChanged && !nameTaken && (
                 <label className="flex items-start gap-2 cursor-pointer mt-1">
@@ -305,7 +290,8 @@ export default function ChannelSettings({
                     className="mt-0.5 h-4 w-4 shrink-0"
                   />
                   <span className="text-xs text-amber-600">
-                    I understand that changing the channel name may break existing integrations that use this channel name to send events.
+                    I understand that changing the channel name may break existing integrations that
+                    use this channel name to send events.
                   </span>
                 </label>
               )}
@@ -320,16 +306,16 @@ export default function ChannelSettings({
               />
             </div>
 
-            {editError && (
-              <p className="text-sm text-destructive">{editError}</p>
-            )}
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
 
             <div className="flex gap-2 justify-end">
               <Button variant="secondary" onClick={() => setEditTarget(null)}>
                 Cancel
               </Button>
               <Button
-                disabled={!editName.trim() || nameTaken || (nameChanged && !editNameWarningAcked) || editing}
+                disabled={
+                  !editName.trim() || nameTaken || (nameChanged && !editNameWarningAcked) || editing
+                }
                 onClick={handleEditConfirm}
               >
                 {editing ? "Saving…" : "Save"}
@@ -355,13 +341,10 @@ export default function ChannelSettings({
             <DialogTitle>Delete channel</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete{" "}
-              <span className="font-bold"># {deleteTarget?.name}</span>? This
-              cannot be undone.
+              <span className="font-bold"># {deleteTarget?.name}</span>? This cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          {deleteError && (
-            <p className="text-sm text-destructive">{deleteError}</p>
-          )}
+          {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
           <Label>Confirm channel name</Label>
           <Input
             placeholder="Channel name"
@@ -400,11 +383,9 @@ export default function ChannelSettings({
           <DialogHeader>
             <DialogTitle>Merge channel</DialogTitle>
             <DialogDescription>
-              Merge{" "}
-              <span className="font-bold"># {mergeSource?.name}</span> into
-              another channel. All events will move to the surviving channel and{" "}
-              <span className="font-bold"># {mergeSource?.name}</span> will be
-              deleted.
+              Merge <span className="font-bold"># {mergeSource?.name}</span> into another channel.
+              All events will move to the surviving channel and{" "}
+              <span className="font-bold"># {mergeSource?.name}</span> will be deleted.
             </DialogDescription>
           </DialogHeader>
 
@@ -438,10 +419,7 @@ export default function ChannelSettings({
                       { value: "custom", label: "Custom…" },
                     ] as const
                   ).map(({ value, label }) => (
-                    <label
-                      key={value}
-                      className="flex items-center gap-2 cursor-pointer text-sm"
-                    >
+                    <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
                       <input
                         type="radio"
                         name="nameChoice"
@@ -466,15 +444,10 @@ export default function ChannelSettings({
               </div>
             )}
 
-            {mergeError && (
-              <p className="text-sm text-destructive">{mergeError}</p>
-            )}
+            {mergeError && <p className="text-sm text-destructive">{mergeError}</p>}
 
             <div className="flex gap-2 justify-end">
-              <Button
-                variant="secondary"
-                onClick={() => setMergeSource(null)}
-              >
+              <Button variant="secondary" onClick={() => setMergeSource(null)}>
                 Cancel
               </Button>
               <Button

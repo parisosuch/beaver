@@ -6,10 +6,7 @@ import type { TagPrimitive } from "./event";
 export async function getEventTags(ids: number[]): Promise<Record<number, TagPrimitive>> {
   if (ids.length === 0) return {};
 
-  const allTags = await db
-    .select()
-    .from(eventTags)
-    .where(inArray(eventTags.eventId, ids));
+  const allTags = await db.select().from(eventTags).where(inArray(eventTags.eventId, ids));
 
   const tagsByEventId: Record<number, TagPrimitive> = {};
   for (const tag of allTags) {

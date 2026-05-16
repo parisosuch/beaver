@@ -22,7 +22,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     const target = await getUserById(id);
     if (target?.isAdmin && target.id === context.locals.user?.id) {
       return new Response(
-        JSON.stringify({ error: "Cannot reset your own password. Use Settings → Change Password instead." }),
+        JSON.stringify({
+          error: "Cannot reset your own password. Use Settings → Change Password instead.",
+        }),
         { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -32,14 +34,11 @@ export const POST: APIRoute = async (context: APIContext) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Failed to reset password." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+  } catch {
+    return new Response(JSON.stringify({ error: "Failed to reset password." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 

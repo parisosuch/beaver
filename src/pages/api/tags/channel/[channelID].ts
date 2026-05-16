@@ -14,12 +14,9 @@ export async function GET({ params }: { params: { channelID: string } }) {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
