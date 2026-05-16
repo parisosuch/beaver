@@ -6,6 +6,7 @@
     "format": "bun oxfmt",
     "format:check": "bun oxfmt --check",
     "lint": "bun oxlint",
+    "lint:fix": "bun oxlint --fix",
     "dev": "bunx --bun astro dev",
     "build": "astro build",
     "preview": "astro preview",
