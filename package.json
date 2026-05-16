@@ -5,6 +5,8 @@
   "scripts": {
     "format": "bun oxfmt",
     "format:check": "bun oxfmt --check",
+    "lint": "bun oxlint",
+    "lint:fix": "bun oxlint --fix",
     "dev": "bunx --bun astro dev",
     "build": "astro build",
     "preview": "astro preview",
@@ -41,6 +43,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.548.0",
     "oxfmt": "^0.50.0",
+    "oxlint": "^1.65.0",
     "prism-react-renderer": "^2.4.1",
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",

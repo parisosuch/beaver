@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { events, eventTags, channels } from "../db/schema";
+import { events, eventTags } from "../db/schema";
 import { createUser, getUserByUsername } from "../beaver/user";
 import { createProject } from "../beaver/project";
 import { createChannel } from "../beaver/channel";
@@ -38,7 +38,7 @@ async function seed() {
       const project = await createProject(p.name, p.apiKey, p.ownerId);
       console.log(`Created project: ${project.name}`);
       projects.push(project);
-    } catch (e) {
+    } catch {
       console.log(`Project "${p.name}" already exists, skipping...`);
     }
   }
@@ -93,7 +93,7 @@ async function seed() {
       const channel = await createChannel(c.name, c.projectId, c.description);
       console.log(`Created channel: ${channel.name}`);
       channelMap[`${c.projectId}-${c.name}`] = channel;
-    } catch (e) {
+    } catch {
       console.log(`Channel "${c.name}" already exists, skipping...`);
     }
   }

@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context: APIContext) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

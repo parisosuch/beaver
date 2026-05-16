@@ -28,7 +28,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to change password." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

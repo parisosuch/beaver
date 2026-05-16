@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
         } else {
           tagObj = tags;
         }
-      } catch (error) {
+      } catch {
         return new Response(JSON.stringify({ error: "tags object is not valid JSON." }), {
           status: 400,
           headers: { "Content-Type": "application/json" },

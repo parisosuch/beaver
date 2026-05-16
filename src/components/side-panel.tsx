@@ -734,7 +734,6 @@ function PanelContent({
   }, [currentProject.id, pathname]);
 
   const canEdit = userRole === "owner" || userRole === "maintainer";
-  const isOwner = userRole === "owner";
 
   const handleSignout = async () => {
     await signOut();

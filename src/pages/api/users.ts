@@ -27,7 +27,7 @@ export const GET: APIRoute = async (context) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to fetch users." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ export const PATCH: APIRoute = async (context) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to update user." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -136,7 +136,7 @@ export const DELETE: APIRoute = async (context) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to delete user." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
