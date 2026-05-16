@@ -1,21 +1,7 @@
 import { db } from "../db/db";
 import { events, channels, eventTags, channelReads, bookmarks } from "../db/schema";
 import { getEventTags } from "./event-tags";
-import {
-  eq,
-  and,
-  or,
-  asc,
-  desc,
-  like,
-  gt,
-  lt,
-  gte,
-  lte,
-  exists,
-  max,
-  sql,
-} from "drizzle-orm";
+import { eq, and, or, asc, desc, like, gt, lt, gte, lte, exists, max, sql } from "drizzle-orm";
 import { getProject } from "./project";
 
 export async function getMaxEventId(): Promise<number> {
