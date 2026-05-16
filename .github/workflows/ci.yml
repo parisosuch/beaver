@@ -25,4 +25,4 @@ jobs:
         run: bun lint
 
       - name: Type check
-        run: bunx tsc --noEmit
+        run: bun astro sync && bunx tsc --noEmit
