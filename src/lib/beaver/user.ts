@@ -49,22 +49,13 @@ export async function getAdminUsers(): Promise<User[]> {
   return await db.select(userSelect).from(users).where(eq(users.isAdmin, true));
 }
 
-export async function getUserByUsername(
-  userName: string,
-): Promise<DatabaseUser | null> {
-  const result = await db
-    .select()
-    .from(users)
-    .where(eq(users.userName, userName))
-    .limit(1);
+export async function getUserByUsername(userName: string): Promise<DatabaseUser | null> {
+  const result = await db.select().from(users).where(eq(users.userName, userName)).limit(1);
 
   return result[0] || null;
 }
 
-export async function verifyPassword(
-  password: string,
-  hashedPassword: string,
-): Promise<boolean> {
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
   return await Bun.password.verify(password, hashedPassword);
 }
 
@@ -114,10 +105,7 @@ export async function createUserAccount(
   return { ...user, tempPassword };
 }
 
-export async function setCanCreateProjects(
-  id: number,
-  canCreateProjects: boolean,
-): Promise<void> {
+export async function setCanCreateProjects(id: number, canCreateProjects: boolean): Promise<void> {
   await db.update(users).set({ canCreateProjects }).where(eq(users.id, id));
 }
 
@@ -126,10 +114,7 @@ export async function deleteUser(id: number): Promise<void> {
   await db.delete(users).where(eq(users.id, id));
 }
 
-export async function setUserAdmin(
-  id: number,
-  isAdmin: boolean,
-): Promise<void> {
+export async function setUserAdmin(id: number, isAdmin: boolean): Promise<void> {
   await db.update(users).set({ isAdmin }).where(eq(users.id, id));
 }
 
@@ -148,10 +133,7 @@ export async function resetUserPassword(id: number): Promise<string> {
   return tempPassword;
 }
 
-export async function changePassword(
-  id: number,
-  newPassword: string,
-): Promise<void> {
+export async function changePassword(id: number, newPassword: string): Promise<void> {
   const hashedPassword = await Bun.password.hash(newPassword);
 
   await db
@@ -167,10 +149,7 @@ export async function changePassword(
   await db.delete(sessions).where(eq(sessions.userId, id));
 }
 
-export async function updatePassword(
-  id: number,
-  newPassword: string,
-): Promise<void> {
+export async function updatePassword(id: number, newPassword: string): Promise<void> {
   const hashedPassword = await Bun.password.hash(newPassword);
 
   await db
@@ -179,10 +158,7 @@ export async function updatePassword(
     .where(eq(users.id, id));
 }
 
-export async function updateUserEmail(
-  id: number,
-  email: string | null,
-): Promise<void> {
+export async function updateUserEmail(id: number, email: string | null): Promise<void> {
   await db.update(users).set({ email }).where(eq(users.id, id));
 }
 
@@ -194,26 +170,16 @@ export async function setProjectNotifications(
   await db
     .update(projectMembers)
     .set({ notificationsEnabled: enabled })
-    .where(
-      and(
-        eq(projectMembers.userId, userId),
-        eq(projectMembers.projectId, projectId),
-      ),
-    );
+    .where(and(eq(projectMembers.userId, userId), eq(projectMembers.projectId, projectId)));
 }
 
-export async function getNotificationEmails(
-  projectId: number,
-): Promise<string[]> {
+export async function getNotificationEmails(projectId: number): Promise<string[]> {
   const rows = await db
     .select({ email: users.email })
     .from(projectMembers)
     .innerJoin(users, eq(projectMembers.userId, users.id))
     .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.notificationsEnabled, true),
-      ),
+      and(eq(projectMembers.projectId, projectId), eq(projectMembers.notificationsEnabled, true)),
     );
 
   return rows.flatMap((r) => (r.email ? [r.email] : []));

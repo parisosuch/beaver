@@ -10,42 +10,32 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
     const apiKey = request.headers.get("X-API-Key");
 
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "X-API-Key header is required." }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-          },
+      return new Response(JSON.stringify({ error: "X-API-Key header is required." }), {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
     }
 
     // extract body and verify contents
-    const { name, description, icon, channel, tags, notify } =
-      await request.json();
+    const { name, description, icon, channel, tags, notify } = await request.json();
 
     if (!name) {
-      return new Response(
-        JSON.stringify({ error: "name is a required field." }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
+      return new Response(JSON.stringify({ error: "name is a required field." }), {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
     }
     if (!channel) {
-      return new Response(
-        JSON.stringify({ error: "channel is a required field." }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
+      return new Response(JSON.stringify({ error: "channel is a required field." }), {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
     }
 
     // TODO: there is a better way to do this but this will work for now
@@ -59,10 +49,10 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
           tagObj = tags;
         }
       } catch (error) {
-        return new Response(
-          JSON.stringify({ error: "tags object is not valid JSON." }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ error: "tags object is not valid JSON." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
       }
     }
 
@@ -99,13 +89,10 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 

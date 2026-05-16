@@ -23,13 +23,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { DatePicker } from "./ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
 import type { AvailableTag } from "@/lib/beaver/tags";
 import type { TagFilter } from "@/lib/beaver/event";
@@ -41,11 +35,7 @@ interface EventFilterDialogProps {
   currentStartDate: string | null;
   currentEndDate: string | null;
   currentTags: TagFilter[];
-  onApplyFilters: (
-    startDate: string | null,
-    endDate: string | null,
-    tags: TagFilter[],
-  ) => void;
+  onApplyFilters: (startDate: string | null, endDate: string | null, tags: TagFilter[]) => void;
 }
 
 const timePresets = [
@@ -62,7 +52,10 @@ const timePresets = [
   {
     label: "Yesterday",
     value: "day" as const,
-    getDates: () => ({ start: startOfDay(subDays(new Date(), 1)), end: endOfDay(subDays(new Date(), 1)) }),
+    getDates: () => ({
+      start: startOfDay(subDays(new Date(), 1)),
+      end: endOfDay(subDays(new Date(), 1)),
+    }),
   },
   {
     label: "This week",
@@ -120,9 +113,7 @@ export default function EventFilterDialog({
 
   // Tag input state
   const [selectedKey, setSelectedKey] = useState("");
-  const [numericOperator, setNumericOperator] = useState<
-    "eq" | "gt" | "lt" | "between"
-  >("eq");
+  const [numericOperator, setNumericOperator] = useState<"eq" | "gt" | "lt" | "between">("eq");
   const [valueInput, setValueInput] = useState("");
   const [value2Input, setValue2Input] = useState("");
 
@@ -176,9 +167,7 @@ export default function EventFilterDialog({
     }
   };
 
-  const handleTimePresetSelect = (
-    preset: (typeof timePresets)[number]["value"],
-  ) => {
+  const handleTimePresetSelect = (preset: (typeof timePresets)[number]["value"]) => {
     const presetConfig = timePresets.find((p) => p.value === preset);
     if (presetConfig) {
       const { start, end } = presetConfig.getDates();
@@ -215,9 +204,7 @@ export default function EventFilterDialog({
         type: "number",
         operator: numericOperator,
         value: valueInput.trim(),
-        ...(numericOperator === "between"
-          ? { value2: value2Input.trim() }
-          : {}),
+        ...(numericOperator === "between" ? { value2: value2Input.trim() } : {}),
       });
     } else {
       addTag({
@@ -248,10 +235,8 @@ export default function EventFilterDialog({
     setTags(tags.filter((_, i) => i !== index));
   };
 
-  const hasActiveFilters =
-    currentStartDate || currentEndDate || currentTags.length > 0;
-  const filterCount =
-    (currentStartDate || currentEndDate ? 1 : 0) + currentTags.length;
+  const hasActiveFilters = currentStartDate || currentEndDate || currentTags.length > 0;
+  const filterCount = (currentStartDate || currentEndDate ? 1 : 0) + currentTags.length;
 
   const getActivePreset = () => {
     if (!startDate || !endDate) return null;
@@ -275,9 +260,7 @@ export default function EventFilterDialog({
     (numericOperator !== "between" || value2Input.trim() !== "");
 
   const canAddFreeText =
-    selectedTag?.type === "string" &&
-    selectedTag.values.length === 0 &&
-    valueInput.trim() !== "";
+    selectedTag?.type === "string" && selectedTag.values.length === 0 && valueInput.trim() !== "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -295,9 +278,7 @@ export default function EventFilterDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Filter Events</DialogTitle>
-          <DialogDescription>
-            Filter events by time range and tags
-          </DialogDescription>
+          <DialogDescription>Filter events by time range and tags</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -308,9 +289,7 @@ export default function EventFilterDialog({
               {timePresets.map((preset) => (
                 <Button
                   key={preset.value}
-                  variant={
-                    activePreset === preset.value ? "default" : "outline"
-                  }
+                  variant={activePreset === preset.value ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleTimePresetSelect(preset.value)}
                 >
@@ -344,9 +323,7 @@ export default function EventFilterDialog({
             {loadingTags ? (
               <p className="text-sm text-muted-foreground">Loading tags...</p>
             ) : availableTags.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No tags available for this {type}
-              </p>
+              <p className="text-sm text-muted-foreground">No tags available for this {type}</p>
             ) : (
               <div className="space-y-3">
                 {/* Key selector */}
@@ -360,9 +337,7 @@ export default function EventFilterDialog({
                       {availableTags.map((tag) => (
                         <SelectItem key={tag.key} value={tag.key}>
                           <span>{tag.key}</span>
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {tag.type}
-                          </span>
+                          <span className="ml-2 text-xs text-muted-foreground">{tag.type}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -372,9 +347,7 @@ export default function EventFilterDialog({
                 {/* Value input — varies by type */}
                 {selectedTag?.type === "boolean" && (
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">
-                      Value
-                    </label>
+                    <label className="text-sm text-muted-foreground">Value</label>
                     <Select value="" onValueChange={handleDropdownValueSelect}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select value..." />
@@ -387,69 +360,50 @@ export default function EventFilterDialog({
                   </div>
                 )}
 
-                {selectedTag?.type === "string" &&
-                  selectedTag.values.length > 0 && (
-                    <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground">
-                        Value
-                      </label>
-                      <Select
-                        value=""
-                        onValueChange={handleDropdownValueSelect}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select value..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {selectedTag.values.map((v) => (
-                            <SelectItem key={v} value={v}>
-                              {v}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                {selectedTag?.type === "string" && selectedTag.values.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">Value</label>
+                    <Select value="" onValueChange={handleDropdownValueSelect}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select value..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedTag.values.map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-                {selectedTag?.type === "string" &&
-                  selectedTag.values.length === 0 && (
-                    <div className="flex gap-2">
-                      <div className="flex-1 space-y-2">
-                        <label className="text-sm text-muted-foreground">
-                          Value
-                        </label>
-                        <Input
-                          placeholder="Enter value..."
-                          value={valueInput}
-                          onChange={(e) => setValueInput(e.target.value)}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleAddClick()
-                          }
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          size="sm"
-                          onClick={handleAddClick}
-                          disabled={!canAddFreeText}
-                        >
-                          <PlusIcon className="size-4" />
-                        </Button>
-                      </div>
+                {selectedTag?.type === "string" && selectedTag.values.length === 0 && (
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-sm text-muted-foreground">Value</label>
+                      <Input
+                        placeholder="Enter value..."
+                        value={valueInput}
+                        onChange={(e) => setValueInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddClick()}
+                      />
                     </div>
-                  )}
+                    <div className="flex items-end">
+                      <Button size="sm" onClick={handleAddClick} disabled={!canAddFreeText}>
+                        <PlusIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {selectedTag?.type === "number" && (
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">
-                      Condition
-                    </label>
+                    <label className="text-sm text-muted-foreground">Condition</label>
                     <div className="flex gap-2">
                       <Select
                         value={numericOperator}
-                        onValueChange={(v) =>
-                          setNumericOperator(v as typeof numericOperator)
-                        }
+                        onValueChange={(v) => setNumericOperator(v as typeof numericOperator)}
                       >
                         <SelectTrigger className="w-32 shrink-0">
                           <SelectValue />
@@ -475,9 +429,7 @@ export default function EventFilterDialog({
                           placeholder="To"
                           value={value2Input}
                           onChange={(e) => setValue2Input(e.target.value)}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleAddClick()
-                          }
+                          onKeyDown={(e) => e.key === "Enter" && handleAddClick()}
                         />
                       )}
                       <Button

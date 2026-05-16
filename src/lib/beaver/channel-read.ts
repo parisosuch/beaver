@@ -4,19 +4,11 @@ import { eq, and, sql } from "drizzle-orm";
 
 // Mark a channel as read for a user. Returns the previous lastReadAt (or null
 // if the user has never read this channel before).
-export async function markChannelRead(
-  userId: number,
-  channelId: number,
-): Promise<Date | null> {
+export async function markChannelRead(userId: number, channelId: number): Promise<Date | null> {
   const existing = await db
     .select({ lastReadAt: channelReads.lastReadAt })
     .from(channelReads)
-    .where(
-      and(
-        eq(channelReads.userId, userId),
-        eq(channelReads.channelId, channelId),
-      ),
-    )
+    .where(and(eq(channelReads.userId, userId), eq(channelReads.channelId, channelId)))
     .limit(1);
 
   const previousLastReadAt = existing[0]?.lastReadAt ?? null;

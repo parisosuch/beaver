@@ -4,10 +4,7 @@ import type { EventWithChannelName } from "../beaver/event";
 const apiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "notifications@beaver.app";
 
-function buildEmailHtml(
-  event: EventWithChannelName,
-  projectName: string,
-): string {
+function buildEmailHtml(event: EventWithChannelName, projectName: string): string {
   const tags = Object.entries(event.tags ?? {});
   const tagsHtml =
     tags.length > 0

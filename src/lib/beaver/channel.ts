@@ -23,10 +23,7 @@ export async function getChannels(project_id: number) {
 }
 
 export async function getChannel(channelID: number) {
-  const res = await db
-    .select()
-    .from(channels)
-    .where(eq(channels.id, channelID));
+  const res = await db.select().from(channels).where(eq(channels.id, channelID));
 
   return res[0];
 }
@@ -43,9 +40,7 @@ export async function createChannel(
   const projectChannels = await db
     .select()
     .from(channels)
-    .where(
-      and(eq(channels.projectId, project_id), eq(channels.name, channel_name)),
-    );
+    .where(and(eq(channels.projectId, project_id), eq(channels.name, channel_name)));
 
   if (projectChannels.length > 0) {
     throw new Error("Channel with name already exists for this project.");
@@ -82,11 +77,7 @@ export async function reorderChannels(
   );
 }
 
-export async function coalesceChannels(
-  sourceId: number,
-  targetId: number,
-  survivingName: string,
-) {
+export async function coalesceChannels(sourceId: number, targetId: number, survivingName: string) {
   const [source, target] = await Promise.all([
     db.select().from(channels).where(eq(channels.id, sourceId)).limit(1),
     db.select().from(channels).where(eq(channels.id, targetId)).limit(1),
@@ -97,20 +88,14 @@ export async function coalesceChannels(
     throw new Error("Channels must belong to the same project.");
 
   // Move all events from source to target
-  await db
-    .update(events)
-    .set({ channelId: targetId })
-    .where(eq(events.channelId, sourceId));
+  await db.update(events).set({ channelId: targetId }).where(eq(events.channelId, sourceId));
 
   // Drop source channel reads — avoid unique constraint conflicts on (userId, channelId)
   await db.delete(channelReads).where(eq(channelReads.channelId, sourceId));
 
   // Rename target if the surviving name differs
   if (survivingName !== target[0].name) {
-    await db
-      .update(channels)
-      .set({ name: survivingName })
-      .where(eq(channels.id, targetId));
+    await db.update(channels).set({ name: survivingName }).where(eq(channels.id, targetId));
   }
 
   // Delete source (events already moved, no cascade needed)
@@ -133,12 +118,7 @@ export async function updateChannel(
     const existing = await db
       .select({ id: channels.id })
       .from(channels)
-      .where(
-        and(
-          eq(channels.projectId, channel[0].projectId),
-          eq(channels.name, updates.name),
-        ),
-      )
+      .where(and(eq(channels.projectId, channel[0].projectId), eq(channels.name, updates.name)))
       .limit(1);
     if (existing.length > 0 && existing[0].id !== channelId) {
       throw new Error("Channel with name already exists for this project.");
@@ -170,10 +150,7 @@ export async function deleteChannel(channelID: number) {
     await db.delete(events).where(eq(events.channelId, channelID));
   }
 
-  const channel = await db
-    .delete(channels)
-    .where(eq(channels.id, channelID))
-    .returning();
+  const channel = await db.delete(channels).where(eq(channels.id, channelID)).returning();
 
   return channel;
 }

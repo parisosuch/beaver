@@ -1,9 +1,6 @@
 import type { APIRoute } from "astro";
 import { getUserByUsername, verifyPassword } from "../../../lib/beaver/user";
-import {
-  createRefreshToken,
-  getRefreshTokenExpiryDate,
-} from "../../../lib/auth/jwt";
+import { createRefreshToken, getRefreshTokenExpiryDate } from "../../../lib/auth/jwt";
 import { createSession } from "../../../lib/auth/session";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -12,26 +9,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { username, password } = body;
 
     if (!username || !password) {
-      return new Response(
-        JSON.stringify({ error: "Username and password are required" }),
-        { status: 400 },
-      );
+      return new Response(JSON.stringify({ error: "Username and password are required" }), {
+        status: 400,
+      });
     }
 
     const user = await getUserByUsername(username);
     if (!user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid username or password" }),
-        { status: 401 },
-      );
+      return new Response(JSON.stringify({ error: "Invalid username or password" }), {
+        status: 401,
+      });
     }
 
     const isValidPassword = await verifyPassword(password, user.password);
     if (!isValidPassword) {
-      return new Response(
-        JSON.stringify({ error: "Invalid username or password" }),
-        { status: 401 },
-      );
+      return new Response(JSON.stringify({ error: "Invalid username or password" }), {
+        status: 401,
+      });
     }
 
     const payload = {

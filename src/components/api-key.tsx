@@ -2,20 +2,9 @@ import type { Project } from "@/lib/beaver/project";
 import { CheckIcon, ClipboardIcon, RefreshCwIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 const CONFIRM_PHRASE = "rotate api key";
 
@@ -101,8 +90,8 @@ export default function APIKey({ project }: { project: Project }) {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              This will immediately invalidate your current API key. Any
-              integrations using the old key will stop working until updated.
+              This will immediately invalidate your current API key. Any integrations using the old
+              key will stop working until updated.
             </p>
             <div className="space-y-2">
               <label className="text-sm font-medium">
@@ -117,11 +106,7 @@ export default function APIKey({ project }: { project: Project }) {
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={CONFIRM_PHRASE}
                 onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    confirmText === CONFIRM_PHRASE &&
-                    !rotating
-                  ) {
+                  if (e.key === "Enter" && confirmText === CONFIRM_PHRASE && !rotating) {
                     handleRotate();
                   }
                 }}

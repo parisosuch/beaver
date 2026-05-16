@@ -40,7 +40,12 @@ export function logError(
   const message = error instanceof Error ? error.message : String(error);
   const stack =
     error instanceof Error && error.stack
-      ? "\n" + error.stack.split("\n").slice(1).map((l) => "  " + l.trim()).join("\n")
+      ? "\n" +
+        error.stack
+          .split("\n")
+          .slice(1)
+          .map((l) => "  " + l.trim())
+          .join("\n")
       : "";
   write(`[${timestamp()}] ERROR ${method} ${pathname} ${durationMs}ms - ${message}${stack}`);
 }

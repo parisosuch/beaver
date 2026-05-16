@@ -13,10 +13,10 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
     const project_id = url.searchParams.get("project_id");
 
     if (!project_id) {
-      return new Response(
-        JSON.stringify({ error: "project_id is a required query parameter." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "project_id is a required query parameter." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const groups = await getChannelGroups(parseInt(project_id));
@@ -32,13 +32,10 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -47,10 +44,10 @@ export const POST: APIRoute = async ({ request }) => {
     const { name, project_id } = await request.json();
 
     if (!name || !project_id) {
-      return new Response(
-        JSON.stringify({ error: "name and project_id are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "name and project_id are required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const group = await createChannelGroup(name, parseInt(project_id));
@@ -66,13 +63,10 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -82,10 +76,10 @@ export const PATCH: APIRoute = async ({ request }) => {
     const { groups } = await request.json();
 
     if (!Array.isArray(groups) || groups.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "groups array is required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "groups array is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     await reorderGroups(groups);
@@ -101,13 +95,10 @@ export const PATCH: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -117,10 +108,10 @@ export const PUT: APIRoute = async ({ request }) => {
     const { id, name } = await request.json();
 
     if (!id || !name) {
-      return new Response(
-        JSON.stringify({ error: "id and name are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "id and name are required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     await renameChannelGroup(parseInt(id), name);
@@ -136,13 +127,10 @@ export const PUT: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -170,13 +158,10 @@ export const DELETE: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
