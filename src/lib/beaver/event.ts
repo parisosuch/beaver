@@ -8,7 +8,6 @@ import {
   asc,
   desc,
   like,
-  inArray,
   gt,
   lt,
   gte,

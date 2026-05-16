@@ -54,7 +54,7 @@ export async function GET({
     if (url.searchParams.get("tags")) {
       try {
         tags = JSON.parse(url.searchParams.get("tags")!);
-      } catch (e) {
+      } catch {
         // Invalid JSON, ignore
       }
     }

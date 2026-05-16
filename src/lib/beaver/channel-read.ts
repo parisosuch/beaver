@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { channelReads, channels } from "../db/schema";
+import { channelReads } from "../db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 // Mark a channel as read for a user. Returns the previous lastReadAt (or null

@@ -1,6 +1,6 @@
 import { db } from "../db/db";
-import { bookmarks, events, channels, eventTags } from "../db/schema";
-import { eq, and, desc, asc, or, like, gte, lte, inArray } from "drizzle-orm";
+import { bookmarks, events, channels } from "../db/schema";
+import { eq, and, desc, asc, or, like, gte, lte } from "drizzle-orm";
 import type { EventWithChannelName, TagFilter, SortField, SortOrder } from "./event";
 import { getEventTags } from "./event-tags";
 

@@ -3,7 +3,6 @@
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Card, CardTitle } from "./ui/card";
 import { useState } from "react";
 
 const TOKEN_STORAGE_KEY = "beaver_tokens";
