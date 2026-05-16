@@ -1,14 +1,6 @@
 import type { APIRoute } from "astro";
-import {
-  verifyToken,
-  createRefreshToken,
-  getRefreshTokenExpiryDate,
-} from "../../../lib/auth/jwt";
-import {
-  getSessionByToken,
-  deleteSession,
-  createSession,
-} from "../../../lib/auth/session";
+import { verifyToken, createRefreshToken, getRefreshTokenExpiryDate } from "../../../lib/auth/jwt";
+import { getSessionByToken, deleteSession, createSession } from "../../../lib/auth/session";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -27,10 +19,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!refreshToken) {
-      return new Response(
-        JSON.stringify({ error: "Refresh token is required" }),
-        { status: 400 },
-      );
+      return new Response(JSON.stringify({ error: "Refresh token is required" }), { status: 400 });
     }
 
     // Verify the refresh token

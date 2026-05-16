@@ -10,9 +10,7 @@ export interface AvailableTag {
   values: string[];
 }
 
-function groupTags(
-  rows: { key: string; type: string; value: string }[],
-): AvailableTag[] {
+function groupTags(rows: { key: string; type: string; value: string }[]): AvailableTag[] {
   const tagMap = new Map<string, { type: string; values: Set<string> }>();
 
   for (const row of rows) {
@@ -25,8 +23,7 @@ function groupTags(
   const tags: AvailableTag[] = [];
   for (const [key, { type, values }] of tagMap) {
     const valuesArray = Array.from(values).sort();
-    const showValues =
-      type !== "number" && valuesArray.length <= DISTINCT_VALUE_THRESHOLD;
+    const showValues = type !== "number" && valuesArray.length <= DISTINCT_VALUE_THRESHOLD;
     tags.push({
       key,
       type: type as "string" | "number" | "boolean",
@@ -37,9 +34,7 @@ function groupTags(
   return tags.sort((a, b) => a.key.localeCompare(b.key));
 }
 
-export async function getChannelAvailableTags(
-  channelId: number,
-): Promise<AvailableTag[]> {
+export async function getChannelAvailableTags(channelId: number): Promise<AvailableTag[]> {
   const result = await db
     .selectDistinct({
       key: eventTags.key,
@@ -53,9 +48,7 @@ export async function getChannelAvailableTags(
   return groupTags(result);
 }
 
-export async function getProjectAvailableTags(
-  projectId: number,
-): Promise<AvailableTag[]> {
+export async function getProjectAvailableTags(projectId: number): Promise<AvailableTag[]> {
   const result = await db
     .selectDistinct({
       key: eventTags.key,

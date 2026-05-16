@@ -1,11 +1,5 @@
 // src/db/schema.ts
-import {
-  sqliteTable,
-  text,
-  integer,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 // ---- PROJECTS ----
@@ -134,15 +128,11 @@ export const eventTags = sqliteTable(
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
-  canCreateProjects: integer("can_create_projects", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  canCreateProjects: integer("can_create_projects", { mode: "boolean" }).notNull().default(false),
   userName: text("username").notNull(),
   email: text("email"),
   password: text("password").notNull(),
-  mustChangePassword: integer("must_change_password", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
   tempPassword: text("temp_password"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
@@ -193,10 +183,7 @@ export const channelReads = sqliteTable(
     lastReadAt: integer("last_read_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => ({
-    userChannelIdx: uniqueIndex("channel_reads_user_channel_idx").on(
-      table.userId,
-      table.channelId,
-    ),
+    userChannelIdx: uniqueIndex("channel_reads_user_channel_idx").on(table.userId, table.channelId),
   }),
 );
 
@@ -216,10 +203,7 @@ export const bookmarks = sqliteTable(
       .notNull(),
   },
   (table) => ({
-    userEventIdx: uniqueIndex("bookmarks_user_event_idx").on(
-      table.userId,
-      table.eventId,
-    ),
+    userEventIdx: uniqueIndex("bookmarks_user_event_idx").on(table.userId, table.eventId),
   }),
 );
 
@@ -243,16 +227,13 @@ export const projectRelations = relations(projects, ({ many }) => ({
   members: many(projectMembers),
 }));
 
-export const channelGroupRelations = relations(
-  channelGroups,
-  ({ one, many }) => ({
-    project: one(projects, {
-      fields: [channelGroups.projectId],
-      references: [projects.id],
-    }),
-    channels: many(channels),
+export const channelGroupRelations = relations(channelGroups, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [channelGroups.projectId],
+    references: [projects.id],
   }),
-);
+  channels: many(channels),
+}));
 
 export const channelRelations = relations(channels, ({ one, many }) => ({
   project: one(projects, {

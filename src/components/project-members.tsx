@@ -1,25 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { UserMinusIcon, UserPlusIcon } from "lucide-react";
 
 type Role = "owner" | "maintainer" | "guest";
@@ -97,9 +80,7 @@ export default function ProjectMembers({
       body: JSON.stringify({ projectId, userId, role }),
     });
     if (res.ok) {
-      setMembers((prev) =>
-        prev.map((m) => (m.userId === userId ? { ...m, role } : m)),
-      );
+      setMembers((prev) => prev.map((m) => (m.userId === userId ? { ...m, role } : m)));
     } else {
       const data = await res.json();
       alert(data.error ?? "Failed to update role.");
@@ -136,9 +117,7 @@ export default function ProjectMembers({
             <div className="flex items-center gap-2">
               <Select
                 value={member.role}
-                onValueChange={(val) =>
-                  handleRoleChange(member.userId, val as Role)
-                }
+                onValueChange={(val) => handleRoleChange(member.userId, val as Role)}
                 disabled={member.userId === currentUserId}
               >
                 <SelectTrigger className="w-full sm:w-32 h-8 text-sm">
@@ -206,10 +185,7 @@ export default function ProjectMembers({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Role</label>
-              <Select
-                value={selectedRole}
-                onValueChange={(val) => setSelectedRole(val as Role)}
-              >
+              <Select value={selectedRole} onValueChange={(val) => setSelectedRole(val as Role)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -226,10 +202,7 @@ export default function ProjectMembers({
             <Button variant="outline" onClick={() => setAddOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleAddMember}
-              disabled={loading || !selectedUserId}
-            >
+            <Button onClick={handleAddMember} disabled={loading || !selectedUserId}>
               Add
             </Button>
           </DialogFooter>
@@ -249,11 +222,7 @@ export default function ProjectMembers({
             <Button variant="outline" onClick={() => setRemoveTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRemoveMember}
-              disabled={loading}
-            >
+            <Button variant="destructive" onClick={handleRemoveMember} disabled={loading}>
               Remove
             </Button>
           </DialogFooter>

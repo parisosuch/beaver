@@ -6,10 +6,7 @@ import {
   renameProject,
   rotateApiKey,
 } from "@/lib/beaver/project";
-import {
-  getUserProjectRole,
-  getProjectsForUser,
-} from "@/lib/beaver/project-member";
+import { getUserProjectRole, getProjectsForUser } from "@/lib/beaver/project-member";
 
 export const GET: APIRoute = async (context: APIContext) => {
   if (!context.locals.user) {
@@ -29,10 +26,10 @@ export const GET: APIRoute = async (context: APIContext) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -63,11 +60,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       });
     }
 
-    const project = await createProject(
-      name.trim(),
-      crypto.randomUUID(),
-      context.locals.user.id,
-    );
+    const project = await createProject(name.trim(), crypto.randomUUID(), context.locals.user.id);
 
     return new Response(JSON.stringify(project), {
       status: 200,
@@ -80,10 +73,10 @@ export const POST: APIRoute = async (context: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -99,10 +92,10 @@ export const PATCH: APIRoute = async (context: APIContext) => {
     const { projectID, name } = await context.request.json();
 
     if (!projectID || !name?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "projectID and name are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "projectID and name are required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const project = await getProject(parseInt(projectID));
@@ -113,15 +106,12 @@ export const PATCH: APIRoute = async (context: APIContext) => {
       });
     }
 
-    const role = await getUserProjectRole(
-      parseInt(projectID),
-      context.locals.user.id,
-    );
+    const role = await getUserProjectRole(parseInt(projectID), context.locals.user.id);
     if (!context.locals.user.isAdmin && role !== "owner") {
-      return new Response(
-        JSON.stringify({ error: "Only the project owner can rename it." }),
-        { status: 403, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Only the project owner can rename it." }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const updated = await renameProject(parseInt(projectID), name.trim());
@@ -136,10 +126,10 @@ export const PATCH: APIRoute = async (context: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -169,15 +159,12 @@ export const DELETE: APIRoute = async (context: APIContext) => {
       });
     }
 
-    const role = await getUserProjectRole(
-      parseInt(projectID),
-      context.locals.user.id,
-    );
+    const role = await getUserProjectRole(parseInt(projectID), context.locals.user.id);
     if (!context.locals.user.isAdmin && role !== "owner") {
-      return new Response(
-        JSON.stringify({ error: "Only the project owner can delete it." }),
-        { status: 403, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Only the project owner can delete it." }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const userProjects = await getProjectsForUser(context.locals.user.id);
@@ -193,9 +180,7 @@ export const DELETE: APIRoute = async (context: APIContext) => {
 
     await deleteProject(parseInt(projectID));
 
-    const remainingProjects = userProjects.filter(
-      (p) => p.id !== parseInt(projectID),
-    );
+    const remainingProjects = userProjects.filter((p) => p.id !== parseInt(projectID));
 
     return new Response(JSON.stringify({ projects: remainingProjects }), {
       status: 200,
@@ -208,10 +193,10 @@ export const DELETE: APIRoute = async (context: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -233,10 +218,7 @@ export const PUT: APIRoute = async (context: APIContext) => {
       });
     }
 
-    const role = await getUserProjectRole(
-      parseInt(projectID),
-      context.locals.user.id,
-    );
+    const role = await getUserProjectRole(parseInt(projectID), context.locals.user.id);
     if (!context.locals.user.isAdmin && role !== "owner") {
       return new Response(
         JSON.stringify({
@@ -261,10 +243,10 @@ export const PUT: APIRoute = async (context: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "An unknown error has occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 

@@ -1,13 +1,7 @@
 import { getBookmarkedEvents } from "@/lib/beaver/bookmark";
 import type { TagFilter, SortField, SortOrder } from "@/lib/beaver/event";
 
-export async function GET({
-  url,
-  locals,
-}: {
-  url: URL;
-  locals: App.Locals;
-}) {
+export async function GET({ url, locals }: { url: URL; locals: App.Locals }) {
   const user = locals.user;
   if (!user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -26,7 +20,9 @@ export async function GET({
   if (url.searchParams.get("startDate")) startDate = new Date(url.searchParams.get("startDate")!);
   if (url.searchParams.get("endDate")) endDate = new Date(url.searchParams.get("endDate")!);
   if (url.searchParams.get("tags")) {
-    try { tags = JSON.parse(url.searchParams.get("tags")!); } catch {}
+    try {
+      tags = JSON.parse(url.searchParams.get("tags")!);
+    } catch {}
   }
 
   const events = await getBookmarkedEvents(user.id, parseInt(projectId), {

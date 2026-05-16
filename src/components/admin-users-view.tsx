@@ -3,19 +3,8 @@ import type { User } from "@/lib/beaver/user";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -40,9 +29,7 @@ function TempPasswordCell({ tempPassword }: { tempPassword: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-        {tempPassword}
-      </code>
+      <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{tempPassword}</code>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -62,9 +49,7 @@ function UserRoleBadge({ isAdmin }: { isAdmin: boolean }) {
   return (
     <span
       className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-        isAdmin
-          ? "bg-primary/10 text-primary"
-          : "bg-muted text-muted-foreground"
+        isAdmin ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
       }`}
     >
       {isAdmin ? "Admin" : "User"}
@@ -93,22 +78,14 @@ function UserActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() =>
-                onToggleCanCreateProjects(user.id, !user.canCreateProjects)
-              }
+              onClick={() => onToggleCanCreateProjects(user.id, !user.canCreateProjects)}
               className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
-              {user.canCreateProjects ? (
-                <FolderPlusIcon size={15} />
-              ) : (
-                <FolderIcon size={15} />
-              )}
+              {user.canCreateProjects ? <FolderPlusIcon size={15} /> : <FolderIcon size={15} />}
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            {user.canCreateProjects
-              ? "Revoke project creation"
-              : "Allow project creation"}
+            {user.canCreateProjects ? "Revoke project creation" : "Allow project creation"}
           </TooltipContent>
         </Tooltip>
       )}
@@ -119,16 +96,10 @@ function UserActions({
               onClick={() => onToggleAdmin(user.id, !user.isAdmin)}
               className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
-              {user.isAdmin ? (
-                <ShieldOffIcon size={15} />
-              ) : (
-                <ShieldIcon size={15} />
-              )}
+              {user.isAdmin ? <ShieldOffIcon size={15} /> : <ShieldIcon size={15} />}
             </button>
           </TooltipTrigger>
-          <TooltipContent>
-            {user.isAdmin ? "Remove admin" : "Make admin"}
-          </TooltipContent>
+          <TooltipContent>{user.isAdmin ? "Remove admin" : "Make admin"}</TooltipContent>
         </Tooltip>
       )}
       {!(user.id === currentUserId && user.isAdmin) && (
@@ -239,25 +210,18 @@ export default function AdminUsersView({
       body: JSON.stringify({ id, isAdmin }),
     });
     if (res.ok) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, isAdmin } : u)),
-      );
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, isAdmin } : u)));
     }
   };
 
-  const handleToggleCanCreateProjects = async (
-    id: number,
-    canCreateProjects: boolean,
-  ) => {
+  const handleToggleCanCreateProjects = async (id: number, canCreateProjects: boolean) => {
     const res = await fetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, canCreateProjects }),
     });
     if (res.ok) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, canCreateProjects } : u)),
-      );
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, canCreateProjects } : u)));
     }
   };
 
@@ -274,9 +238,7 @@ export default function AdminUsersView({
         const { tempPassword } = await res.json();
         setUsers((prev) =>
           prev.map((u) =>
-            u.id === resetTarget.id
-              ? { ...u, tempPassword, mustChangePassword: true }
-              : u,
+            u.id === resetTarget.id ? { ...u, tempPassword, mustChangePassword: true } : u,
           ),
         );
         setResetTarget(null);
@@ -334,28 +296,17 @@ export default function AdminUsersView({
                         type="checkbox"
                         id="canCreateProjects"
                         checked={newCanCreateProjects}
-                        onChange={(e) =>
-                          setNewCanCreateProjects(e.target.checked)
-                        }
+                        onChange={(e) => setNewCanCreateProjects(e.target.checked)}
                         className="h-4 w-4"
                       />
-                      <Label htmlFor="canCreateProjects">
-                        Can create projects
-                      </Label>
+                      <Label htmlFor="canCreateProjects">Can create projects</Label>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      A temporary password will be generated. Share it with the
-                      user — they'll be prompted to set a new one on first
-                      login.
+                      A temporary password will be generated. Share it with the user — they'll be
+                      prompted to set a new one on first login.
                     </p>
-                    {createError && (
-                      <p className="text-sm text-destructive">{createError}</p>
-                    )}
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={creating}
-                    >
+                    {createError && <p className="text-sm text-destructive">{createError}</p>}
+                    <Button type="submit" className="w-full" disabled={creating}>
                       {creating ? "Creating…" : "Create user"}
                     </Button>
                   </form>
@@ -372,9 +323,7 @@ export default function AdminUsersView({
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                     Username
                   </th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    Role
-                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                     Temp password
                   </th>
@@ -405,9 +354,7 @@ export default function AdminUsersView({
                         <UserActions
                           user={user}
                           currentUserId={currentUserId}
-                          onToggleCanCreateProjects={
-                            handleToggleCanCreateProjects
-                          }
+                          onToggleCanCreateProjects={handleToggleCanCreateProjects}
                           onToggleAdmin={handleToggleAdmin}
                           onReset={setResetTarget}
                           onDelete={setDeleteTarget}
@@ -425,16 +372,12 @@ export default function AdminUsersView({
             {users.map((user) => (
               <div key={user.id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-medium">
-                    @{user.userName}
-                  </span>
+                  <span className="font-mono font-medium">@{user.userName}</span>
                   <UserRoleBadge isAdmin={user.isAdmin} />
                 </div>
                 {user.tempPassword && (
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Temp password
-                    </p>
+                    <p className="text-xs text-muted-foreground mb-1">Temp password</p>
                     <TempPasswordCell tempPassword={user.tempPassword} />
                   </div>
                 )}
@@ -454,10 +397,7 @@ export default function AdminUsersView({
         </div>
 
         {/* Delete confirmation dialog */}
-        <Dialog
-          open={!!deleteTarget}
-          onOpenChange={(open) => !open && setDeleteTarget(null)}
-        >
+        <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete user</DialogTitle>
@@ -473,11 +413,7 @@ export default function AdminUsersView({
               <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
                 Cancel
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-              >
+              <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deleting}>
                 {deleting ? "Deleting…" : "Delete"}
               </Button>
             </div>
@@ -485,10 +421,7 @@ export default function AdminUsersView({
         </Dialog>
 
         {/* Reset password confirmation dialog */}
-        <Dialog
-          open={!!resetTarget}
-          onOpenChange={(open) => !open && setResetTarget(null)}
-        >
+        <Dialog open={!!resetTarget} onOpenChange={(open) => !open && setResetTarget(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Reset password</DialogTitle>
@@ -498,8 +431,7 @@ export default function AdminUsersView({
               <span className="font-mono font-medium text-foreground">
                 @{resetTarget?.userName}
               </span>{" "}
-              and sign them out. They'll need to set a new password on next
-              login.
+              and sign them out. They'll need to set a new password on next login.
             </p>
             <div className="flex gap-2 justify-end mt-2">
               <Button variant="secondary" onClick={() => setResetTarget(null)}>

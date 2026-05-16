@@ -14,10 +14,10 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
     const project_id = url.searchParams.get("project_id");
 
     if (!project_id) {
-      return new Response(
-        JSON.stringify({ error: "project_id is a required query parameter." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "project_id is a required query parameter." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const projects = await getChannels(parseInt(project_id));
@@ -34,13 +34,10 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -49,14 +46,10 @@ export const POST: APIRoute = async ({ request }) => {
     const { name, project_id, description } = await request.json();
 
     if (!name) {
-      return new Response(
-        JSON.stringify({ error: "name is required to create channel." }),
-      );
+      return new Response(JSON.stringify({ error: "name is required to create channel." }));
     }
     if (!project_id) {
-      return new Response(
-        JSON.stringify({ error: "project_id is required to create channel." }),
-      );
+      return new Response(JSON.stringify({ error: "project_id is required to create channel." }));
     }
 
     const splitName = name.replace(" ", "-");
@@ -77,13 +70,10 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -92,10 +82,10 @@ export const PATCH: APIRoute = async ({ request }) => {
     const { channels } = await request.json();
 
     if (!Array.isArray(channels) || channels.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "channels array is required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "channels array is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     await reorderChannels(channels);
@@ -112,13 +102,10 @@ export const PATCH: APIRoute = async ({ request }) => {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -147,10 +134,10 @@ export const PUT: APIRoute = async ({ request }) => {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -179,13 +166,10 @@ export const DELETE: APIRoute = async ({ request }) => {
       });
     }
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "An unkown error has occurred." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 

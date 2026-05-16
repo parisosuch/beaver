@@ -569,9 +569,7 @@ async function seed() {
     const tagIndex = i % template.tagVariants.length;
 
     // Spread timestamps across last 30 days (newest first)
-    const ageMs = Math.floor(
-      (i / totalEvents) * thirtyDaysMs + Math.random() * 3600000,
-    );
+    const ageMs = Math.floor((i / totalEvents) * thirtyDaysMs + Math.random() * 3600000);
     const createdAt = new Date(now - ageMs);
 
     const channelKey = `${template.projectId}-${template.channelName}`;
