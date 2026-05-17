@@ -16,9 +16,7 @@ export type ProjectMemberWithUser = ProjectMember & {
   userName: string;
 };
 
-export async function getProjectMembers(
-  projectId: number,
-): Promise<ProjectMemberWithUser[]> {
+export async function getProjectMembers(projectId: number): Promise<ProjectMemberWithUser[]> {
   const rows = await db
     .select({
       id: projectMembers.id,
@@ -35,19 +33,11 @@ export async function getProjectMembers(
   return rows as ProjectMemberWithUser[];
 }
 
-export async function getUserProjectRole(
-  projectId: number,
-  userId: number,
-): Promise<Role | null> {
+export async function getUserProjectRole(projectId: number, userId: number): Promise<Role | null> {
   const rows = await db
     .select({ role: projectMembers.role })
     .from(projectMembers)
-    .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-      ),
-    )
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
     .limit(1);
 
   return rows[0]?.role ?? null;
@@ -63,12 +53,7 @@ export async function getProjectMembership(
       notificationsEnabled: projectMembers.notificationsEnabled,
     })
     .from(projectMembers)
-    .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-      ),
-    )
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
     .limit(1);
 
   return rows[0] ?? null;
@@ -79,10 +64,7 @@ export async function addProjectMember(
   userId: number,
   role: Role,
 ): Promise<ProjectMember> {
-  const [row] = await db
-    .insert(projectMembers)
-    .values({ projectId, userId, role })
-    .returning();
+  const [row] = await db.insert(projectMembers).values({ projectId, userId, role }).returning();
   return row as ProjectMember;
 }
 
@@ -96,12 +78,7 @@ export async function updateMemberRole(
     const owners = await db
       .select({ userId: projectMembers.userId })
       .from(projectMembers)
-      .where(
-        and(
-          eq(projectMembers.projectId, projectId),
-          eq(projectMembers.role, "owner"),
-        ),
-      );
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.role, "owner")));
     if (owners.length === 1 && owners[0].userId === userId) {
       throw new Error("Project must have at least one owner.");
     }
@@ -110,40 +87,22 @@ export async function updateMemberRole(
   await db
     .update(projectMembers)
     .set({ role })
-    .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-      ),
-    );
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
 }
 
-export async function removeProjectMember(
-  projectId: number,
-  userId: number,
-): Promise<void> {
+export async function removeProjectMember(projectId: number, userId: number): Promise<void> {
   // Ensure at least one owner remains
   const member = await db
     .select({ role: projectMembers.role })
     .from(projectMembers)
-    .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-      ),
-    )
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
     .limit(1);
 
   if (member[0]?.role === "owner") {
     const owners = await db
       .select({ userId: projectMembers.userId })
       .from(projectMembers)
-      .where(
-        and(
-          eq(projectMembers.projectId, projectId),
-          eq(projectMembers.role, "owner"),
-        ),
-      );
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.role, "owner")));
     if (owners.length <= 1) {
       throw new Error("Project must have at least one owner.");
     }
@@ -151,12 +110,7 @@ export async function removeProjectMember(
 
   await db
     .delete(projectMembers)
-    .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-      ),
-    );
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
 }
 
 export async function getProjectsForUser(userId: number) {

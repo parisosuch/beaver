@@ -1,22 +1,7 @@
 import { db } from "../db/db";
 import { events, channels, eventTags, channelReads, bookmarks } from "../db/schema";
 import { getEventTags } from "./event-tags";
-import {
-  eq,
-  and,
-  or,
-  asc,
-  desc,
-  like,
-  inArray,
-  gt,
-  lt,
-  gte,
-  lte,
-  exists,
-  max,
-  sql,
-} from "drizzle-orm";
+import { eq, and, or, asc, desc, like, gt, lt, gte, lte, exists, max, sql } from "drizzle-orm";
 import { getProject } from "./project";
 
 export async function getMaxEventId(): Promise<number> {
@@ -85,10 +70,7 @@ type QueryOptions = {
 };
 
 const buildTagCondition = (tagFilter: TagFilter) => {
-  const base = [
-    eq(eventTags.eventId, events.id),
-    eq(eventTags.key, tagFilter.key),
-  ];
+  const base = [eq(eventTags.eventId, events.id), eq(eventTags.key, tagFilter.key)];
 
   if (tagFilter.type === "number") {
     const op = tagFilter.operator ?? "eq";
@@ -99,9 +81,7 @@ const buildTagCondition = (tagFilter: TagFilter) => {
       base.push(sql`CAST(${eventTags.value} AS REAL) < ${v}` as any);
     } else if (op === "between") {
       const v2 = parseFloat(tagFilter.value2 ?? tagFilter.value);
-      base.push(
-        sql`CAST(${eventTags.value} AS REAL) BETWEEN ${v} AND ${v2}` as any,
-      );
+      base.push(sql`CAST(${eventTags.value} AS REAL) BETWEEN ${v} AND ${v2}` as any);
     } else {
       base.push(sql`CAST(${eventTags.value} AS REAL) = ${v}` as any);
     }
@@ -117,7 +97,6 @@ const buildTagCondition = (tagFilter: TagFilter) => {
   );
 };
 
-
 export async function getChannelEvents(
   channelId: number,
   options: QueryOptions,
@@ -130,9 +109,7 @@ export async function getChannelEvents(
     const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
     conditions.push(
-      ...searchTerms.map((term) =>
-        or(like(events.name, term), like(events.description, term)),
-      ),
+      ...searchTerms.map((term) => or(like(events.name, term), like(events.description, term))),
     );
   }
 
@@ -179,28 +156,33 @@ export async function getChannelEvents(
   }
 
   const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn =
-    options.sortBy === "name" ? events.name : events.createdAt;
+  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
 
-  const readExpr = userId !== undefined
-    ? exists(
-        db.select({ _: sql`1` }).from(channelReads).where(
-          and(
-            eq(channelReads.channelId, events.channelId),
-            eq(channelReads.userId, userId),
-            gte(channelReads.lastReadAt, events.createdAt),
-          ),
-        ),
-      )
-    : sql<boolean>`0`;
+  const readExpr =
+    userId !== undefined
+      ? exists(
+          db
+            .select({ _: sql`1` })
+            .from(channelReads)
+            .where(
+              and(
+                eq(channelReads.channelId, events.channelId),
+                eq(channelReads.userId, userId),
+                gte(channelReads.lastReadAt, events.createdAt),
+              ),
+            ),
+        )
+      : sql<boolean>`0`;
 
-  const bookmarkedExpr = userId !== undefined
-    ? exists(
-        db.select({ _: sql`1` }).from(bookmarks).where(
-          and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId)),
-        ),
-      )
-    : sql<boolean>`0`;
+  const bookmarkedExpr =
+    userId !== undefined
+      ? exists(
+          db
+            .select({ _: sql`1` })
+            .from(bookmarks)
+            .where(and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId))),
+        )
+      : sql<boolean>`0`;
 
   const eventData = await db
     .select({
@@ -243,9 +225,7 @@ export async function getProjectEvents(
     const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
 
     conditions.push(
-      ...searchTerms.map((term) =>
-        or(like(events.name, term), like(events.description, term)),
-      ),
+      ...searchTerms.map((term) => or(like(events.name, term), like(events.description, term))),
     );
   }
 
@@ -292,28 +272,33 @@ export async function getProjectEvents(
   }
 
   const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn =
-    options.sortBy === "name" ? events.name : events.createdAt;
+  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
 
-  const readExpr = userId !== undefined
-    ? exists(
-        db.select({ _: sql`1` }).from(channelReads).where(
-          and(
-            eq(channelReads.channelId, events.channelId),
-            eq(channelReads.userId, userId),
-            gte(channelReads.lastReadAt, events.createdAt),
-          ),
-        ),
-      )
-    : sql<boolean>`0`;
+  const readExpr =
+    userId !== undefined
+      ? exists(
+          db
+            .select({ _: sql`1` })
+            .from(channelReads)
+            .where(
+              and(
+                eq(channelReads.channelId, events.channelId),
+                eq(channelReads.userId, userId),
+                gte(channelReads.lastReadAt, events.createdAt),
+              ),
+            ),
+        )
+      : sql<boolean>`0`;
 
-  const bookmarkedExpr = userId !== undefined
-    ? exists(
-        db.select({ _: sql`1` }).from(bookmarks).where(
-          and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId)),
-        ),
-      )
-    : sql<boolean>`0`;
+  const bookmarkedExpr =
+    userId !== undefined
+      ? exists(
+          db
+            .select({ _: sql`1` })
+            .from(bookmarks)
+            .where(and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId))),
+        )
+      : sql<boolean>`0`;
 
   const eventData = await db
     .select({
@@ -330,10 +315,7 @@ export async function getProjectEvents(
     .from(events)
     .innerJoin(
       channels,
-      and(
-        eq(events.channelId, channels.id),
-        eq(events.projectId, channels.projectId),
-      ),
+      and(eq(events.channelId, channels.id), eq(events.projectId, channels.projectId)),
     )
     .where(and(...conditions))
     .orderBy(orderFn(orderColumn))
@@ -354,25 +336,31 @@ export async function getEvent(
   eventId: number,
   userId?: number,
 ): Promise<EventWithChannelName | null> {
-  const readExpr = userId !== undefined
-    ? exists(
-        db.select({ _: sql`1` }).from(channelReads).where(
-          and(
-            eq(channelReads.channelId, events.channelId),
-            eq(channelReads.userId, userId),
-            gte(channelReads.lastReadAt, events.createdAt),
-          ),
-        ),
-      )
-    : sql<boolean>`0`;
+  const readExpr =
+    userId !== undefined
+      ? exists(
+          db
+            .select({ _: sql`1` })
+            .from(channelReads)
+            .where(
+              and(
+                eq(channelReads.channelId, events.channelId),
+                eq(channelReads.userId, userId),
+                gte(channelReads.lastReadAt, events.createdAt),
+              ),
+            ),
+        )
+      : sql<boolean>`0`;
 
-  const bookmarkedExpr = userId !== undefined
-    ? exists(
-        db.select({ _: sql`1` }).from(bookmarks).where(
-          and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId)),
-        ),
-      )
-    : sql<boolean>`0`;
+  const bookmarkedExpr =
+    userId !== undefined
+      ? exists(
+          db
+            .select({ _: sql`1` })
+            .from(bookmarks)
+            .where(and(eq(bookmarks.eventId, events.id), eq(bookmarks.userId, userId))),
+        )
+      : sql<boolean>`0`;
 
   const eventData = await db
     .select({
@@ -452,7 +440,12 @@ export async function exportChannelEvents(
     .orderBy(orderFn(orderColumn));
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
-  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false, bookmarked: false }));
+  return eventData.map((e) => ({
+    ...e,
+    tags: fetchedTags[e.id] || {},
+    read: false,
+    bookmarked: false,
+  }));
 }
 
 export async function exportProjectEvents(
@@ -479,7 +472,12 @@ export async function exportProjectEvents(
     .orderBy(orderFn(orderColumn));
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
-  return eventData.map((e) => ({ ...e, tags: fetchedTags[e.id] || {}, read: false, bookmarked: false }));
+  return eventData.map((e) => ({
+    ...e,
+    tags: fetchedTags[e.id] || {},
+    read: false,
+    bookmarked: false,
+  }));
 }
 
 export async function createEvent({
@@ -498,10 +496,7 @@ export async function createEvent({
   tags?: Record<string, string | number | boolean>;
 }): Promise<EventWithChannelName> {
   // check if channel exists first
-  const channelsRes = await db
-    .select()
-    .from(channels)
-    .where(eq(channels.name, channel));
+  const channelsRes = await db.select().from(channels).where(eq(channels.name, channel));
 
   if (channelsRes.length === 0) {
     throw new Error(`Channel with name ${channel} does not exist.`);

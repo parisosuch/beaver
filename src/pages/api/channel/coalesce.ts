@@ -20,10 +20,10 @@ export const POST: APIRoute = async ({ request, locals }: APIContext) => {
     }
 
     if (sourceId === targetId) {
-      return new Response(
-        JSON.stringify({ error: "Cannot merge a channel into itself." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Cannot merge a channel into itself." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const channel = await coalesceChannels(sourceId, targetId, survivingName.trim());

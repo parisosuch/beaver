@@ -1,25 +1,13 @@
 import type { EventWithChannelName } from "@/lib/beaver/event";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "./ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import { ArrowLeftIcon, BookmarkIcon } from "lucide-react";
+import { ArrowLeftIcon, BookmarkIcon, CheckIcon, LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
-function TagBadge({
-  tagKey,
-  value,
-}: {
-  tagKey: string;
-  value: string | number | boolean;
-}) {
-  const displayValue =
-    typeof value === "boolean" ? (value ? "true" : "false") : String(value);
+function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | boolean }) {
+  const displayValue = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
 
   return (
     <div className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 dark:bg-white/10 px-2.5 py-1 text-sm">
@@ -30,14 +18,11 @@ function TagBadge({
   );
 }
 
-export default function EventDetail({
-  event,
-}: {
-  event: EventWithChannelName;
-}) {
+export default function EventDetail({ event }: { event: EventWithChannelName }) {
   const tags = Object.entries(event.tags);
   const [bookmarked, setBookmarked] = useState(event.bookmarked);
   const [bookmarking, setBookmarking] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleBookmark = async () => {
     setBookmarking(true);
@@ -54,18 +39,33 @@ export default function EventDetail({
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   useEffect(() => {
     fetch("/api/unread", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelName: event.channelName, projectId: event.projectId }),
-    }).then((res) => res.json()).then((data) => {
-      window.dispatchEvent(
-        new CustomEvent("channel:read", {
-          detail: { channelId: data.channelId, channelName: event.channelName },
-        }),
-      );
-    }).catch(() => {});
+      body: JSON.stringify({
+        channelName: event.channelName,
+        projectId: event.projectId,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        window.dispatchEvent(
+          new CustomEvent("channel:read", {
+            detail: {
+              channelId: data.channelId,
+              channelName: event.channelName,
+            },
+          }),
+        );
+      })
+      .catch(() => {});
   }, [event.id]);
 
   const handleBack = () => {
@@ -99,27 +99,46 @@ export default function EventDetail({
                   </CardDescription>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBookmark}
-                disabled={bookmarking}
-                className="shrink-0"
-              >
-                <BookmarkIcon
-                  className={bookmarked ? "fill-current" : ""}
-                  size={18}
-                />
-              </Button>
+              <div>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleBookmark}
+                        disabled={bookmarking}
+                        className="shrink-0 hover:cursor-pointer"
+                      >
+                        <BookmarkIcon className={bookmarked ? "fill-current" : ""} size={18} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{bookmarked ? "Remove bookmark" : "Bookmark"}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCopyLink}
+                        className="shrink-0 hover:cursor-pointer"
+                      >
+                        {copied ? <CheckIcon size={18} /> : <LinkIcon size={18} />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{copied ? "Copied!" : "Copy link"}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </CardHeader>
 
           {event.description && (
             <CardContent>
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Description
-                </h3>
+                <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
                 <p className="text-foreground/80">{event.description}</p>
               </div>
             </CardContent>
@@ -128,9 +147,7 @@ export default function EventDetail({
           {tags.length > 0 && (
             <CardContent>
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Tags
-                </h3>
+                <h3 className="text-sm font-medium text-muted-foreground">Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {tags.map(([key, value]) => (
                     <TagBadge key={key} tagKey={key} value={value} />

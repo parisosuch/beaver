@@ -1,9 +1,4 @@
-import {
-  createMetric,
-  deleteMetric,
-  getMetrics,
-  updateMetric,
-} from "@/lib/beaver/metric";
+import { createMetric, deleteMetric, getMetrics, updateMetric } from "@/lib/beaver/metric";
 import type { MetricType, ChartType } from "@/lib/beaver/metric";
 import type { APIContext, APIRoute } from "astro";
 
@@ -25,8 +20,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
 
 export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
-    const { projectId, name, description, unit, type, chartType } =
-      await request.json();
+    const { projectId, name, description, unit, type, chartType } = await request.json();
 
     if (!projectId) return json({ error: "projectId is required." }, 400);
     if (!name) return json({ error: "name is required." }, 400);

@@ -15,9 +15,7 @@ export type ChannelGroupWithChannels = ChannelGroup & {
   channels: Channel[];
 };
 
-export async function getChannelGroups(
-  projectId: number,
-): Promise<ChannelGroupWithChannels[]> {
+export async function getChannelGroups(projectId: number): Promise<ChannelGroupWithChannels[]> {
   const groups = await db
     .select()
     .from(channelGroups)
@@ -36,10 +34,7 @@ export async function getChannelGroups(
   }));
 }
 
-export async function createChannelGroup(
-  name: string,
-  projectId: number,
-): Promise<ChannelGroup> {
+export async function createChannelGroup(name: string, projectId: number): Promise<ChannelGroup> {
   const [{ maxOrder }] = await db
     .select({ maxOrder: max(channelGroups.order) })
     .from(channelGroups)
@@ -57,26 +52,18 @@ export async function createChannelGroup(
   return group;
 }
 
-export async function renameChannelGroup(
-  id: number,
-  name: string,
-): Promise<void> {
+export async function renameChannelGroup(id: number, name: string): Promise<void> {
   await db.update(channelGroups).set({ name }).where(eq(channelGroups.id, id));
 }
 
 export async function deleteChannelGroup(id: number): Promise<void> {
   // Ungroup all channels in this group
-  await db
-    .update(channels)
-    .set({ groupId: null })
-    .where(eq(channels.groupId, id));
+  await db.update(channels).set({ groupId: null }).where(eq(channels.groupId, id));
 
   await db.delete(channelGroups).where(eq(channelGroups.id, id));
 }
 
-export async function reorderGroups(
-  items: { id: number; order: number }[],
-): Promise<void> {
+export async function reorderGroups(items: { id: number; order: number }[]): Promise<void> {
   await Promise.all(
     items.map(({ id, order }) =>
       db.update(channelGroups).set({ order }).where(eq(channelGroups.id, id)),

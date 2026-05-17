@@ -3,12 +3,7 @@ import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 export default function ProjectRename({ project }: { project: Project }) {
   const [editing, setEditing] = useState(false);

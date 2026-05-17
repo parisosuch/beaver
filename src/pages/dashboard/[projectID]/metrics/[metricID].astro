@@ -1,0 +1,28 @@
+---
+import Layout from "@/layouts/layout.astro";
+import MetricDetail from "@/components/metric-detail";
+import { getMetric, getMetricValues } from "@/lib/beaver/metric";
+import { subDays } from "date-fns";
+
+const { projectID, metricID } = Astro.params;
+
+const metric = await getMetric(parseInt(metricID!));
+
+if (!metric || metric.projectId !== parseInt(projectID!) || metric.type !== "timeseries") {
+  return Astro.redirect(`/dashboard/${projectID}/metrics`);
+}
+
+const initialValues =
+  metric.type === "timeseries"
+    ? await getMetricValues(metric.id, { from: subDays(new Date(), 7) })
+    : [];
+---
+
+<Layout projectID={projectID!}>
+  <MetricDetail
+    client:load
+    metric={metric}
+    projectId={parseInt(projectID!)}
+    initialValues={initialValues}
+  />
+</Layout>

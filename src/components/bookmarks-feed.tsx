@@ -5,13 +5,7 @@ import EventCard from "./event-card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { SearchIcon, BookmarkIcon } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import EventFilterDialog from "./event-filter-dialog";
 
 export default function BookmarksFeed({
@@ -36,7 +30,11 @@ export default function BookmarksFeed({
   const [searchInput, setSearchInput] = useState(search ?? "");
 
   const parsedTags = (() => {
-    try { return tags ? JSON.parse(tags) : []; } catch { return []; }
+    try {
+      return tags ? JSON.parse(tags) : [];
+    } catch {
+      return [];
+    }
   })();
 
   const navigate = (params: Record<string, string | null>) => {
@@ -50,11 +48,7 @@ export default function BookmarksFeed({
 
   const handleSearch = () => navigate({ search: searchInput || null });
 
-  const handleApplyFilters = (
-    start: string | null,
-    end: string | null,
-    newTags: any[],
-  ) => {
+  const handleApplyFilters = (start: string | null, end: string | null, newTags: any[]) => {
     navigate({
       startDate: start,
       endDate: end,
@@ -140,7 +134,9 @@ export default function BookmarksFeed({
           </div>
         ) : (
           <div className="px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto flex flex-col gap-4">
-            {events.map((event) => <EventCard key={event.id} event={event} />)}
+            {events.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
           </div>
         )}
       </div>

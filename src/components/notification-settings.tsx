@@ -78,11 +78,7 @@ export default function NotificationSettings({
             onClick={saveEmail}
             disabled={saving || email.trim() === savedEmail}
           >
-            {status === "saved"
-              ? "Saved!"
-              : status === "error"
-                ? "Error"
-                : "Save"}
+            {status === "saved" ? "Saved!" : status === "error" ? "Error" : "Save"}
           </Button>
         </div>
       </div>
@@ -93,9 +89,7 @@ export default function NotificationSettings({
           <h3 className="font-medium shrink-0">Event Notifications</h3>
           <p className="text-sm text-muted-foreground mt-0.5">
             Receive an email when an event is posted with{" "}
-            <code className="bg-muted px-1 rounded text-xs">
-              "notify": true
-            </code>
+            <code className="bg-muted px-1 rounded text-xs">"notify": true</code>
           </p>
         </div>
         <Button
