@@ -332,11 +332,19 @@ function ChannelGroups({
         })),
       );
     };
+    const onUpdated = (e: CustomEvent<{ id: number; name: string; description: string }>) => {
+      const patch = (c: Channel) =>
+        c.id === e.detail.id ? { ...c, name: e.detail.name, description: e.detail.description } : c;
+      setUngrouped((prev) => prev.map(patch));
+      setGroups((prev) => prev.map((g) => ({ ...g, channels: g.channels.map(patch) })));
+    };
     window.addEventListener("channel:created", onCreated as EventListener);
     window.addEventListener("channel:deleted", onDeleted as EventListener);
+    window.addEventListener("channel:updated", onUpdated as EventListener);
     return () => {
       window.removeEventListener("channel:created", onCreated as EventListener);
       window.removeEventListener("channel:deleted", onDeleted as EventListener);
+      window.removeEventListener("channel:updated", onUpdated as EventListener);
     };
   }, []);
 
