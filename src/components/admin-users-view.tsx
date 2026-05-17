@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { User } from "@/lib/beaver/user";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -142,6 +142,12 @@ export default function AdminUsersView({
   backUrl: string;
 }) {
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [resolvedBackUrl, setResolvedBackUrl] = useState(backUrl);
+
+  useEffect(() => {
+    const lastId = localStorage.getItem("lastProjectId");
+    if (lastId) setResolvedBackUrl(`/dashboard/${lastId}/feed`);
+  }, []);
 
   // Create
   const [createOpen, setCreateOpen] = useState(false);
@@ -255,7 +261,7 @@ export default function AdminUsersView({
           {/* Header */}
           <div className="mb-8">
             <a
-              href={backUrl}
+              href={resolvedBackUrl}
               data-astro-reload
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
             >

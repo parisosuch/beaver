@@ -55,6 +55,9 @@ const userRole = user.isAdmin
       applyStoredTheme();
       document.addEventListener("astro:after-swap", applyStoredTheme);
     </script>
+    <script is:inline define:vars={{ projectID }}>
+      localStorage.setItem("lastProjectId", projectID);
+    </script>
   </head>
   <body>
     <div class="flex flex-col md:flex-row">
