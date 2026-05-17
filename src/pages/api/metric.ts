@@ -1,9 +1,4 @@
-import {
-  appendTimeseries,
-  getMetricByName,
-  incrementCounter,
-  setGauge,
-} from "@/lib/beaver/metric";
+import { appendTimeseries, getMetricByName, incrementCounter, setGauge } from "@/lib/beaver/metric";
 import { getProjectByApiKey } from "@/lib/beaver/project";
 import type { APIContext, APIRoute } from "astro";
 
@@ -73,7 +68,12 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
         return json({ error: "value must be a number." }, 400);
       }
       await appendTimeseries(metric.id, value, ts);
-      return json({ ok: true, metric: metricName, value, timestamp: (ts ?? new Date()).toISOString() });
+      return json({
+        ok: true,
+        metric: metricName,
+        value,
+        timestamp: (ts ?? new Date()).toISOString(),
+      });
     }
 
     return json({ error: "Unknown metric type." }, 500);

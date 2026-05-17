@@ -1,19 +1,7 @@
 import type { MetricWithValue, MetricType, ChartType } from "@/lib/beaver/metric";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "./ui/chart";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
+import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { BarChart2Icon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -60,8 +48,26 @@ function Sparkline({
     );
   }
 
-  const chartData = data.map((d) => ({ value: d.value }));
-  const config = { value: { label: "Value", color: "hsl(var(--chart-1))" } };
+  // Bucket bar sparklines by day to avoid rendering hundreds of 1px-wide bars
+  const chartData =
+    chartType === "bar"
+      ? (() => {
+          const sums = new Map<string, number>();
+          const counts = new Map<string, number>();
+          for (const d of data) {
+            const key = new Date(d.timestamp).toISOString().slice(0, 10);
+            sums.set(key, (sums.get(key) ?? 0) + d.value);
+            counts.set(key, (counts.get(key) ?? 0) + 1);
+          }
+          return Array.from(sums.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, sum]) => ({ value: Math.round((sum / (counts.get(key) ?? 1)) * 10) / 10 }));
+        })()
+      : data.map((d) => ({ value: d.value }));
+
+  const config = {
+    value: { theme: { light: "black", dark: "oklch(0.78 0 0)" } },
+  };
 
   return (
     <ChartContainer config={config} className="h-16 w-full">
@@ -105,14 +111,19 @@ function MetricCard({
   sparkline?: { value: number; timestamp: Date }[];
   projectId: number;
 }) {
+  const isClickable = metric.type === "timeseries";
+  const Wrapper = isClickable ? "a" : "div";
   return (
-    <a href={`/dashboard/${projectId}/metrics/${metric.id}`} className="block">
-      <Card className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer h-full">
+    <Wrapper
+      href={isClickable ? `/dashboard/${projectId}/metrics/${metric.id}` : undefined}
+      className="block"
+    >
+      <Card
+        className={`h-full ${isClickable ? "hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer" : ""}`}
+      >
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-base font-medium truncate">
-              {metric.name}
-            </CardTitle>
+            <CardTitle className="text-base font-medium truncate">{metric.name}</CardTitle>
             <TypeBadge type={metric.type as MetricType} />
           </div>
           {metric.description && (
@@ -124,7 +135,7 @@ function MetricCard({
             {formatValue(metric.currentValue, metric.unit)}
           </p>
 
-          {metric.type === "gauge" && metric.lastUpdatedAt && (
+          {(metric.type === "gauge" || metric.type === "counter") && metric.lastUpdatedAt && (
             <p className="text-xs text-muted-foreground mt-1">
               Updated {formatDistanceToNow(new Date(metric.lastUpdatedAt), { addSuffix: true })}
             </p>
@@ -140,7 +151,7 @@ function MetricCard({
           )}
         </CardContent>
       </Card>
-    </a>
+    </Wrapper>
   );
 }
 

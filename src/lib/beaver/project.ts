@@ -60,10 +60,7 @@ export async function rotateApiKey(projectId: number): Promise<string> {
 }
 
 export async function getProjectByApiKey(apiKey: string) {
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.apiKey, apiKey));
+  const [project] = await db.select().from(projects).where(eq(projects.apiKey, apiKey));
 
   return project;
 }

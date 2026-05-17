@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { metrics, metricValues } from "../db/schema";
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
 export type MetricType = "gauge" | "counter" | "timeseries";
 export type ChartType = "line" | "bar";
@@ -63,66 +63,124 @@ export async function createMetric(
 }
 
 export async function getMetrics(projectId: number): Promise<MetricWithValue[]> {
-  const ranked = db
-    .select({
-      metricId: metricValues.metricId,
-      value: metricValues.value,
-      timestamp: metricValues.timestamp,
-      rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${metricValues.metricId} ORDER BY ${metricValues.timestamp} DESC)`.as("rn"),
-    })
-    .from(metricValues)
-    .as("ranked");
-
-  const rows = await db
-    .select({
-      id: metrics.id,
-      projectId: metrics.projectId,
-      name: metrics.name,
-      description: metrics.description,
-      unit: metrics.unit,
-      type: metrics.type,
-      chartType: metrics.chartType,
-      createdAt: metrics.createdAt,
-      currentValue: ranked.value,
-      lastUpdatedAt: ranked.timestamp,
-    })
+  const allMetrics = await db
+    .select()
     .from(metrics)
-    .leftJoin(ranked, and(eq(ranked.metricId, metrics.id), eq(ranked.rn, 1)))
     .where(eq(metrics.projectId, projectId))
     .orderBy(metrics.createdAt);
 
-  return rows as MetricWithValue[];
+  if (allMetrics.length === 0) return [];
+
+  const counterIds = allMetrics.filter((m) => m.type === "counter").map((m) => m.id);
+  const nonCounterIds = allMetrics.filter((m) => m.type !== "counter").map((m) => m.id);
+
+  const latestMap = new Map<number, { value: number; timestamp: Date }>();
+  if (nonCounterIds.length > 0) {
+    const ranked = db
+      .select({
+        metricId: metricValues.metricId,
+        value: metricValues.value,
+        timestamp: metricValues.timestamp,
+        rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${metricValues.metricId} ORDER BY ${metricValues.timestamp} DESC)`.as(
+          "rn",
+        ),
+      })
+      .from(metricValues)
+      .where(inArray(metricValues.metricId, nonCounterIds))
+      .as("ranked");
+
+    const rows = await db
+      .select({ metricId: ranked.metricId, value: ranked.value, timestamp: ranked.timestamp })
+      .from(ranked)
+      .where(eq(ranked.rn, 1));
+
+    for (const row of rows) {
+      latestMap.set(row.metricId, { value: row.value, timestamp: row.timestamp as Date });
+    }
+  }
+
+  const counterMap = new Map<number, { value: number; timestamp: Date | null }>();
+  if (counterIds.length > 0) {
+    const rows = await db
+      .select({
+        metricId: metricValues.metricId,
+        total: sql<number>`COALESCE(SUM(${metricValues.value}), 0)`,
+        lastTs: sql<number>`MAX(${metricValues.timestamp})`,
+      })
+      .from(metricValues)
+      .where(inArray(metricValues.metricId, counterIds))
+      .groupBy(metricValues.metricId);
+
+    for (const row of rows) {
+      counterMap.set(row.metricId, {
+        value: row.total,
+        timestamp: row.lastTs ? new Date(row.lastTs) : null,
+      });
+    }
+  }
+
+  return allMetrics.map((m) => {
+    if (m.type === "counter") {
+      const entry = counterMap.get(m.id);
+      return {
+        ...m,
+        type: m.type as MetricType,
+        chartType: m.chartType as ChartType | null,
+        createdAt: m.createdAt as Date,
+        currentValue: entry?.value ?? null,
+        lastUpdatedAt: entry?.timestamp ?? null,
+      } as MetricWithValue;
+    }
+    const entry = latestMap.get(m.id);
+    return {
+      ...m,
+      type: m.type as MetricType,
+      chartType: m.chartType as ChartType | null,
+      createdAt: m.createdAt as Date,
+      currentValue: entry?.value ?? null,
+      lastUpdatedAt: entry?.timestamp ?? null,
+    } as MetricWithValue;
+  });
 }
 
 export async function getMetric(metricId: number): Promise<MetricWithValue | undefined> {
-  const ranked = db
-    .select({
-      metricId: metricValues.metricId,
-      value: metricValues.value,
-      timestamp: metricValues.timestamp,
-      rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${metricValues.metricId} ORDER BY ${metricValues.timestamp} DESC)`.as("rn"),
-    })
+  const [metric] = await db.select().from(metrics).where(eq(metrics.id, metricId));
+  if (!metric) return undefined;
+
+  if (metric.type === "counter") {
+    const [agg] = await db
+      .select({
+        total: sql<number>`COALESCE(SUM(${metricValues.value}), 0)`,
+        lastTs: sql<number>`MAX(${metricValues.timestamp})`,
+      })
+      .from(metricValues)
+      .where(eq(metricValues.metricId, metricId));
+
+    return {
+      ...metric,
+      type: metric.type as MetricType,
+      chartType: metric.chartType as ChartType | null,
+      createdAt: metric.createdAt as Date,
+      currentValue: agg ? agg.total : null,
+      lastUpdatedAt: agg?.lastTs ? new Date(agg.lastTs) : null,
+    };
+  }
+
+  const [latest] = await db
+    .select({ value: metricValues.value, timestamp: metricValues.timestamp })
     .from(metricValues)
-    .as("ranked");
+    .where(eq(metricValues.metricId, metricId))
+    .orderBy(desc(metricValues.timestamp))
+    .limit(1);
 
-  const [row] = await db
-    .select({
-      id: metrics.id,
-      projectId: metrics.projectId,
-      name: metrics.name,
-      description: metrics.description,
-      unit: metrics.unit,
-      type: metrics.type,
-      chartType: metrics.chartType,
-      createdAt: metrics.createdAt,
-      currentValue: ranked.value,
-      lastUpdatedAt: ranked.timestamp,
-    })
-    .from(metrics)
-    .leftJoin(ranked, and(eq(ranked.metricId, metrics.id), eq(ranked.rn, 1)))
-    .where(eq(metrics.id, metricId));
-
-  return row as MetricWithValue | undefined;
+  return {
+    ...metric,
+    type: metric.type as MetricType,
+    chartType: metric.chartType as ChartType | null,
+    createdAt: metric.createdAt as Date,
+    currentValue: latest?.value ?? null,
+    lastUpdatedAt: latest ? (latest.timestamp as Date) : null,
+  };
 }
 
 export async function getMetricByName(
@@ -195,30 +253,15 @@ export async function setGauge(metricId: number, value: number): Promise<void> {
   });
 }
 
-export async function incrementCounter(
-  metricId: number,
-  amount: number,
-): Promise<number> {
-  return db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select()
-      .from(metricValues)
-      .where(eq(metricValues.metricId, metricId));
+export async function incrementCounter(metricId: number, amount: number): Promise<number> {
+  await db.insert(metricValues).values({ metricId, value: amount, timestamp: new Date() });
 
-    const next = (existing?.value ?? 0) + amount;
-    const now = new Date();
+  const [result] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${metricValues.value}), 0)` })
+    .from(metricValues)
+    .where(eq(metricValues.metricId, metricId));
 
-    if (existing) {
-      await tx
-        .update(metricValues)
-        .set({ value: next, timestamp: now })
-        .where(eq(metricValues.metricId, metricId));
-    } else {
-      await tx.insert(metricValues).values({ metricId, value: next, timestamp: now });
-    }
-
-    return next;
-  });
+  return result?.total ?? 0;
 }
 
 export async function appendTimeseries(
@@ -284,4 +327,3 @@ export async function getMetricValues(
 
   return (await query) as MetricValue[];
 }
-

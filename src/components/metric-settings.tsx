@@ -13,12 +13,7 @@ import { Label } from "./ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { PencilIcon, Trash2Icon, PlusIcon } from "lucide-react";
 import { useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 const TYPE_LABELS: Record<MetricType, string> = {
   gauge: "Gauge",
@@ -41,9 +36,21 @@ function TypeBadge({ type }: { type: MetricType }) {
 }
 
 const METRIC_TYPES: { value: MetricType; label: string; description: string }[] = [
-  { value: "gauge", label: "Gauge", description: "A single current value, overwritten on each update." },
-  { value: "counter", label: "Counter", description: "A running total that increments or decrements." },
-  { value: "timeseries", label: "Timeseries", description: "Append-only series of values over time." },
+  {
+    value: "gauge",
+    label: "Gauge",
+    description: "A single current value, overwritten on each update.",
+  },
+  {
+    value: "counter",
+    label: "Counter",
+    description: "A running total that increments or decrements.",
+  },
+  {
+    value: "timeseries",
+    label: "Timeseries",
+    description: "Append-only series of values over time.",
+  },
 ];
 
 export default function MetricSettings({
@@ -65,9 +72,7 @@ export default function MetricSettings({
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
 
-  const createNameTaken = clientMetrics.some(
-    (m) => m.name === createName.trim(),
-  );
+  const createNameTaken = clientMetrics.some((m) => m.name === createName.trim());
 
   const handleCreate = async () => {
     setCreating(true);
@@ -187,7 +192,13 @@ export default function MetricSettings({
     <TooltipProvider delayDuration={300}>
       <div className="flex items-center justify-between">
         <h2 className="font-mono">Metrics</h2>
-        <Button size="sm" onClick={() => { resetCreateForm(); setCreateOpen(true); }}>
+        <Button
+          size="sm"
+          onClick={() => {
+            resetCreateForm();
+            setCreateOpen(true);
+          }}
+        >
           <PlusIcon size={14} className="mr-1.5" />
           New metric
         </Button>
@@ -208,9 +219,7 @@ export default function MetricSettings({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h3 className="font-medium text-lg">{metric.name}</h3>
               <TypeBadge type={metric.type as MetricType} />
-              {metric.unit && (
-                <span className="text-xs text-muted-foreground">{metric.unit}</span>
-              )}
+              {metric.unit && <span className="text-xs text-muted-foreground">{metric.unit}</span>}
             </div>
             {metric.description && (
               <p className="font-light text-xs truncate text-muted-foreground mt-0.5">
@@ -260,7 +269,10 @@ export default function MetricSettings({
       <Dialog
         open={createOpen}
         onOpenChange={(open) => {
-          if (!open) { setCreateOpen(false); setCreateError(""); }
+          if (!open) {
+            setCreateOpen(false);
+            setCreateError("");
+          }
         }}
       >
         <DialogContent>
@@ -281,14 +293,14 @@ export default function MetricSettings({
                 onChange={(e) => setCreateName(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
               />
               {createNameTaken && (
-                <p className="text-xs text-destructive">
-                  A metric with this name already exists.
-                </p>
+                <p className="text-xs text-destructive">A metric with this name already exists.</p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="create-description">Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label htmlFor="create-description">
+                Description <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
               <Input
                 id="create-description"
                 value={createDescription}
@@ -298,7 +310,9 @@ export default function MetricSettings({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="create-unit">Unit <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label htmlFor="create-unit">
+                Unit <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
               <Input
                 id="create-unit"
                 value={createUnit}
@@ -311,8 +325,15 @@ export default function MetricSettings({
               <Label>Type</Label>
               <RadioGroup value={createType} onValueChange={(v) => setCreateType(v as MetricType)}>
                 {METRIC_TYPES.map(({ value, label, description }) => (
-                  <label key={value} className="flex items-start gap-3 cursor-pointer rounded border p-3 hover:bg-muted transition-colors">
-                    <RadioGroupItem value={value} id={`type-${value}`} className="mt-0.5 shrink-0" />
+                  <label
+                    key={value}
+                    className="flex items-start gap-3 cursor-pointer rounded border p-3 hover:bg-muted transition-colors"
+                  >
+                    <RadioGroupItem
+                      value={value}
+                      id={`type-${value}`}
+                      className="mt-0.5 shrink-0"
+                    />
                     <div>
                       <p className="text-sm font-medium">{label}</p>
                       <p className="text-xs text-muted-foreground">{description}</p>
@@ -325,7 +346,11 @@ export default function MetricSettings({
             {createType === "timeseries" && (
               <div className="flex flex-col gap-2">
                 <Label>Chart type</Label>
-                <RadioGroup value={createChartType} onValueChange={(v) => setCreateChartType(v as ChartType)} className="flex gap-4">
+                <RadioGroup
+                  value={createChartType}
+                  onValueChange={(v) => setCreateChartType(v as ChartType)}
+                  className="flex gap-4"
+                >
                   {(["line", "bar"] as ChartType[]).map((ct) => (
                     <label key={ct} className="flex items-center gap-2 cursor-pointer text-sm">
                       <RadioGroupItem value={ct} id={`chart-${ct}`} />
@@ -336,9 +361,7 @@ export default function MetricSettings({
               </div>
             )}
 
-            {createError && (
-              <p className="text-sm text-destructive">{createError}</p>
-            )}
+            {createError && <p className="text-sm text-destructive">{createError}</p>}
 
             <div className="flex gap-2 justify-end">
               <Button variant="secondary" onClick={() => setCreateOpen(false)}>
@@ -359,15 +382,18 @@ export default function MetricSettings({
       <Dialog
         open={!!editTarget}
         onOpenChange={(open) => {
-          if (!open) { setEditTarget(null); setEditError(""); }
+          if (!open) {
+            setEditTarget(null);
+            setEditError("");
+          }
         }}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit metric</DialogTitle>
             <DialogDescription>
-              Update <span className="font-bold">{editTarget?.name}</span>.
-              Type cannot be changed after creation.
+              Update <span className="font-bold">{editTarget?.name}</span>. Type cannot be changed
+              after creation.
             </DialogDescription>
           </DialogHeader>
 
@@ -390,9 +416,7 @@ export default function MetricSettings({
                 }}
               />
               {editNameTaken && (
-                <p className="text-xs text-destructive">
-                  A metric with this name already exists.
-                </p>
+                <p className="text-xs text-destructive">A metric with this name already exists.</p>
               )}
               {editNameChanged && !editNameTaken && (
                 <label className="flex items-start gap-2 cursor-pointer mt-1">
@@ -403,14 +427,17 @@ export default function MetricSettings({
                     className="mt-0.5 h-4 w-4 shrink-0"
                   />
                   <span className="text-xs text-amber-600">
-                    I understand that changing the metric name will break existing integrations that use this name in the API.
+                    I understand that changing the metric name will break existing integrations that
+                    use this name in the API.
                   </span>
                 </label>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-description">Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label htmlFor="edit-description">
+                Description <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
               <Input
                 id="edit-description"
                 value={editDescription}
@@ -420,7 +447,9 @@ export default function MetricSettings({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-unit">Unit <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label htmlFor="edit-unit">
+                Unit <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
               <Input
                 id="edit-unit"
                 value={editUnit}
@@ -429,16 +458,19 @@ export default function MetricSettings({
               />
             </div>
 
-            {editError && (
-              <p className="text-sm text-destructive">{editError}</p>
-            )}
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
 
             <div className="flex gap-2 justify-end">
               <Button variant="secondary" onClick={() => setEditTarget(null)}>
                 Cancel
               </Button>
               <Button
-                disabled={!editName.trim() || editNameTaken || (editNameChanged && !editNameWarningAcked) || editing}
+                disabled={
+                  !editName.trim() ||
+                  editNameTaken ||
+                  (editNameChanged && !editNameWarningAcked) ||
+                  editing
+                }
                 onClick={handleEdit}
               >
                 {editing ? "Saving…" : "Save"}
@@ -463,9 +495,8 @@ export default function MetricSettings({
           <DialogHeader>
             <DialogTitle>Delete metric</DialogTitle>
             <DialogDescription>
-              This will permanently delete{" "}
-              <span className="font-bold">{deleteTarget?.name}</span> and all
-              its recorded values. This cannot be undone.
+              This will permanently delete <span className="font-bold">{deleteTarget?.name}</span>{" "}
+              and all its recorded values. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -476,9 +507,7 @@ export default function MetricSettings({
               value={deleteConfirmName}
               onChange={(e) => setDeleteConfirmName(e.target.value)}
             />
-            {deleteError && (
-              <p className="text-sm text-destructive">{deleteError}</p>
-            )}
+            {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
             <div className="flex gap-2 justify-end mt-1">
               <DialogClose asChild>
                 <Button variant="secondary">Cancel</Button>
