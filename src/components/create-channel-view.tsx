@@ -63,7 +63,11 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
             className="w-full"
             maxLength={16}
             value={channelName}
-            onChange={(e) => setChannelName(e.target.value.replace(/ /g, "-"))}
+            onChange={(e) =>
+              setChannelName(
+                e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/-{2,}/g, "-"),
+              )
+            }
             disabled={isLoading}
           />
           <p className="text-xs text-black/50 dark:text-white/50">Maximum 16 characters.</p>
