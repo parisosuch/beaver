@@ -68,11 +68,20 @@ export function generateTempPassword(): string {
   return result;
 }
 
+const USERNAME_RE = /^[a-zA-Z0-9-]+$/;
+
+function validateUsername(userName: string) {
+  if (!USERNAME_RE.test(userName)) {
+    throw new Error("Username may only contain letters, numbers, and hyphens.");
+  }
+}
+
 export async function createUser(
   userName: string,
   password: string,
   isAdmin: boolean,
 ): Promise<User> {
+  validateUsername(userName);
   const hashedPassword = await Bun.password.hash(password);
 
   const [user] = await db
@@ -87,6 +96,7 @@ export async function createUserAccount(
   userName: string,
   canCreateProjects = false,
 ): Promise<User & { tempPassword: string }> {
+  validateUsername(userName);
   const tempPassword = generateTempPassword();
   const hashedPassword = await Bun.password.hash(tempPassword);
 

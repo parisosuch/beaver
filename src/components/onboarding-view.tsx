@@ -50,7 +50,7 @@ const CreateAdminAccount = ({
           className="w-full"
           value={username}
           onChange={(e) => {
-            setUsername(e.target.value);
+            setUsername(e.target.value.replace(/[^a-zA-Z0-9-]/g, "-").replace(/-{2,}/g, "-"));
           }}
         />
       </div>
