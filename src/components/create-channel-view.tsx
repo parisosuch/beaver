@@ -51,7 +51,7 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
     <div className="w-full min-h-screen flex items-center justify-center px-4 md:px-0">
       <form onSubmit={handleSubmit} className="flex flex-col text-center w-full max-w-sm">
         <h1 className="text-2xl md:text-3xl font-bold">Create Channel</h1>
-        <p className="text-sm mt-2 text-black/50 font-medium">
+        <p className="text-sm mt-2 text-black/50 dark:text-white/50 font-medium">
           Create a new channel to organize your events.
         </p>
         <div className="mt-4 space-y-2">
@@ -66,7 +66,7 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
             onChange={(e) => setChannelName(e.target.value.replace(/ /g, "-"))}
             disabled={isLoading}
           />
-          <p className="text-xs text-black/50">Maximum 16 characters.</p>
+          <p className="text-xs text-black/50 dark:text-white/50">Maximum 16 characters.</p>
         </div>
         <div className="mt-4 space-y-2">
           <Label htmlFor="channel-description">Description (optional)</Label>
