@@ -157,6 +157,15 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
       ],
     },
     {
+      id: "metrics",
+      title: "Metrics",
+      children: [
+        { id: "metrics-gauge", title: "Gauge" },
+        { id: "metrics-counter", title: "Counter" },
+        { id: "metrics-timeseries", title: "Timeseries" },
+      ],
+    },
+    {
       id: "code-examples",
       title: "Code Examples",
       children: [
@@ -738,6 +747,318 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Type mismatches are treated as a caller error. Design your tag schema upfront and send
               values of the same JSON type for a given key on every event.
             </p>
+          </section>
+
+          {/* Metrics */}
+          <section id="metrics">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <span className="text-gray-400">#</span>
+              Metrics
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+              Log numeric measurements to metrics you've defined in the dashboard. Three types are
+              supported: <strong>gauge</strong> (a single current value), <strong>counter</strong>{" "}
+              (an incrementing total), and <strong>timeseries</strong> (a time-stamped series of
+              values).
+            </p>
+
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5 mb-8">
+              <p className="text-amber-800 dark:text-amber-300 font-semibold mb-1">
+                Create metrics in the dashboard first
+              </p>
+              <p className="text-amber-700 dark:text-amber-400 text-sm">
+                The API will return a{" "}
+                <code className="bg-amber-100 dark:bg-white/10 px-1 rounded">404</code> if the
+                metric name does not exist in the project. Go to{" "}
+                <a
+                  href="metrics"
+                  className="underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200"
+                >
+                  Metrics → Settings
+                </a>{" "}
+                to create a metric before logging to it.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 bg-gray-900 rounded-xl mb-8">
+              <MethodBadge method="POST" />
+              <code className="text-gray-100 font-mono text-lg">/api/metric</code>
+            </div>
+
+            {/* Gauge */}
+            <h3
+              id="metrics-gauge"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            >
+              Gauge
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Sets the current value of a gauge metric. Each call overwrites the previous value.
+            </p>
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Field
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Required
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        metric
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      The name of the metric as defined in the dashboard
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        value
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      The current value to set
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-4 mb-10">
+              <CodeBlock
+                title="cURL — set gauge"
+                language="bash"
+                code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '{ "metric": "disk_usage", "value": 42.3 }'`}
+              />
+              <CodeBlock
+                title="200 OK"
+                language="json"
+                code={`{ "ok": true, "metric": "disk_usage", "value": 42.3 }`}
+              />
+            </div>
+
+            {/* Counter */}
+            <h3
+              id="metrics-counter"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            >
+              Counter
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Adds an amount to a counter metric. Use a negative{" "}
+              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded text-pink-600 dark:text-pink-400">
+                increment
+              </code>{" "}
+              to subtract. The response includes the new running total.
+            </p>
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Field
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Required
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        metric
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      The name of the metric as defined in the dashboard
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        increment
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      Amount to add (use a negative number to subtract)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-4 mb-10">
+              <CodeBlock
+                title="cURL — increment counter"
+                language="bash"
+                code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '{ "metric": "signups", "increment": 1 }'`}
+              />
+              <CodeBlock
+                title="cURL — decrement counter"
+                language="bash"
+                code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '{ "metric": "signups", "increment": -1 }'`}
+              />
+              <CodeBlock
+                title="200 OK"
+                language="json"
+                code={`{ "ok": true, "metric": "signups", "total": 42 }`}
+              />
+            </div>
+
+            {/* Timeseries */}
+            <h3
+              id="metrics-timeseries"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            >
+              Timeseries
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Appends a data point to a timeseries metric. If{" "}
+              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded text-pink-600 dark:text-pink-400">
+                timestamp
+              </code>{" "}
+              is omitted, the server records the current time.
+            </p>
+            <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Field
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Required
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        metric
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      The name of the metric as defined in the dashboard
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        value
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      The numeric measurement to record
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        timestamp
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3">
+                      <Badge>Optional</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      ISO 8601 timestamp for the data point. Defaults to now.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-4 mb-2">
+              <CodeBlock
+                title="cURL — append data point"
+                language="bash"
+                code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '{ "metric": "response_time", "value": 123.4 }'`}
+              />
+              <CodeBlock
+                title="cURL — with explicit timestamp"
+                language="bash"
+                code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '{
+    "metric": "response_time",
+    "value": 98.7,
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }'`}
+              />
+              <CodeBlock
+                title="200 OK"
+                language="json"
+                code={`{
+  "ok": true,
+  "metric": "response_time",
+  "value": 123.4,
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}`}
+              />
+            </div>
           </section>
 
           {/* Code Examples */}
