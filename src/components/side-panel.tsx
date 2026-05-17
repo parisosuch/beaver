@@ -25,6 +25,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
+  BarChart2Icon,
   BookmarkIcon,
   BookOpenIcon,
   ChevronDownIcon,
@@ -743,6 +744,7 @@ function PanelContent({
   const project = currentProject;
   const isFeedActive = () => pathname === `/dashboard/${project.id}/feed`;
   const isBookmarksActive = () => pathname === `/dashboard/${project.id}/bookmarks`;
+  const isMetricsActive = () => pathname.startsWith(`/dashboard/${project.id}/metrics`);
   const isSettingsActive = () => pathname === `/dashboard/${project.id}/settings`;
   const isApiDocsActive = () => pathname === `/dashboard/${project.id}/api-docs`;
 
@@ -821,6 +823,14 @@ function PanelContent({
         >
           <BookmarkIcon size={20} />
           <p>Bookmarks</p>
+        </a>
+        <a
+          className={isMetricsActive() ? activeNavCss : navCss}
+          href={`/dashboard/${project.id}/metrics`}
+          onClick={() => onNavigate?.()}
+        >
+          <BarChart2Icon size={20} />
+          <p>Metrics</p>
         </a>
         {canEdit && (
           <a

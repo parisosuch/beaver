@@ -6,7 +6,7 @@ import { getProjectsForUser } from "./lib/beaver/project-member";
 import { logRequest, logError } from "./lib/logger";
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["/login", "/onboarding", "/api/event"];
+const PUBLIC_ROUTES = ["/login", "/onboarding", "/api/event", "/api/metric"];
 
 // API routes that don't require authentication (prefix-matched)
 const PUBLIC_API_ROUTES = ["/api/auth/", "/api/admin"];

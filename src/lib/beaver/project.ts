@@ -58,3 +58,9 @@ export async function rotateApiKey(projectId: number): Promise<string> {
   await db.update(projects).set({ apiKey: newKey }).where(eq(projects.id, projectId));
   return newKey;
 }
+
+export async function getProjectByApiKey(apiKey: string) {
+  const [project] = await db.select().from(projects).where(eq(projects.apiKey, apiKey));
+
+  return project;
+}
