@@ -63,7 +63,7 @@ export async function GET({ params, url }: { params: { channelID: string }; url:
               controller.enqueue(encoder.encode(`data: ${JSON.stringify([])}\n\n`));
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 10000));
+            await new Promise((resolve) => setTimeout(resolve, 2000));
           }
         } catch (err) {
           console.error("Error in SSE stream:", err);
