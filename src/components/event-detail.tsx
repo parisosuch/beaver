@@ -2,8 +2,9 @@ import type { EventWithChannelName } from "@/lib/beaver/event";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import { ArrowLeftIcon, BookmarkIcon } from "lucide-react";
+import { ArrowLeftIcon, BookmarkIcon, CheckIcon, LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | boolean }) {
   const displayValue = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
@@ -21,6 +22,7 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
   const tags = Object.entries(event.tags);
   const [bookmarked, setBookmarked] = useState(event.bookmarked);
   const [bookmarking, setBookmarking] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleBookmark = async () => {
     setBookmarking(true);
@@ -37,17 +39,29 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   useEffect(() => {
     fetch("/api/unread", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelName: event.channelName, projectId: event.projectId }),
+      body: JSON.stringify({
+        channelName: event.channelName,
+        projectId: event.projectId,
+      }),
     })
       .then((res) => res.json())
       .then((data) => {
         window.dispatchEvent(
           new CustomEvent("channel:read", {
-            detail: { channelId: data.channelId, channelName: event.channelName },
+            detail: {
+              channelId: data.channelId,
+              channelName: event.channelName,
+            },
           }),
         );
       })
@@ -85,15 +99,32 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                   </CardDescription>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBookmark}
-                disabled={bookmarking}
-                className="shrink-0"
-              >
-                <BookmarkIcon className={bookmarked ? "fill-current" : ""} size={18} />
-              </Button>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleBookmark}
+                  disabled={bookmarking}
+                  className="shrink-0"
+                >
+                  <BookmarkIcon className={bookmarked ? "fill-current" : ""} size={18} />
+                </Button>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCopyLink}
+                        className="shrink-0 hover:cursor-pointer"
+                      >
+                        {copied ? <CheckIcon size={18} /> : <LinkIcon size={18} />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{copied ? "Copied!" : "Copy link"}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </CardHeader>
 
