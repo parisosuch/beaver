@@ -3,6 +3,7 @@ import {
   createProject,
   deleteProject,
   getProject,
+  getProjects,
   renameProject,
   rotateApiKey,
 } from "@/lib/beaver/project";
@@ -167,7 +168,9 @@ export const DELETE: APIRoute = async (context: APIContext) => {
       });
     }
 
-    const userProjects = await getProjectsForUser(context.locals.user.id);
+    const userProjects = context.locals.user.isAdmin
+      ? await getProjects()
+      : await getProjectsForUser(context.locals.user.id);
     if (userProjects.length <= 1) {
       return new Response(
         JSON.stringify({
