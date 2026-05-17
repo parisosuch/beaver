@@ -100,15 +100,22 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                 </div>
               </div>
               <div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleBookmark}
-                  disabled={bookmarking}
-                  className="shrink-0"
-                >
-                  <BookmarkIcon className={bookmarked ? "fill-current" : ""} size={18} />
-                </Button>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleBookmark}
+                        disabled={bookmarking}
+                        className="shrink-0 hover:cursor-pointer"
+                      >
+                        <BookmarkIcon className={bookmarked ? "fill-current" : ""} size={18} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{bookmarked ? "Remove bookmark" : "Bookmark"}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
