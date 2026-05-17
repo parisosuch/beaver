@@ -28,11 +28,16 @@ export async function getChannel(channelID: number) {
   return res[0];
 }
 
+function sanitizeName(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "-").replace(/-{2,}/g, "-");
+}
+
 export async function createChannel(
   channel_name: string,
   project_id: number,
   description?: string,
 ) {
+  channel_name = sanitizeName(channel_name);
   if (channel_name.length > 16) {
     throw new Error("Channel name cannot be longer than 16 characters.");
   }
@@ -112,6 +117,7 @@ export async function updateChannel(
   if (!channel[0]) throw new Error("Channel not found.");
 
   if (updates.name !== undefined) {
+    updates.name = sanitizeName(updates.name);
     if (updates.name.length > 16) {
       throw new Error("Channel name cannot be longer than 16 characters.");
     }
