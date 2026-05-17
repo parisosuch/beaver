@@ -732,7 +732,7 @@ function PanelContent({
       clearInterval(interval);
       window.removeEventListener("channel:read", handleChannelRead as EventListener);
     };
-  }, [currentProject.id, pathname]);
+  }, [currentProject.id]);
 
   const canEdit = userRole === "owner" || userRole === "maintainer";
 
