@@ -286,7 +286,11 @@ export default function AdminUsersView({
                       <Input
                         id="username"
                         value={newUsername}
-                        onChange={(e) => setNewUsername(e.target.value)}
+                        onChange={(e) =>
+                          setNewUsername(
+                            e.target.value.replace(/[^a-zA-Z0-9-]/g, "-").replace(/-{2,}/g, "-"),
+                          )
+                        }
                         placeholder="e.g. paris"
                         required
                       />
