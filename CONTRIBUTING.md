@@ -7,6 +7,7 @@
 - **UI:** [React](https://react.dev/) v19 (via `@astrojs/react`), [Tailwind CSS](https://tailwindcss.com/) v4, [Radix UI](https://www.radix-ui.com/) primitives, [Framer Motion](https://motion.dev/), [Lucide React](https://lucide.dev/) icons
 - **Database:** SQLite via `bun:sqlite` + [Drizzle ORM](https://orm.drizzle.team/)
 - **Auth:** JWT (via [jose](https://github.com/panva/jose)) with refresh tokens stored in cookies and sessions persisted in the database
+- **PWA:** `@vite-pwa/astro` with iOS-specific meta tags and safe-area insets
 
 ## Getting Started
 
@@ -45,7 +46,7 @@ src/
 
 The SQLite database file is created automatically at `data/beaver.sqlite`. The schema is defined in `src/lib/db/schema.ts` with Drizzle ORM. Migration files live in `drizzle/`.
 
-**Tables:** `projects`, `channels`, `events`, `event_tags`, `users`, `sessions`
+**Tables:** `projects`, `channel_groups`, `channels`, `events`, `event_tags`, `channel_reads`, `bookmarks`, `users`, `sessions`, `project_members`, `metrics`, `metric_values`
 
 All tables use integer primary keys with auto-increment. Timestamps are stored as milliseconds since epoch (`mode: "timestamp_ms"`). Cascade deletes are configured on foreign keys.
 
@@ -79,7 +80,21 @@ Astro pages (`.astro` files) handle routing and server-side data fetching. React
 
 ### Real-Time Updates
 
-Event feeds use Server-Sent Events (SSE) for real-time streaming. SSE endpoints exist per channel (`/api/events/channel/:id/event-stream`) and per project (`/api/events/project/:id/event-stream`). SSE is only active for the default sort order (newest first).
+Event feeds use Server-Sent Events (SSE) for real-time streaming. SSE endpoints exist per channel (`/api/events/channel/:id/event-stream`) and per project (`/api/events/project/:id/event-stream`). Each endpoint polls the DB every 2s in a `while(true)` loop and sends new events to the client. SSE is only active for the default sort order (newest first).
+
+### Metrics
+
+Three metric types are supported:
+
+- **gauge** — upserts a single current value (e.g. CPU usage)
+- **counter** — append-only increment (e.g. request count)
+- **timeseries** — append-only series with timestamps (e.g. response latency over time)
+
+Metrics must be created in the dashboard before data can be ingested. Logic lives in `src/lib/beaver/metric.ts`; ingestion endpoint is `POST /api/metric`.
+
+### Custom Events
+
+Components communicate client-side via `window.dispatchEvent(new CustomEvent(...))`. Key events: `channel:updated`, `channel:created`, `channel:deleted`, `unread:updated`. Always subscribe in `useEffect` and remove the listener on unmount.
 
 ### API Authentication
 
@@ -87,11 +102,16 @@ External API calls (e.g., creating events) use the `X-API-Key` header with the p
 
 ## Conventions
 
-- **Formatting:** Run `bun run format` (Prettier) before committing
-- **Responsive design:** Mobile-first with Tailwind breakpoints — default styles target mobile, `md:` for tablet, `lg:` for desktop
-- **Component patterns:** UI primitives live in `src/components/ui/` (shadcn/ui style). Feature components are at the top level of `src/components/`
-- **Database queries:** Domain logic goes in `src/lib/beaver/` (one file per entity). Raw Drizzle queries, not a repository pattern
-- **API routes:** Astro API routes in `src/pages/api/`. Use `APIRoute` type exports (`GET`, `POST`, etc.)
+- **Formatting:** `bun run format` (oxfmt). A pre-commit hook enforces `format:check`, `lint`, and `tsc`.
+- **Linting:** `bun run lint` (oxlint). Auto-fix with `bun run lint:fix`.
+- **Type checking:** `bun run astro sync && bunx tsc --noEmit`
+- **Commits:** Conventional commit format (`feat:`, `fix:`, `refactor:`, etc.). No issue references in commit messages — this is a squash-merge project; put issue refs in the PR body only.
+- **Colors:** The project uses oklch via CSS variables. Never use `hsl(var(--chart-N))` — it's invalid. Use `var(--chart-N)` directly.
+- **Responsive design:** Mobile-first with Tailwind breakpoints — default styles target mobile, `md:` for tablet, `lg:` for desktop.
+- **Component patterns:** UI primitives live in `src/components/ui/` (shadcn/ui). Add new ones with `bunx shadcn@latest add <component>`. Feature components are at the top level of `src/components/`.
+- **Database queries:** Domain logic goes in `src/lib/beaver/` (one file per entity). Raw Drizzle queries, not a repository pattern.
+- **API routes:** Astro API routes in `src/pages/api/`. Use `APIRoute` type exports (`GET`, `POST`, etc.).
+- **SSR hydration:** Any value that reads from `localStorage` or the DOM must be set inside `useEffect`, not computed during render.
 
 ## Building for Production
 
