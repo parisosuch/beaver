@@ -86,7 +86,7 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 min-w-0">
                 <div className="bg-gray-100 dark:bg-white/10 p-3 rounded-md">
                   <p className="text-2xl">{event.icon ? event.icon : "🪵"}</p>
                 </div>
@@ -99,7 +99,7 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                   </CardDescription>
                 </div>
               </div>
-              <div>
+              <div className="flex items-center shrink-0">
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
