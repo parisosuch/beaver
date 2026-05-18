@@ -332,6 +332,55 @@ export async function getProjectEvents(
   })) as EventWithChannelName[];
 }
 
+type CountOptions = Pick<QueryOptions, "search" | "startDate" | "endDate" | "tags">;
+
+export async function countChannelEvents(
+  channelId: number,
+  options: CountOptions,
+): Promise<number> {
+  const conditions: any[] = [eq(events.channelId, channelId)];
+  if (options.search) {
+    const terms = options.search.split(" ").map((w) => `%${w}%`);
+    conditions.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
+  }
+  if (options.startDate) conditions.push(gte(events.createdAt, options.startDate));
+  if (options.endDate) conditions.push(lte(events.createdAt, options.endDate));
+  if (options.tags?.length) {
+    for (const tag of options.tags) conditions.push(buildTagCondition(tag));
+  }
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(events)
+    .innerJoin(channels, eq(events.channelId, channels.id))
+    .where(and(...conditions));
+  return count;
+}
+
+export async function countProjectEvents(
+  projectId: number,
+  options: CountOptions,
+): Promise<number> {
+  const conditions: any[] = [eq(events.projectId, projectId)];
+  if (options.search) {
+    const terms = options.search.split(" ").map((w) => `%${w}%`);
+    conditions.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
+  }
+  if (options.startDate) conditions.push(gte(events.createdAt, options.startDate));
+  if (options.endDate) conditions.push(lte(events.createdAt, options.endDate));
+  if (options.tags?.length) {
+    for (const tag of options.tags) conditions.push(buildTagCondition(tag));
+  }
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(events)
+    .innerJoin(
+      channels,
+      and(eq(events.channelId, channels.id), eq(events.projectId, channels.projectId)),
+    )
+    .where(and(...conditions));
+  return count;
+}
+
 export async function getEvent(
   eventId: number,
   userId?: number,

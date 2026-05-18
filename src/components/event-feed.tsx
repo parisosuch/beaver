@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Badge } from "./ui/badge";
 
 type SortOption = `${SortField}_${SortOrder}`;
 
@@ -72,6 +73,7 @@ export default function EventFeed({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState(search ?? "");
+  const [eventCount, setEventCount] = useState<number | null>(null);
   const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
@@ -301,6 +303,24 @@ export default function EventFeed({
     };
   }, [projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
 
+  // Fetch total event count scoped to current filters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    if (tags) params.set("tags", tags);
+
+    const endpoint = channel
+      ? `/api/events/channel/${channel.id}/count?${params}`
+      : `/api/events/project/${projectID}/count?${params}`;
+
+    fetch(endpoint)
+      .then((r) => r.json())
+      .then((d) => setEventCount(d.count))
+      .catch(() => {});
+  }, [projectID, channel, search, startDate, endDate, tags]);
+
   // Mark channel as read, capture lastReadAt for divider
   useEffect(() => {
     if (type !== "channel" || !channel) return;
@@ -447,9 +467,16 @@ export default function EventFeed({
       {/* Header */}
       <div className="w-full flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">
-            {type === "project" ? "Feed" : `# ${channel?.name}`}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold">
+              {type === "project" ? "Feed" : `# ${channel?.name}`}
+            </h1>
+            {eventCount !== null && (
+              <Badge variant="secondary" className="tabular-nums">
+                {eventCount.toLocaleString()} {eventCount === 1 ? "event" : "events"}
+              </Badge>
+            )}
+          </div>
           {type === "channel" && channel?.description && (
             <p className="text-sm text-muted-foreground mt-1">{channel.description}</p>
           )}
