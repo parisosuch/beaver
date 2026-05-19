@@ -2,7 +2,9 @@ import { countChannelEvents, type TagFilter } from "@/lib/beaver/event";
 
 export async function GET({ params, url }: { params: { channelID: string }; url: URL }) {
   const channelId = parseInt(params.channelID);
-  const search = url.searchParams.get("search");
+  const title = url.searchParams.get("title");
+  const object = url.searchParams.get("object");
+  const action = url.searchParams.get("action");
   const startDate = url.searchParams.get("startDate")
     ? new Date(url.searchParams.get("startDate")!)
     : undefined;
@@ -16,7 +18,14 @@ export async function GET({ params, url }: { params: { channelID: string }; url:
     } catch {}
   }
 
-  const count = await countChannelEvents(channelId, { search, startDate, endDate, tags });
+  const count = await countChannelEvents(channelId, {
+    title,
+    object,
+    action,
+    startDate,
+    endDate,
+    tags,
+  });
   return new Response(JSON.stringify({ count }), {
     headers: { "Content-Type": "application/json" },
   });

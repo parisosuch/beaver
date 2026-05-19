@@ -7,7 +7,9 @@ const { projectID } = Astro.params;
 const url = new URL(Astro.request.url);
 const searchParams = url.searchParams;
 
-const search = searchParams.get("search");
+const title = searchParams.get("title");
+const object = searchParams.get("object");
+const action = searchParams.get("action");
 const startDate = searchParams.get("startDate");
 const endDate = searchParams.get("endDate");
 const tags = searchParams.get("tags");
@@ -21,7 +23,9 @@ const sortOrder = searchParams.get("sortOrder");
     client:load
     type="project"
     projectID={parseInt(projectID!)}
-    search={search}
+    title={title}
+    object={object}
+    action={action}
     startDate={startDate}
     endDate={endDate}
     tags={tags}

@@ -86,12 +86,17 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 min-w-0">
                 <div className="bg-gray-100 dark:bg-white/10 p-3 rounded-md">
                   <p className="text-2xl">{event.icon ? event.icon : "🪵"}</p>
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">{event.name}</CardTitle>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-1">
+                    <span>{event.eventObject}</span>
+                    <span>·</span>
+                    <span>{event.eventAction}</span>
+                  </div>
+                  <CardTitle className="text-2xl">{event.title}</CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
                     <span># {event.channelName}</span>
                     <span className="text-muted-foreground">·</span>
@@ -99,7 +104,7 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                   </CardDescription>
                 </div>
               </div>
-              <div>
+              <div className="flex items-center shrink-0">
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>

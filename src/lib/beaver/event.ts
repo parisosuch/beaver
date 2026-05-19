@@ -1,8 +1,12 @@
 import { db } from "../db/db";
 import { events, channels, eventTags, channelReads, bookmarks } from "../db/schema";
 import { getEventTags } from "./event-tags";
-import { eq, and, or, asc, desc, like, gt, lt, gte, lte, exists, max, sql } from "drizzle-orm";
+import { eq, ne, and, or, asc, desc, like, gt, lt, gte, lte, exists, max, sql } from "drizzle-orm";
 import { getProject } from "./project";
+
+export const EVENT_NAME_REGEX = /^[a-z][a-z_]*\.[a-z][a-z_]*$/;
+export const EVENT_SEGMENT_REGEX = /^[a-z][a-z_]*$/;
+export const RESERVED_OBJECT = "legacy";
 
 export async function getMaxEventId(): Promise<number> {
   const result = await db.select({ maxId: max(events.id) }).from(events);
@@ -17,12 +21,13 @@ export type Tag = {
   type: "string" | "number" | "boolean";
 };
 
-// TODO: this name sucks but IDK what else to use.
 export type TagPrimitive = Record<string, number | string | boolean>;
 
 export type Event = {
   id: number;
-  name: string;
+  eventObject: string;
+  eventAction: string;
+  title: string;
   description?: string;
   icon?: string;
   projectId: number;
@@ -30,10 +35,11 @@ export type Event = {
   createdAt: Date;
 };
 
-// TODO: this name sucks too
 export type EventWithChannelName = {
   id: number;
-  name: string;
+  eventObject: string;
+  eventAction: string;
+  title: string;
   description: string | null;
   icon: string | null;
   projectId: number;
@@ -56,10 +62,13 @@ export type SortField = "date" | "name";
 export type SortOrder = "asc" | "desc";
 
 type QueryOptions = {
-  search: string | null;
+  title?: string | null;
+  object?: string | null;
+  action?: string | null;
   afterId?: number;
   beforeId?: number;
-  cursorName?: string;
+  cursorObject?: string;
+  cursorAction?: string;
   cursorId?: number;
   limit?: number;
   startDate?: Date;
@@ -97,66 +106,68 @@ const buildTagCondition = (tagFilter: TagFilter) => {
   );
 };
 
+function applyFilterConditions(conditions: any[], options: QueryOptions) {
+  if (options.title) {
+    conditions.push(like(events.title, `%${options.title}%`));
+  }
+  if (options.object) {
+    conditions.push(eq(events.eventObject, options.object));
+  }
+  if (options.action) {
+    conditions.push(eq(events.eventAction, options.action));
+  }
+  if (options.startDate) conditions.push(gte(events.createdAt, options.startDate));
+  if (options.endDate) conditions.push(lte(events.createdAt, options.endDate));
+  if (options.tags?.length) {
+    for (const tag of options.tags) conditions.push(buildTagCondition(tag));
+  }
+}
+
+function applyCursorAndPagination(conditions: any[], options: QueryOptions) {
+  if (options.afterId) conditions.push(gt(events.id, options.afterId));
+  if (options.beforeId) conditions.push(lt(events.id, options.beforeId));
+
+  if (
+    options.cursorObject !== undefined &&
+    options.cursorAction !== undefined &&
+    options.cursorId !== undefined
+  ) {
+    const isAsc = options.sortOrder === "asc";
+    const cmpStrict = isAsc ? gt : lt;
+    const cmpStrictId = isAsc ? gt : lt;
+    conditions.push(
+      or(
+        cmpStrict(events.eventObject, options.cursorObject),
+        and(
+          eq(events.eventObject, options.cursorObject),
+          cmpStrict(events.eventAction, options.cursorAction),
+        ),
+        and(
+          eq(events.eventObject, options.cursorObject),
+          eq(events.eventAction, options.cursorAction),
+          cmpStrictId(events.id, options.cursorId),
+        ),
+      ),
+    );
+  }
+}
+
+function getOrderBy(options: QueryOptions) {
+  const orderFn = options.sortOrder === "asc" ? asc : desc;
+  if (options.sortBy === "name") {
+    return [orderFn(events.eventObject), orderFn(events.eventAction), orderFn(events.id)];
+  }
+  return [orderFn(events.createdAt), orderFn(events.id)];
+}
+
 export async function getChannelEvents(
   channelId: number,
   options: QueryOptions,
   userId?: number,
 ): Promise<EventWithChannelName[]> {
-  // initial where clause
   const conditions: any[] = [eq(events.channelId, channelId)];
-
-  if (options.search) {
-    const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
-
-    conditions.push(
-      ...searchTerms.map((term) => or(like(events.name, term), like(events.description, term))),
-    );
-  }
-
-  if (options.afterId) {
-    conditions.push(gt(events.id, options.afterId));
-  }
-
-  if (options.beforeId) {
-    conditions.push(lt(events.id, options.beforeId));
-  }
-
-  if (options.cursorName !== undefined && options.cursorId !== undefined) {
-    if (options.sortOrder === "asc") {
-      conditions.push(
-        or(
-          gt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), gt(events.id, options.cursorId)),
-        ),
-      );
-    } else {
-      conditions.push(
-        or(
-          lt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), lt(events.id, options.cursorId)),
-        ),
-      );
-    }
-  }
-
-  // Date range filtering
-  if (options.startDate) {
-    conditions.push(gte(events.createdAt, options.startDate));
-  }
-
-  if (options.endDate) {
-    conditions.push(lte(events.createdAt, options.endDate));
-  }
-
-  // Tag filtering using EXISTS subquery
-  if (options.tags && options.tags.length > 0) {
-    for (const tagFilter of options.tags) {
-      conditions.push(buildTagCondition(tagFilter));
-    }
-  }
-
-  const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+  applyFilterConditions(conditions, options);
+  applyCursorAndPagination(conditions, options);
 
   const readExpr =
     userId !== undefined
@@ -187,7 +198,9 @@ export async function getChannelEvents(
   const eventData = await db
     .select({
       id: events.id,
-      name: events.name,
+      eventObject: events.eventObject,
+      eventAction: events.eventAction,
+      title: events.title,
       description: events.description,
       icon: events.icon,
       projectId: events.projectId,
@@ -199,7 +212,7 @@ export async function getChannelEvents(
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
-    .orderBy(orderFn(orderColumn))
+    .orderBy(...getOrderBy(options))
     .limit(options.limit ?? 100);
 
   const eventIds = eventData.map((event) => event.id);
@@ -218,61 +231,9 @@ export async function getProjectEvents(
   options: QueryOptions,
   userId?: number,
 ): Promise<EventWithChannelName[]> {
-  // initial where clause
   const conditions: any[] = [eq(events.projectId, projectId)];
-
-  if (options.search) {
-    const searchTerms = options.search.split(" ").map((word) => `%${word}%`);
-
-    conditions.push(
-      ...searchTerms.map((term) => or(like(events.name, term), like(events.description, term))),
-    );
-  }
-
-  if (options.afterId) {
-    conditions.push(gt(events.id, options.afterId));
-  }
-
-  if (options.beforeId) {
-    conditions.push(lt(events.id, options.beforeId));
-  }
-
-  if (options.cursorName !== undefined && options.cursorId !== undefined) {
-    if (options.sortOrder === "asc") {
-      conditions.push(
-        or(
-          gt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), gt(events.id, options.cursorId)),
-        ),
-      );
-    } else {
-      conditions.push(
-        or(
-          lt(events.name, options.cursorName),
-          and(eq(events.name, options.cursorName), lt(events.id, options.cursorId)),
-        ),
-      );
-    }
-  }
-
-  // Date range filtering
-  if (options.startDate) {
-    conditions.push(gte(events.createdAt, options.startDate));
-  }
-
-  if (options.endDate) {
-    conditions.push(lte(events.createdAt, options.endDate));
-  }
-
-  // Tag filtering using EXISTS subquery
-  if (options.tags && options.tags.length > 0) {
-    for (const tagFilter of options.tags) {
-      conditions.push(buildTagCondition(tagFilter));
-    }
-  }
-
-  const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+  applyFilterConditions(conditions, options);
+  applyCursorAndPagination(conditions, options);
 
   const readExpr =
     userId !== undefined
@@ -303,7 +264,9 @@ export async function getProjectEvents(
   const eventData = await db
     .select({
       id: events.id,
-      name: events.name,
+      eventObject: events.eventObject,
+      eventAction: events.eventAction,
+      title: events.title,
       description: events.description,
       icon: events.icon,
       projectId: events.projectId,
@@ -318,7 +281,7 @@ export async function getProjectEvents(
       and(eq(events.channelId, channels.id), eq(events.projectId, channels.projectId)),
     )
     .where(and(...conditions))
-    .orderBy(orderFn(orderColumn))
+    .orderBy(...getOrderBy(options))
     .limit(options.limit ?? 100);
 
   const eventIds = eventData.map((event) => event.id);
@@ -332,22 +295,17 @@ export async function getProjectEvents(
   })) as EventWithChannelName[];
 }
 
-type CountOptions = Pick<QueryOptions, "search" | "startDate" | "endDate" | "tags">;
+type CountOptions = Pick<
+  QueryOptions,
+  "title" | "object" | "action" | "startDate" | "endDate" | "tags"
+>;
 
 export async function countChannelEvents(
   channelId: number,
   options: CountOptions,
 ): Promise<number> {
   const conditions: any[] = [eq(events.channelId, channelId)];
-  if (options.search) {
-    const terms = options.search.split(" ").map((w) => `%${w}%`);
-    conditions.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
-  }
-  if (options.startDate) conditions.push(gte(events.createdAt, options.startDate));
-  if (options.endDate) conditions.push(lte(events.createdAt, options.endDate));
-  if (options.tags?.length) {
-    for (const tag of options.tags) conditions.push(buildTagCondition(tag));
-  }
+  applyFilterConditions(conditions, options);
   const [{ count }] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(events)
@@ -361,15 +319,7 @@ export async function countProjectEvents(
   options: CountOptions,
 ): Promise<number> {
   const conditions: any[] = [eq(events.projectId, projectId)];
-  if (options.search) {
-    const terms = options.search.split(" ").map((w) => `%${w}%`);
-    conditions.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
-  }
-  if (options.startDate) conditions.push(gte(events.createdAt, options.startDate));
-  if (options.endDate) conditions.push(lte(events.createdAt, options.endDate));
-  if (options.tags?.length) {
-    for (const tag of options.tags) conditions.push(buildTagCondition(tag));
-  }
+  applyFilterConditions(conditions, options);
   const [{ count }] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(events)
@@ -414,7 +364,9 @@ export async function getEvent(
   const eventData = await db
     .select({
       id: events.id,
-      name: events.name,
+      eventObject: events.eventObject,
+      eventAction: events.eventAction,
+      title: events.title,
       description: events.description,
       icon: events.icon,
       projectId: events.projectId,
@@ -444,7 +396,9 @@ export async function getEvent(
 }
 
 type ExportOptions = {
-  search?: string | null;
+  title?: string | null;
+  object?: string | null;
+  action?: string | null;
   startDate?: Date;
   endDate?: Date;
   tags?: TagFilter[];
@@ -453,15 +407,7 @@ type ExportOptions = {
 };
 
 function buildExportConditions(base: any[], options: ExportOptions) {
-  if (options.search) {
-    const terms = options.search.split(" ").map((w) => `%${w}%`);
-    base.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
-  }
-  if (options.startDate) base.push(gte(events.createdAt, options.startDate));
-  if (options.endDate) base.push(lte(events.createdAt, options.endDate));
-  if (options.tags?.length) {
-    for (const tagFilter of options.tags) base.push(buildTagCondition(tagFilter));
-  }
+  applyFilterConditions(base, options);
   return base;
 }
 
@@ -470,13 +416,13 @@ export async function exportChannelEvents(
   options: ExportOptions,
 ): Promise<EventWithChannelName[]> {
   const conditions = buildExportConditions([eq(events.channelId, channelId)], options);
-  const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
 
   const eventData = await db
     .select({
       id: events.id,
-      name: events.name,
+      eventObject: events.eventObject,
+      eventAction: events.eventAction,
+      title: events.title,
       description: events.description,
       icon: events.icon,
       projectId: events.projectId,
@@ -486,7 +432,7 @@ export async function exportChannelEvents(
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
-    .orderBy(orderFn(orderColumn));
+    .orderBy(...getOrderBy(options));
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
   return eventData.map((e) => ({
@@ -502,13 +448,13 @@ export async function exportProjectEvents(
   options: ExportOptions,
 ): Promise<EventWithChannelName[]> {
   const conditions = buildExportConditions([eq(events.projectId, projectId)], options);
-  const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
 
   const eventData = await db
     .select({
       id: events.id,
-      name: events.name,
+      eventObject: events.eventObject,
+      eventAction: events.eventAction,
+      title: events.title,
       description: events.description,
       icon: events.icon,
       projectId: events.projectId,
@@ -518,7 +464,7 @@ export async function exportProjectEvents(
     .from(events)
     .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
-    .orderBy(orderFn(orderColumn));
+    .orderBy(...getOrderBy(options));
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
   return eventData.map((e) => ({
@@ -529,8 +475,43 @@ export async function exportProjectEvents(
   }));
 }
 
+export async function getDistinctEventObjects(
+  scope: { projectId: number } | { channelId: number },
+): Promise<string[]> {
+  const filter =
+    "projectId" in scope
+      ? eq(events.projectId, scope.projectId)
+      : eq(events.channelId, scope.channelId);
+  const rows = await db
+    .selectDistinct({ value: events.eventObject })
+    .from(events)
+    .where(and(filter, ne(events.eventObject, RESERVED_OBJECT)))
+    .orderBy(asc(events.eventObject));
+  return rows.map((r) => r.value);
+}
+
+export async function getDistinctEventActions(
+  scope: { projectId: number } | { channelId: number },
+  object?: string,
+): Promise<string[]> {
+  const filter =
+    "projectId" in scope
+      ? eq(events.projectId, scope.projectId)
+      : eq(events.channelId, scope.channelId);
+  const objectFilter = object
+    ? eq(events.eventObject, object)
+    : ne(events.eventObject, RESERVED_OBJECT);
+  const rows = await db
+    .selectDistinct({ value: events.eventAction })
+    .from(events)
+    .where(and(filter, objectFilter))
+    .orderBy(asc(events.eventAction));
+  return rows.map((r) => r.value);
+}
+
 export async function createEvent({
   name,
+  title,
   description,
   icon,
   channel,
@@ -538,13 +519,22 @@ export async function createEvent({
   tags,
 }: {
   name: string;
+  title: string;
   description?: string;
   icon?: string;
   channel: string;
   apiKey: string;
   tags?: Record<string, string | number | boolean>;
 }): Promise<EventWithChannelName> {
-  // check if channel exists first
+  const match = name.match(EVENT_NAME_REGEX);
+  if (!match) {
+    throw new Error("name must follow the object.action convention (e.g. server.status_changed).");
+  }
+  const [eventObject, eventAction] = name.split(".");
+  if (eventObject === RESERVED_OBJECT) {
+    throw new Error("'legacy' is a reserved object name.");
+  }
+
   const channelsRes = await db.select().from(channels).where(eq(channels.name, channel));
 
   if (channelsRes.length === 0) {
@@ -553,7 +543,6 @@ export async function createEvent({
 
   const channelId = channelsRes[0].id;
 
-  // validate api key
   const project = await getProject(channelsRes[0].projectId);
   const projectId = project.id;
 
@@ -563,11 +552,12 @@ export async function createEvent({
 
   const res = await db
     .insert(events)
-    .values({ name, description, icon, projectId, channelId })
+    .values({ eventObject, eventAction, title, description, icon, projectId, channelId })
     .returning();
 
   const event = res[0];
 
+  let tagPayload: TagPrimitive = {};
   if (tags) {
     const tagEntries = Object.entries(tags).map(([key, value]) => ({
       eventId: event.id,
@@ -577,27 +567,17 @@ export async function createEvent({
     }));
 
     await db.insert(eventTags).values(tagEntries);
-
-    return {
-      id: event.id,
-      name: event.name,
-      icon: event.icon,
-      description: event.description,
-      tags: tags,
-      projectId: project.id,
-      channelName: channelsRes[0].name,
-      createdAt: event.createdAt,
-      read: false,
-      bookmarked: false,
-    };
+    tagPayload = tags;
   }
 
   return {
     id: event.id,
-    name: event.name,
+    eventObject: event.eventObject,
+    eventAction: event.eventAction,
+    title: event.title,
     icon: event.icon,
     description: event.description,
-    tags: {},
+    tags: tagPayload,
     projectId: project.id,
     channelName: channelsRes[0].name,
     createdAt: event.createdAt,

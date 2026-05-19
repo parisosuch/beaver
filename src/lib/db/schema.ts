@@ -61,7 +61,9 @@ export const events = sqliteTable(
   "events",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    name: text("name").notNull(),
+    eventObject: text("event_object").notNull(),
+    eventAction: text("event_action").notNull(),
+    title: text("title").notNull(),
     description: text("description"),
     icon: text("icon"),
     projectId: integer("project_id")
@@ -83,15 +85,15 @@ export const events = sqliteTable(
       table.projectId,
       table.createdAt,
     ),
-    channelNameIdIdx: index("events_channel_id_name_id_idx").on(
-      table.channelId,
-      table.name,
-      table.id,
-    ),
-    projectNameIdIdx: index("events_project_id_name_id_idx").on(
+    projectObjActIdx: index("events_project_id_event_object_event_action_idx").on(
       table.projectId,
-      table.name,
-      table.id,
+      table.eventObject,
+      table.eventAction,
+    ),
+    channelObjActIdx: index("events_channel_id_event_object_event_action_idx").on(
+      table.channelId,
+      table.eventObject,
+      table.eventAction,
     ),
   }),
 );
