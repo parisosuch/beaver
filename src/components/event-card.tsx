@@ -26,7 +26,12 @@ const EventCard = memo(function EventCard({ event }: { event: EventWithChannelNa
             <p className="text-xl">{event.icon ? `${event.icon} ` : "🪵"}</p>
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-medium">{event.name}</h2>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-0.5">
+              <span>{event.eventObject}</span>
+              <span>·</span>
+              <span>{event.eventAction}</span>
+            </div>
+            <h2 className="text-xl font-medium truncate">{event.title}</h2>
             <div className="flex space-x-2 items-center text-sm text-muted-foreground">
               <p># {event.channelName}</p>
               <p>{getEventTime(new Date(event.createdAt))}</p>

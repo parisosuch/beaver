@@ -5,7 +5,6 @@ import {
   type SortOrder,
 } from "@/lib/beaver/event";
 
-// Paginated endpoint
 export async function GET({
   params,
   url,
@@ -17,12 +16,15 @@ export async function GET({
 }) {
   try {
     const { projectID } = params;
-    const search = url.searchParams.get("search"); // string
+    const title = url.searchParams.get("title");
+    const object = url.searchParams.get("object");
+    const action = url.searchParams.get("action");
 
     let limit;
     let beforeId;
     let afterId;
-    let cursorName: string | undefined;
+    let cursorObject: string | undefined;
+    let cursorAction: string | undefined;
     let cursorId: number | undefined;
 
     if (url.searchParams.get("limit")) {
@@ -34,12 +36,16 @@ export async function GET({
     if (url.searchParams.get("afterId")) {
       afterId = parseInt(url.searchParams.get("afterId")!);
     }
-    if (url.searchParams.get("cursorName") && url.searchParams.get("cursorId")) {
-      cursorName = url.searchParams.get("cursorName")!;
+    if (
+      url.searchParams.get("cursorObject") &&
+      url.searchParams.get("cursorAction") &&
+      url.searchParams.get("cursorId")
+    ) {
+      cursorObject = url.searchParams.get("cursorObject")!;
+      cursorAction = url.searchParams.get("cursorAction")!;
       cursorId = parseInt(url.searchParams.get("cursorId")!);
     }
 
-    // Date range params
     let startDate: Date | undefined;
     let endDate: Date | undefined;
     if (url.searchParams.get("startDate")) {
@@ -49,7 +55,6 @@ export async function GET({
       endDate = new Date(url.searchParams.get("endDate")!);
     }
 
-    // Tag filter params
     let tags: TagFilter[] = [];
     if (url.searchParams.get("tags")) {
       try {
@@ -65,11 +70,14 @@ export async function GET({
     const events = await getProjectEvents(
       parseInt(projectID),
       {
-        search,
+        title,
+        object,
+        action,
         limit,
         beforeId,
         afterId,
-        cursorName,
+        cursorObject,
+        cursorAction,
         cursorId,
         startDate,
         endDate,

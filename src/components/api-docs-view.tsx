@@ -283,6 +283,34 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
               Send events to a specific channel in your project.
             </p>
+            <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-5 mb-6">
+              <p className="text-blue-800 dark:text-blue-300 font-semibold mb-2">
+                Event naming convention
+              </p>
+              <p className="text-blue-700 dark:text-blue-400 text-sm mb-2">
+                Every event has a machine identifier (
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">name</code>) in{" "}
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">object.action</code>{" "}
+                form and a human-readable{" "}
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">title</code>. Names must
+                match{" "}
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">
+                  /^[a-z][a-z_]*\.[a-z][a-z_]*$/
+                </code>{" "}
+                — lowercase, letters and underscores, exactly two segments.
+              </p>
+              <p className="text-blue-700 dark:text-blue-400 text-sm">
+                Examples:{" "}
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">user.signed_up</code>,{" "}
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">payment.completed</code>
+                ,{" "}
+                <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">
+                  server.status_changed
+                </code>
+                . The <code className="bg-blue-100 dark:bg-white/10 px-1 rounded">legacy</code>{" "}
+                object is reserved for migrated events and cannot be sent.
+              </p>
+            </div>
 
             {/* Endpoint */}
             <div className="flex items-center gap-4 p-4 bg-gray-900 rounded-xl mb-8">
@@ -383,7 +411,35 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                       <Badge variant="success">Yes</Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      The name/title of the event
+                      Machine identifier in{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">
+                        object.action
+                      </code>{" "}
+                      form (e.g.{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">
+                        server.status_changed
+                      </code>
+                      ). Must match{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">
+                        /^[a-z][a-z_]*\.[a-z][a-z_]*$/
+                      </code>
+                      . The{" "}
+                      <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">legacy</code>{" "}
+                      object is reserved.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <code className="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">
+                        title
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Yes</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      Human-readable description of this specific event instance
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
@@ -492,7 +548,8 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ${displayKey}" \\
   -d '{
-    "name": "User Signed Up",
+    "name": "user.signed_up",
+    "title": "New user registered via Google",
     "channel": "signups",
     "description": "New user registration",
     "icon": "🎉",
@@ -517,7 +574,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 language="json"
                 code={`{
   "id": 123,
-  "name": "User Signed Up",
+  "eventObject": "user",
+  "eventAction": "signed_up",
+  "title": "New user registered via Google",
   "description": "New user registration",
   "icon": "🎉",
   "tags": {
@@ -551,6 +610,27 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 language="json"
                 code={`{
   "error": "name is a required field."
+}`}
+              />
+              <CodeBlock
+                title="400 Bad Request - Missing title"
+                language="json"
+                code={`{
+  "error": "title is a required field."
+}`}
+              />
+              <CodeBlock
+                title="400 Bad Request - Non-conforming name"
+                language="json"
+                code={`{
+  "error": "name must follow the object.action convention (e.g. server.status_changed)."
+}`}
+              />
+              <CodeBlock
+                title="400 Bad Request - Reserved object"
+                language="json"
+                code={`{
+  "error": "'legacy' is a reserved object name."
 }`}
               />
               <CodeBlock
@@ -624,7 +704,8 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ${displayKey}" \\
   -d '{
-    "name": "Deployment Failed",
+    "name": "deploy.failed",
+    "title": "Production deploy failed on step 3",
     "channel": "alerts",
     "description": "Production deploy failed on step 3",
     "icon": "🚨",
@@ -1093,6 +1174,7 @@ async function sendEvent(eventData) {
     },
     body: JSON.stringify({
       name: eventData.name,
+      title: eventData.title,
       channel: eventData.channel,
       description: eventData.description,
       icon: eventData.icon,
@@ -1105,7 +1187,8 @@ async function sendEvent(eventData) {
 
 // Usage
 await sendEvent({
-  name: 'Payment Received',
+  name: 'payment.completed',
+  title: 'Customer paid $99.99',
   channel: 'payments',
   description: 'Customer completed checkout',
   icon: '💰',
@@ -1128,12 +1211,13 @@ await sendEvent({
 
 API_KEY = '${displayKey}'
 
-def send_event(name, channel, description=None, icon=None, tags=None):
+def send_event(name, title, channel, description=None, icon=None, tags=None):
     response = requests.post(
         '${baseUrl}/api/event',
         headers={'X-API-Key': API_KEY},
         json={
             'name': name,
+            'title': title,
             'channel': channel,
             'description': description,
             'icon': icon,
@@ -1144,7 +1228,8 @@ def send_event(name, channel, description=None, icon=None, tags=None):
 
 # Usage
 send_event(
-    name='Deployment Complete',
+    name='deploy.completed',
+    title='v2.1.0 deployed to production',
     channel='deployments',
     description='v2.1.0 deployed to production',
     icon='🚀',
@@ -1175,6 +1260,7 @@ const apiKey = "${displayKey}"
 
 type Event struct {
     Name        string            \`json:"name"\`
+    Title       string            \`json:"title"\`
     Channel     string            \`json:"channel"\`
     Description string            \`json:"description,omitempty"\`
     Icon        string            \`json:"icon,omitempty"\`
@@ -1208,7 +1294,8 @@ func sendEvent(event Event) error {
 // Usage
 func main() {
     sendEvent(Event{
-        Name:        "Server Started",
+        Name:        "server.started",
+        Title:       "Application server initialized",
         Channel:     "server-events",
         Description: "Application server initialized",
         Icon:        "✅",
