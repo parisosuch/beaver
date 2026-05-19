@@ -1,5 +1,11 @@
 import { db } from "../db/db";
-import { events, eventTags } from "../db/schema";
+import {
+  events,
+  eventTags,
+  projects as projectsTable,
+  channels as channelsTable,
+} from "../db/schema";
+import { eq, and } from "drizzle-orm";
 import { createUser, getUserByUsername } from "../beaver/user";
 import { createProject } from "../beaver/project";
 import { createChannel } from "../beaver/channel";
@@ -39,12 +45,21 @@ async function seed() {
       console.log(`Created project: ${project.name}`);
       projects.push(project);
     } catch {
-      console.log(`Project "${p.name}" already exists, skipping...`);
+      const [existing] = await db
+        .select()
+        .from(projectsTable)
+        .where(eq(projectsTable.name, p.name));
+      if (existing) {
+        console.log(`Project "${p.name}" already exists, reusing.`);
+        projects.push(existing);
+      } else {
+        console.log(`Project "${p.name}" failed to create and could not be found.`);
+      }
     }
   }
 
-  if (projects.length === 0) {
-    console.log("\nNo new projects created. Database may already be seeded.");
+  if (projects.length < 2) {
+    console.log("\nCould not resolve both projects. Aborting.");
     return;
   }
 
@@ -94,14 +109,25 @@ async function seed() {
       console.log(`Created channel: ${channel.name}`);
       channelMap[`${c.projectId}-${c.name}`] = channel;
     } catch {
-      console.log(`Channel "${c.name}" already exists, skipping...`);
+      const [existing] = await db
+        .select()
+        .from(channelsTable)
+        .where(and(eq(channelsTable.projectId, c.projectId), eq(channelsTable.name, c.name)));
+      if (existing) {
+        console.log(`Channel "${c.name}" already exists, reusing.`);
+        channelMap[`${c.projectId}-${c.name}`] = existing;
+      } else {
+        console.log(`Channel "${c.name}" failed to create and could not be found.`);
+      }
     }
   }
 
   // Event templates
   const ecomTemplates = [
     {
-      name: "New Sale",
+      eventObject: "sale",
+      eventAction: "completed",
+      title: "New Sale",
       descriptions: [
         "A customer completed a purchase",
         "Premium subscription purchased",
@@ -151,7 +177,9 @@ async function seed() {
       ],
     },
     {
-      name: "Refund Issued",
+      eventObject: "refund",
+      eventAction: "issued",
+      title: "Refund Issued",
       descriptions: [
         "Customer requested a full refund",
         "Partial refund for damaged item",
@@ -170,7 +198,9 @@ async function seed() {
       ],
     },
     {
-      name: "Cart Abandoned",
+      eventObject: "cart",
+      eventAction: "abandoned",
+      title: "Cart Abandoned",
       descriptions: [
         "User left items in cart",
         "Cart expired after 24 hours",
@@ -188,7 +218,9 @@ async function seed() {
       ],
     },
     {
-      name: "Payment Error",
+      eventObject: "payment",
+      eventAction: "failed",
+      title: "Payment Error",
       descriptions: [
         "Credit card declined",
         "Insufficient funds",
@@ -215,7 +247,9 @@ async function seed() {
       ],
     },
     {
-      name: "API Error",
+      eventObject: "request",
+      eventAction: "failed",
+      title: "API Error",
       descriptions: [
         "Internal server error on /api/checkout",
         "Database connection timeout",
@@ -237,7 +271,9 @@ async function seed() {
       ],
     },
     {
-      name: "Validation Error",
+      eventObject: "validation",
+      eventAction: "failed",
+      title: "Validation Error",
       descriptions: [
         "Invalid email format",
         "Password too short",
@@ -255,7 +291,9 @@ async function seed() {
       ],
     },
     {
-      name: "User Signup",
+      eventObject: "user",
+      eventAction: "signed_up",
+      title: "User Signup",
       descriptions: [
         "New user registered via Google OAuth",
         "New user registered via email",
@@ -279,7 +317,9 @@ async function seed() {
       ],
     },
     {
-      name: "Account Deleted",
+      eventObject: "account",
+      eventAction: "deleted",
+      title: "Account Deleted",
       descriptions: [
         "User requested account deletion",
         "Account removed due to inactivity",
@@ -295,7 +335,9 @@ async function seed() {
       ],
     },
     {
-      name: "Email Sent",
+      eventObject: "email",
+      eventAction: "sent",
+      title: "Email Sent",
       descriptions: [
         "Welcome email delivered",
         "Password reset email sent",
@@ -333,7 +375,9 @@ async function seed() {
       ],
     },
     {
-      name: "Push Notification",
+      eventObject: "push",
+      eventAction: "sent",
+      title: "Push Notification",
       descriptions: [
         "Flash sale alert sent",
         "Order status update pushed",
@@ -356,7 +400,9 @@ async function seed() {
 
   const mobileTemplates = [
     {
-      name: "In-App Purchase",
+      eventObject: "purchase",
+      eventAction: "completed",
+      title: "In-App Purchase",
       descriptions: [
         "User bought premium features",
         "Coin pack purchased",
@@ -380,7 +426,9 @@ async function seed() {
       ],
     },
     {
-      name: "Subscription Renewed",
+      eventObject: "subscription",
+      eventAction: "renewed",
+      title: "Subscription Renewed",
       descriptions: [
         "Monthly subscription auto-renewed",
         "Annual plan renewed",
@@ -400,7 +448,9 @@ async function seed() {
       ],
     },
     {
-      name: "Subscription Cancelled",
+      eventObject: "subscription",
+      eventAction: "cancelled",
+      title: "Subscription Cancelled",
       descriptions: [
         "User cancelled monthly plan",
         "Annual plan not renewed",
@@ -416,7 +466,9 @@ async function seed() {
       ],
     },
     {
-      name: "App Crash",
+      eventObject: "app",
+      eventAction: "crashed",
+      title: "App Crash",
       descriptions: [
         "Crash in checkout flow",
         "Crash on app launch",
@@ -444,7 +496,9 @@ async function seed() {
       ],
     },
     {
-      name: "ANR Detected",
+      eventObject: "anr",
+      eventAction: "detected",
+      title: "ANR Detected",
       descriptions: [
         "Application not responding on main thread",
         "ANR during database query",
@@ -462,7 +516,9 @@ async function seed() {
       ],
     },
     {
-      name: "Screen View",
+      eventObject: "screen",
+      eventAction: "viewed",
+      title: "Screen View",
       descriptions: [
         "User viewed home screen",
         "User viewed profile page",
@@ -492,7 +548,9 @@ async function seed() {
       ],
     },
     {
-      name: "Feature Used",
+      eventObject: "feature",
+      eventAction: "used",
+      title: "Feature Used",
       descriptions: [
         "User used dark mode toggle",
         "User exported data",
@@ -514,7 +572,9 @@ async function seed() {
       ],
     },
     {
-      name: "Session Started",
+      eventObject: "session",
+      eventAction: "started",
+      title: "Session Started",
       descriptions: [
         "New app session began",
         "User returned after background",
@@ -534,7 +594,9 @@ async function seed() {
       ],
     },
     {
-      name: "User Feedback",
+      eventObject: "feedback",
+      eventAction: "submitted",
+      title: "User Feedback",
       descriptions: [
         "User submitted app rating",
         "Bug report submitted",
@@ -581,7 +643,9 @@ async function seed() {
       const res = await db
         .insert(events)
         .values({
-          name: template.name,
+          eventObject: template.eventObject,
+          eventAction: template.eventAction,
+          title: template.title,
           description: template.descriptions[descIndex],
           icon: template.icon,
           projectId: template.projectId,
@@ -608,7 +672,7 @@ async function seed() {
         console.log(`  Created ${eventCount} events...`);
       }
     } catch (err) {
-      console.log(`Failed to create event "${template.name}": ${err}`);
+      console.log(`Failed to create event "${template.title}": ${err}`);
     }
   }
 

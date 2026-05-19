@@ -2,9 +2,10 @@ import { getChannelEvents, type TagFilter } from "@/lib/beaver/event";
 
 export async function GET({ params, url }: { params: { channelID: string }; url: URL }) {
   const { channelID } = params;
-  const search = url.searchParams.get("search");
+  const title = url.searchParams.get("title");
+  const object = url.searchParams.get("object");
+  const action = url.searchParams.get("action");
 
-  // Date range params
   let startDate: Date | undefined;
   let endDate: Date | undefined;
   if (url.searchParams.get("startDate")) {
@@ -14,7 +15,6 @@ export async function GET({ params, url }: { params: { channelID: string }; url:
     endDate = new Date(url.searchParams.get("endDate")!);
   }
 
-  // Tag filter params
   let tags: TagFilter[] = [];
   if (url.searchParams.get("tags")) {
     try {
@@ -34,10 +34,8 @@ export async function GET({ params, url }: { params: { channelID: string }; url:
 
   const encoder = new TextEncoder();
 
-  // TODO: handle limits which in this case shouldn't have a limit.
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial comment to flush headers through reverse proxies
       controller.enqueue(encoder.encode(": ok\n\n"));
 
       async function sendEvents() {
@@ -49,7 +47,9 @@ export async function GET({ params, url }: { params: { channelID: string }; url:
 
           while (true) {
             const events = await getChannelEvents(parseInt(channelID), {
-              search,
+              title,
+              object,
+              action,
               afterId,
               startDate,
               endDate,

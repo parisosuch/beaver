@@ -37,12 +37,14 @@ function buildEmailHtml(event: EventWithChannelName, projectName: string): strin
     ? `<p style="margin:8px 0 0;font-size:15px;color:#6b7280;line-height:1.6;">${event.description}</p>`
     : "";
 
+  const eventName = `${event.eventObject}.${event.eventAction}`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>${event.name}</title>
+  <title>${event.title}</title>
 </head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 0;">
@@ -64,7 +66,8 @@ function buildEmailHtml(event: EventWithChannelName, projectName: string): strin
           <tr>
             <td style="background:#ffffff;padding:32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
               ${iconHtml}
-              <h1 style="margin:0;font-size:22px;font-weight:700;color:#111827;line-height:1.3;">${event.name}</h1>
+              <p style="margin:0 0 6px;font-size:12px;font-family:monospace;color:#9ca3af;letter-spacing:0.05em;">${eventName}</p>
+              <h1 style="margin:0;font-size:22px;font-weight:700;color:#111827;line-height:1.3;">${event.title}</h1>
               ${descHtml}
 
               ${tagsHtml}
@@ -106,7 +109,7 @@ export async function sendEventNotification(
   await resend.emails.send({
     from: fromEmail,
     to: recipientEmails,
-    subject: `${event.icon ? `${event.icon} ` : ""}${event.name} — ${projectName}`,
+    subject: `${event.icon ? `${event.icon} ` : ""}${event.title} — ${projectName}`,
     html: buildEmailHtml(event, projectName),
   });
 }

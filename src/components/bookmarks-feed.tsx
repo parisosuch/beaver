@@ -2,16 +2,17 @@ import type { EventWithChannelName } from "@/lib/beaver/event";
 import type { Channel } from "@/lib/beaver/channel";
 import { useEffect, useState } from "react";
 import EventCard from "./event-card";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { SearchIcon, BookmarkIcon } from "lucide-react";
+import EventSearchBar from "./event-search-bar";
+import { BookmarkIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import EventFilterDialog from "./event-filter-dialog";
 
 export default function BookmarksFeed({
   projectID,
   channels,
-  search,
+  title,
+  object,
+  action,
   startDate,
   endDate,
   tags,
@@ -19,7 +20,9 @@ export default function BookmarksFeed({
 }: {
   projectID: number;
   channels: Channel[];
-  search?: string | null;
+  title?: string | null;
+  object?: string | null;
+  action?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   tags?: string | null;
@@ -27,7 +30,6 @@ export default function BookmarksFeed({
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState(search ?? "");
 
   const parsedTags = (() => {
     try {
@@ -46,7 +48,13 @@ export default function BookmarksFeed({
     window.location.href = url.toString();
   };
 
-  const handleSearch = () => navigate({ search: searchInput || null });
+  const handleSearchApply = (next: {
+    title: string | null;
+    object: string | null;
+    action: string | null;
+  }) => {
+    navigate({ title: next.title, object: next.object, action: next.action });
+  };
 
   const handleApplyFilters = (start: string | null, end: string | null, newTags: any[]) => {
     navigate({
@@ -62,7 +70,9 @@ export default function BookmarksFeed({
 
   useEffect(() => {
     const params = new URLSearchParams({ projectId: String(projectID) });
-    if (search) params.set("search", search);
+    if (title) params.set("title", title);
+    if (object) params.set("object", object);
+    if (action) params.set("action", action);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (tags) params.set("tags", tags);
@@ -74,7 +84,7 @@ export default function BookmarksFeed({
         if (Array.isArray(data)) setEvents(data);
       })
       .finally(() => setLoading(false));
-  }, [projectID, search, startDate, endDate, tags, channelId]);
+  }, [projectID, title, object, action, startDate, endDate, tags, channelId]);
 
   return (
     <div className="w-full flex flex-col">
@@ -106,17 +116,14 @@ export default function BookmarksFeed({
             />
           </div>
           <div className="flex gap-2 items-center">
-            <Input
-              placeholder="Search..."
-              type="text"
-              className="flex-1"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            <EventSearchBar
+              type="project"
+              projectID={projectID}
+              title={title ?? null}
+              object={object ?? null}
+              action={action ?? null}
+              onApply={handleSearchApply}
             />
-            <Button variant="secondary" onClick={handleSearch}>
-              <SearchIcon />
-            </Button>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { createEvent } from "@/lib/beaver/event";
+import { createEvent, EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
 import { getProject } from "@/lib/beaver/project";
 import { getNotificationEmails } from "@/lib/beaver/user";
 import { sendEventNotification } from "@/lib/email/resend";
@@ -6,39 +6,50 @@ import type { APIContext, APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }: APIContext) => {
   try {
-    // extract API key from header
     const apiKey = request.headers.get("X-API-Key");
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "X-API-Key header is required." }), {
         status: 401,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
-    // extract body and verify contents
-    const { name, description, icon, channel, tags, notify } = await request.json();
+    const { name, title, description, icon, channel, tags, notify } = await request.json();
 
     if (!name) {
       return new Response(JSON.stringify({ error: "name is a required field." }), {
         status: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (typeof name !== "string" || !EVENT_NAME_REGEX.test(name)) {
+      return new Response(
+        JSON.stringify({
+          error: "name must follow the object.action convention (e.g. server.status_changed).",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (name.split(".")[0] === RESERVED_OBJECT) {
+      return new Response(JSON.stringify({ error: "'legacy' is a reserved object name." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!title || typeof title !== "string" || title.trim() === "") {
+      return new Response(JSON.stringify({ error: "title is a required field." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
       });
     }
     if (!channel) {
       return new Response(JSON.stringify({ error: "channel is a required field." }), {
         status: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
-    // TODO: there is a better way to do this but this will work for now
     let tagObj;
 
     if (tags) {
@@ -58,6 +69,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
 
     const event = await createEvent({
       name,
+      title,
       description,
       icon,
       channel,
@@ -77,9 +89,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
 
     return new Response(JSON.stringify(event), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     if (err instanceof Error) {
