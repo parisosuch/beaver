@@ -460,7 +460,7 @@ export default function EventFeed({
   return (
     <div className="w-full max-h-screen flex flex-col">
       {/* Header */}
-      <div className="w-full flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b gap-4">
+      <div className="w-full flex flex-col p-4 md:p-8 border-b gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold">
@@ -476,58 +476,52 @@ export default function EventFeed({
             <p className="text-sm text-muted-foreground mt-1">{channel.description}</p>
           )}
         </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2 items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <DownloadIcon className="size-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport("json")}>
-                  Export as JSON
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport("csv")}>
-                  Export as CSV
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <EventFilterDialog
-              type={type}
-              projectID={projectID}
-              channelID={channel?.id}
-              currentStartDate={startDate ?? null}
-              currentEndDate={endDate ?? null}
-              currentTags={parsedTags}
-              onApplyFilters={handleApplyFilters}
-            />
-            <Select value={currentSort} onValueChange={handleSortChange}>
-              <SelectTrigger className="w-full sm:w-[160px] gap-2">
-                <ArrowUpDownIcon className="size-4 shrink-0" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2 items-center">
-            <EventSearchBar
-              type={type}
-              projectID={projectID}
-              channelID={channel?.id}
-              title={title ?? null}
-              object={object ?? null}
-              action={action ?? null}
-              onApply={handleSearchApply}
-            />
-          </div>
+        <EventSearchBar
+          type={type}
+          projectID={projectID}
+          channelID={channel?.id}
+          title={title ?? null}
+          object={object ?? null}
+          action={action ?? null}
+          onApply={handleSearchApply}
+        />
+        <div className="flex flex-wrap gap-2 items-center">
+          <EventFilterDialog
+            type={type}
+            projectID={projectID}
+            channelID={channel?.id}
+            currentStartDate={startDate ?? null}
+            currentEndDate={endDate ?? null}
+            currentTags={parsedTags}
+            onApplyFilters={handleApplyFilters}
+          />
+          <Select value={currentSort} onValueChange={handleSortChange}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px] gap-2">
+              <ArrowUpDownIcon className="size-4 shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <DownloadIcon className="size-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("json")}>
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

@@ -1,5 +1,11 @@
 import { db } from "../db/db";
-import { events, eventTags } from "../db/schema";
+import {
+  events,
+  eventTags,
+  projects as projectsTable,
+  channels as channelsTable,
+} from "../db/schema";
+import { eq, and } from "drizzle-orm";
 import { createUser, getUserByUsername } from "../beaver/user";
 import { createProject } from "../beaver/project";
 import { createChannel } from "../beaver/channel";
@@ -39,12 +45,21 @@ async function seed() {
       console.log(`Created project: ${project.name}`);
       projects.push(project);
     } catch {
-      console.log(`Project "${p.name}" already exists, skipping...`);
+      const [existing] = await db
+        .select()
+        .from(projectsTable)
+        .where(eq(projectsTable.name, p.name));
+      if (existing) {
+        console.log(`Project "${p.name}" already exists, reusing.`);
+        projects.push(existing);
+      } else {
+        console.log(`Project "${p.name}" failed to create and could not be found.`);
+      }
     }
   }
 
-  if (projects.length === 0) {
-    console.log("\nNo new projects created. Database may already be seeded.");
+  if (projects.length < 2) {
+    console.log("\nCould not resolve both projects. Aborting.");
     return;
   }
 
@@ -94,7 +109,16 @@ async function seed() {
       console.log(`Created channel: ${channel.name}`);
       channelMap[`${c.projectId}-${c.name}`] = channel;
     } catch {
-      console.log(`Channel "${c.name}" already exists, skipping...`);
+      const [existing] = await db
+        .select()
+        .from(channelsTable)
+        .where(and(eq(channelsTable.projectId, c.projectId), eq(channelsTable.name, c.name)));
+      if (existing) {
+        console.log(`Channel "${c.name}" already exists, reusing.`);
+        channelMap[`${c.projectId}-${c.name}`] = existing;
+      } else {
+        console.log(`Channel "${c.name}" failed to create and could not be found.`);
+      }
     }
   }
 
