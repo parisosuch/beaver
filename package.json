@@ -13,7 +13,9 @@
     "astro": "astro",
     "migrate": "bun src/lib/db/migrate.ts",
     "seed": "bun src/lib/db/seed.ts",
-    "reset-admin": "bun src/scripts/reset-admin.ts"
+    "reset-admin": "bun src/scripts/reset-admin.ts",
+    "rename-event-object": "bun src/scripts/rename-event-object.ts",
+    "rename-event-action": "bun src/scripts/rename-event-action.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.0",

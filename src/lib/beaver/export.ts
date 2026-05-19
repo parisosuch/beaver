@@ -17,7 +17,9 @@ export function parseExportOptions(url: URL) {
   }
 
   return {
-    search: url.searchParams.get("search"),
+    title: url.searchParams.get("title"),
+    object: url.searchParams.get("object"),
+    action: url.searchParams.get("action"),
     startDate,
     endDate,
     tags,
@@ -40,11 +42,13 @@ function csvEscape(value: string): string {
 }
 
 function toCSV(events: ExportEvent[]): string {
-  const header = "id,name,description,icon,channelName,projectId,createdAt,tags";
+  const header = "id,object,action,title,description,icon,channelName,projectId,createdAt,tags";
   const rows = events.map((e) =>
     [
       e.id,
-      csvEscape(e.name),
+      csvEscape(e.eventObject),
+      csvEscape(e.eventAction),
+      csvEscape(e.title),
       csvEscape(e.description ?? ""),
       csvEscape(e.icon ?? ""),
       csvEscape(e.channelName),

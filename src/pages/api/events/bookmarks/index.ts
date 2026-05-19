@@ -26,7 +26,9 @@ export async function GET({ url, locals }: { url: URL; locals: App.Locals }) {
   }
 
   const events = await getBookmarkedEvents(user.id, parseInt(projectId), {
-    search: url.searchParams.get("search"),
+    title: url.searchParams.get("title"),
+    object: url.searchParams.get("object"),
+    action: url.searchParams.get("action"),
     channelId: channelId ? parseInt(channelId) : undefined,
     startDate,
     endDate,

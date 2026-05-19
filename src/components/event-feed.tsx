@@ -12,12 +12,12 @@ const fetchMaxEventId = async (): Promise<number> => {
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
-import { Input } from "./ui/input";
-import { SearchIcon, XIcon, ArrowUpDownIcon, DownloadIcon } from "lucide-react";
+import { XIcon, ArrowUpDownIcon, DownloadIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
 import EventFilterDialog from "./event-filter-dialog";
+import EventSearchBar from "./event-search-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   DropdownMenu,
@@ -52,7 +52,9 @@ export default function EventFeed({
   type,
   projectID,
   channel,
-  search,
+  title,
+  object,
+  action,
   startDate,
   endDate,
   tags,
@@ -62,7 +64,9 @@ export default function EventFeed({
   type: "channel" | "project";
   projectID?: number;
   channel?: Channel;
-  search?: string | null;
+  title?: string | null;
+  object?: string | null;
+  action?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   tags?: string | null;
@@ -72,7 +76,6 @@ export default function EventFeed({
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [searchInput, setSearchInput] = useState(search ?? "");
   const [eventCount, setEventCount] = useState<number | null>(null);
   const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
 
@@ -86,14 +89,11 @@ export default function EventFeed({
   const trickleQueueRef = useRef<EventWithChannelName[]>([]);
   const trickleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Parse tags from URL param
   const parsedTags: TagFilter[] = tags ? JSON.parse(tags) : [];
 
-  // Keep refs in sync with state
   eventsRef.current = events;
   loadingMoreRef.current = loadingMore;
 
-  // Build the base path for navigation
   const getBasePath = () => {
     if (channel) {
       return `/dashboard/${projectID}/channels/${channel.id}`;
@@ -101,9 +101,10 @@ export default function EventFeed({
     return `/dashboard/${projectID}/feed`;
   };
 
-  // Build URL with current filters
   const buildFilterUrl = (overrides: {
-    search?: string | null;
+    title?: string | null;
+    object?: string | null;
+    action?: string | null;
     startDate?: string | null;
     endDate?: string | null;
     tags?: TagFilter[] | null;
@@ -112,14 +113,18 @@ export default function EventFeed({
   }) => {
     const params = new URLSearchParams();
 
-    const newSearch = overrides.search !== undefined ? overrides.search : search;
+    const newTitle = overrides.title !== undefined ? overrides.title : title;
+    const newObject = overrides.object !== undefined ? overrides.object : object;
+    const newAction = overrides.action !== undefined ? overrides.action : action;
     const newStartDate = overrides.startDate !== undefined ? overrides.startDate : startDate;
     const newEndDate = overrides.endDate !== undefined ? overrides.endDate : endDate;
     const newTags = overrides.tags !== undefined ? overrides.tags : parsedTags;
     const newSortBy = overrides.sortBy !== undefined ? overrides.sortBy : sortBy;
     const newSortOrder = overrides.sortOrder !== undefined ? overrides.sortOrder : sortOrder;
 
-    if (newSearch) params.set("search", newSearch);
+    if (newTitle) params.set("title", newTitle);
+    if (newObject) params.set("object", newObject);
+    if (newAction) params.set("action", newAction);
     if (newStartDate) params.set("startDate", newStartDate);
     if (newEndDate) params.set("endDate", newEndDate);
     if (newTags && newTags.length > 0) params.set("tags", JSON.stringify(newTags));
@@ -130,30 +135,25 @@ export default function EventFeed({
     return queryString ? `${getBasePath()}?${queryString}` : getBasePath();
   };
 
-  const handleSearch = () => {
-    if (!searchInput && !search) return;
-    navigate(buildFilterUrl({ search: searchInput || null }));
+  const handleSearchApply = (next: {
+    title: string | null;
+    object: string | null;
+    action: string | null;
+  }) => {
+    navigate(buildFilterUrl(next));
   };
 
-  // Build filter query params for API calls
   const buildApiFilterParams = (): string => {
     const params: string[] = [];
 
-    if (startDate) {
-      params.push(`startDate=${encodeURIComponent(startDate)}`);
-    }
-    if (endDate) {
-      params.push(`endDate=${encodeURIComponent(endDate)}`);
-    }
-    if (tags) {
-      params.push(`tags=${encodeURIComponent(tags)}`);
-    }
-    if (sortBy) {
-      params.push(`sortBy=${encodeURIComponent(sortBy)}`);
-    }
-    if (sortOrder) {
-      params.push(`sortOrder=${encodeURIComponent(sortOrder)}`);
-    }
+    if (title) params.push(`title=${encodeURIComponent(title)}`);
+    if (object) params.push(`object=${encodeURIComponent(object)}`);
+    if (action) params.push(`action=${encodeURIComponent(action)}`);
+    if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+    if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+    if (tags) params.push(`tags=${encodeURIComponent(tags)}`);
+    if (sortBy) params.push(`sortBy=${encodeURIComponent(sortBy)}`);
+    if (sortOrder) params.push(`sortOrder=${encodeURIComponent(sortOrder)}`);
 
     return params.length > 0 ? `&${params.join("&")}` : "";
   };
@@ -179,16 +179,15 @@ export default function EventFeed({
       const field = sortBy ?? "date";
       const order = sortOrder ?? "desc";
       if (field === "name") {
-        endpoint += `&cursorName=${encodeURIComponent(lastEvent.name)}&cursorId=${lastEvent.id}`;
+        endpoint +=
+          `&cursorObject=${encodeURIComponent(lastEvent.eventObject)}` +
+          `&cursorAction=${encodeURIComponent(lastEvent.eventAction)}` +
+          `&cursorId=${lastEvent.id}`;
       } else if (order === "asc") {
         endpoint += `&afterId=${lastEvent.id}`;
       } else {
         endpoint += `&beforeId=${lastEvent.id}`;
       }
-    }
-
-    if (search) {
-      endpoint += `&search=${encodeURIComponent(search)}`;
     }
 
     endpoint += buildApiFilterParams();
@@ -226,7 +225,6 @@ export default function EventFeed({
     navigate(buildFilterUrl({ startDate: null, endDate: null }));
   };
 
-  // Initial load + SSE setup
   useEffect(() => {
     let eventSource: EventSource | null = null;
 
@@ -252,7 +250,6 @@ export default function EventFeed({
       } else {
         endpoint += `/project/${projectID}/event-stream?afterId=${maxId}`;
       }
-      if (search) endpoint += `&search=${encodeURIComponent(search)}`;
       endpoint += buildApiFilterParams();
 
       eventSource = new EventSource(endpoint);
@@ -301,12 +298,13 @@ export default function EventFeed({
         trickleTimerRef.current = null;
       }
     };
-  }, [projectID, channel, search, startDate, endDate, tags, sortBy, sortOrder]);
+  }, [projectID, channel, title, object, action, startDate, endDate, tags, sortBy, sortOrder]);
 
-  // Fetch total event count scoped to current filters
   useEffect(() => {
     const params = new URLSearchParams();
-    if (search) params.set("search", search);
+    if (title) params.set("title", title);
+    if (object) params.set("object", object);
+    if (action) params.set("action", action);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (tags) params.set("tags", tags);
@@ -319,9 +317,8 @@ export default function EventFeed({
       .then((r) => r.json())
       .then((d) => setEventCount(d.count))
       .catch(() => {});
-  }, [projectID, channel, search, startDate, endDate, tags]);
+  }, [projectID, channel, title, object, action, startDate, endDate, tags]);
 
-  // Mark channel as read, capture lastReadAt for divider
   useEffect(() => {
     if (type !== "channel" || !channel) return;
 
@@ -342,7 +339,6 @@ export default function EventFeed({
       .catch(() => {});
   }, [channel?.id]);
 
-  // Clear unread dots when a channel is marked as read
   useEffect(() => {
     const handler = (e: CustomEvent<{ channelName: string }>) => {
       setEvents((prev) =>
@@ -357,7 +353,6 @@ export default function EventFeed({
   const hasNewEvents =
     lastReadDate != null && events.some((e) => new Date(e.createdAt) > lastReadDate);
 
-  // Build flat rows array (events interleaved with optional divider)
   const rows: Row[] = [];
   let dividerRowIndex = -1;
   for (let i = 0; i < events.length; i++) {
@@ -389,14 +384,12 @@ export default function EventFeed({
 
   const virtualItems = virtualizer.getVirtualItems();
 
-  // Scroll to unread divider once after initial load
   useEffect(() => {
     if (loading || didScrollToDivider.current || dividerRowIndex === -1) return;
     didScrollToDivider.current = true;
     virtualizer.scrollToIndex(dividerRowIndex, { align: "center" });
   }, [loading, dividerRowIndex]);
 
-  // Infinite scroll: load more when virtualizer approaches the end
   useEffect(() => {
     if (loading || virtualItems.length === 0) return;
     const lastItem = virtualItems[virtualItems.length - 1];
@@ -425,7 +418,9 @@ export default function EventFeed({
         ? `/api/events/channel/${channel!.id}/export`
         : `/api/events/project/${projectID}/export`;
     const params = new URLSearchParams({ format });
-    if (search) params.set("search", search);
+    if (title) params.set("title", title);
+    if (object) params.set("object", object);
+    if (action) params.set("action", action);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (tags) params.set("tags", tags);
@@ -523,17 +518,15 @@ export default function EventFeed({
             </Select>
           </div>
           <div className="flex gap-2 items-center">
-            <Input
-              placeholder="Search..."
-              type="text"
-              className="flex-1"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            <EventSearchBar
+              type={type}
+              projectID={projectID}
+              channelID={channel?.id}
+              title={title ?? null}
+              object={object ?? null}
+              action={action ?? null}
+              onApply={handleSearchApply}
             />
-            <Button variant="secondary" onClick={handleSearch}>
-              <SearchIcon />
-            </Button>
           </div>
         </div>
       </div>

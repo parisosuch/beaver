@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { bookmarks, events, channels } from "../db/schema";
-import { eq, and, desc, asc, or, like, gte, lte } from "drizzle-orm";
+import { eq, and, desc, asc, like, gte, lte } from "drizzle-orm";
 import type { EventWithChannelName, TagFilter, SortField, SortOrder } from "./event";
 import { getEventTags } from "./event-tags";
 
@@ -24,7 +24,9 @@ export async function getBookmarkedEvents(
   userId: number,
   projectId: number,
   options: {
-    search?: string | null;
+    title?: string | null;
+    object?: string | null;
+    action?: string | null;
     channelId?: number;
     startDate?: Date;
     endDate?: Date;
@@ -39,18 +41,22 @@ export async function getBookmarkedEvents(
   if (options.startDate) conditions.push(gte(events.createdAt, options.startDate));
   if (options.endDate) conditions.push(lte(events.createdAt, options.endDate));
 
-  if (options.search) {
-    const terms = options.search.split(" ").map((w) => `%${w}%`);
-    conditions.push(...terms.map((t) => or(like(events.name, t), like(events.description, t))));
-  }
+  if (options.title) conditions.push(like(events.title, `%${options.title}%`));
+  if (options.object) conditions.push(eq(events.eventObject, options.object));
+  if (options.action) conditions.push(eq(events.eventAction, options.action));
 
   const orderFn = options.sortOrder === "asc" ? asc : desc;
-  const orderColumn = options.sortBy === "name" ? events.name : events.createdAt;
+  const orderBy =
+    options.sortBy === "name"
+      ? [orderFn(events.eventObject), orderFn(events.eventAction), orderFn(events.id)]
+      : [orderFn(events.createdAt), orderFn(events.id)];
 
   const eventData = await db
     .select({
       id: events.id,
-      name: events.name,
+      eventObject: events.eventObject,
+      eventAction: events.eventAction,
+      title: events.title,
       description: events.description,
       icon: events.icon,
       projectId: events.projectId,
@@ -61,7 +67,7 @@ export async function getBookmarkedEvents(
     .innerJoin(events, eq(bookmarks.eventId, events.id))
     .innerJoin(channels, eq(events.channelId, channels.id))
     .where(and(...conditions))
-    .orderBy(orderFn(orderColumn));
+    .orderBy(...orderBy);
 
   const fetchedTags = await getEventTags(eventData.map((e) => e.id));
   return eventData.map((e) => ({

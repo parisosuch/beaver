@@ -91,7 +91,12 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                   <p className="text-2xl">{event.icon ? event.icon : "🪵"}</p>
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">{event.name}</CardTitle>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-1">
+                    <span>{event.eventObject}</span>
+                    <span>·</span>
+                    <span>{event.eventAction}</span>
+                  </div>
+                  <CardTitle className="text-2xl">{event.title}</CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
                     <span># {event.channelName}</span>
                     <span className="text-muted-foreground">·</span>

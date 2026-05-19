@@ -2,7 +2,9 @@ import { countProjectEvents, type TagFilter } from "@/lib/beaver/event";
 
 export async function GET({ params, url }: { params: { projectID: string }; url: URL }) {
   const projectId = parseInt(params.projectID);
-  const search = url.searchParams.get("search");
+  const title = url.searchParams.get("title");
+  const object = url.searchParams.get("object");
+  const action = url.searchParams.get("action");
   const startDate = url.searchParams.get("startDate")
     ? new Date(url.searchParams.get("startDate")!)
     : undefined;
@@ -16,7 +18,14 @@ export async function GET({ params, url }: { params: { projectID: string }; url:
     } catch {}
   }
 
-  const count = await countProjectEvents(projectId, { search, startDate, endDate, tags });
+  const count = await countProjectEvents(projectId, {
+    title,
+    object,
+    action,
+    startDate,
+    endDate,
+    tags,
+  });
   return new Response(JSON.stringify({ count }), {
     headers: { "Content-Type": "application/json" },
   });
