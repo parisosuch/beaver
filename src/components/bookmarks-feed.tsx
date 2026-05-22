@@ -89,42 +89,38 @@ export default function BookmarksFeed({
   return (
     <div className="w-full flex flex-col">
       {/* Header */}
-      <div className="w-full flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b gap-4">
+      <div className="w-full flex flex-col p-4 md:p-8 border-b gap-4">
         <h1 className="text-2xl font-semibold">Bookmarks</h1>
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2 items-center justify-end">
-            <Select value={channelId ?? "all"} onValueChange={handleChannelFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="All channels" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All channels</SelectItem>
-                {channels.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    # {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <EventFilterDialog
-              type="project"
-              projectID={projectID}
-              currentStartDate={startDate ?? null}
-              currentEndDate={endDate ?? null}
-              currentTags={parsedTags}
-              onApplyFilters={handleApplyFilters}
-            />
-          </div>
-          <div className="flex gap-2 items-center">
-            <EventSearchBar
-              type="project"
-              projectID={projectID}
-              title={title ?? null}
-              object={object ?? null}
-              action={action ?? null}
-              onApply={handleSearchApply}
-            />
-          </div>
+        <EventSearchBar
+          type="project"
+          projectID={projectID}
+          title={title ?? null}
+          object={object ?? null}
+          action={action ?? null}
+          onApply={handleSearchApply}
+        />
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={channelId ?? "all"} onValueChange={handleChannelFilter}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px]">
+              <SelectValue placeholder="All channels" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All channels</SelectItem>
+              {channels.map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  # {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <EventFilterDialog
+            type="project"
+            projectID={projectID}
+            currentStartDate={startDate ?? null}
+            currentEndDate={endDate ?? null}
+            currentTags={parsedTags}
+            onApplyFilters={handleApplyFilters}
+          />
         </div>
       </div>
 
