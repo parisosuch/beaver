@@ -69,7 +69,7 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
   }, [event.id]);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
+    if (sessionStorage.getItem("beaver:hasInAppNav") === "1") {
       window.history.back();
     } else {
       window.location.href = `/dashboard/${event.projectId}/feed`;
