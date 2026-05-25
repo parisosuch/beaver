@@ -1,17 +1,32 @@
-import { createMetric, deleteMetric, getMetrics, updateMetric } from "@/lib/beaver/metric";
+import {
+  createMetric,
+  deleteMetric,
+  getMetrics,
+  getMetricSparklines,
+  updateMetric,
+} from "@/lib/beaver/metric";
 import type { MetricType, ChartType } from "@/lib/beaver/metric";
 import type { APIContext, APIRoute } from "astro";
+import { subDays } from "date-fns";
 
 export const GET: APIRoute = async ({ request }: APIContext) => {
   try {
     const url = new URL(request.url);
     const projectId = url.searchParams.get("projectId");
+    const includeSparklines = url.searchParams.get("includeSparklines") === "true";
 
     if (!projectId) {
       return json({ error: "projectId is a required query parameter." }, 400);
     }
 
     const metrics = await getMetrics(parseInt(projectId));
+
+    if (includeSparklines) {
+      const timeseriesIds = metrics.filter((m) => m.type === "timeseries").map((m) => m.id);
+      const sparklines = await getMetricSparklines(timeseriesIds, subDays(new Date(), 7));
+      return json({ metrics, sparklines });
+    }
+
     return json(metrics);
   } catch (err) {
     return handleError(err);

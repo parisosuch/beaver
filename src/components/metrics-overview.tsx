@@ -4,6 +4,47 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { BarChart2Icon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
+
+const VALUE_TWEEN_MS = 600;
+
+function useTweenedNumber(target: number | null): number | null {
+  const [display, setDisplay] = useState(target);
+  const fromRef = useRef(target);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (target === null) {
+      setDisplay(null);
+      fromRef.current = null;
+      return;
+    }
+    const from = fromRef.current ?? target;
+    if (from === target) {
+      setDisplay(target);
+      return;
+    }
+
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / VALUE_TWEEN_MS);
+      const eased = 1 - (1 - t) ** 3;
+      setDisplay(from + (target - from) * eased);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+      else fromRef.current = target;
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      fromRef.current = target;
+    };
+  }, [target]);
+
+  return display;
+}
+
+const POLL_INTERVAL_MS = 10_000;
 
 const TYPE_COLORS: Record<MetricType, string> = {
   gauge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -40,6 +81,17 @@ function Sparkline({
   data: { value: number; timestamp: Date }[];
   chartType: ChartType;
 }) {
+  // Recharts generates non-deterministic clipPath IDs and float-rounded path coords,
+  // which never match between SSR and CSR. Defer chart render to the client.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <Skeleton className="h-16 w-full" />;
+  }
+
   if (data.length === 0) {
     return (
       <div className="h-16 flex items-center justify-center text-xs text-muted-foreground">
@@ -113,6 +165,9 @@ function MetricCard({
 }) {
   const isClickable = metric.type === "timeseries";
   const Wrapper = isClickable ? "a" : "div";
+  const isTweenable = metric.type === "gauge" || metric.type === "counter";
+  const tweened = useTweenedNumber(isTweenable ? metric.currentValue : null);
+  const displayValue = isTweenable ? tweened : metric.currentValue;
   return (
     <Wrapper
       href={isClickable ? `/dashboard/${projectId}/metrics/${metric.id}` : undefined}
@@ -132,7 +187,7 @@ function MetricCard({
         </CardHeader>
         <CardContent>
           <p className="text-2xl font-semibold tabular-nums">
-            {formatValue(metric.currentValue, metric.unit)}
+            {formatValue(displayValue, metric.unit)}
           </p>
 
           {(metric.type === "gauge" || metric.type === "counter") && metric.lastUpdatedAt && (
@@ -156,14 +211,39 @@ function MetricCard({
 }
 
 export default function MetricsOverview({
-  metrics,
-  sparklines,
+  metrics: initialMetrics,
+  sparklines: initialSparklines,
   projectId,
 }: {
   metrics: MetricWithValue[];
   sparklines: Record<number, { value: number; timestamp: Date }[]>;
   projectId: number;
 }) {
+  const [metrics, setMetrics] = useState(initialMetrics);
+  const [sparklines, setSparklines] = useState(initialSparklines);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/metrics?projectId=${projectId}&includeSparklines=true`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setMetrics(data.metrics);
+        setSparklines(data.sparklines);
+      } catch {}
+    };
+
+    poll();
+    const id = setInterval(poll, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [projectId]);
+
   return (
     <div className="px-4 md:px-8 py-4 md:py-8 w-full">
       <div className="flex items-center justify-between mb-6">
