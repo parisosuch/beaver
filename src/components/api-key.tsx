@@ -1,5 +1,5 @@
 import type { Project } from "@/lib/beaver/project";
-import { CheckIcon, ClipboardIcon, RefreshCwIcon } from "lucide-react";
+import { CheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, RefreshCwIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
@@ -10,6 +10,7 @@ const CONFIRM_PHRASE = "rotate api key";
 
 export default function APIKey({ project }: { project: Project }) {
   const [apiKey, setApiKey] = useState(project.apiKey);
+  const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -37,6 +38,7 @@ export default function APIKey({ project }: { project: Project }) {
         return;
       }
       setApiKey(data.apiKey);
+      setRevealed(false);
       setRotateOpen(false);
       setConfirmText("");
     } finally {
@@ -48,7 +50,20 @@ export default function APIKey({ project }: { project: Project }) {
     <TooltipProvider delayDuration={300}>
       <div className="flex items-center gap-2 min-w-0 max-w-full">
         <div className="border px-3 py-1.5 rounded flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-          <p className="font-mono text-sm truncate min-w-0">{apiKey}</p>
+          <p className="font-mono text-sm truncate min-w-0">
+            {revealed ? apiKey : "•".repeat(apiKey.length)}
+          </p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setRevealed((r) => !r)}
+                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {revealed ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{revealed ? "Hide" : "Reveal"}</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button

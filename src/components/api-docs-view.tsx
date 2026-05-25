@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Highlight, themes } from "prism-react-renderer";
-import { CheckIcon, CopyIcon, TerminalIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon, TerminalIcon } from "lucide-react";
 
 interface CodeBlockProps {
   code: string;
@@ -127,8 +127,13 @@ function MethodBadge({ method }: { method: string }) {
 }
 
 export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
-  const displayKey = apiKey;
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const [revealed, setRevealed] = useState(false);
+  const [baseUrl, setBaseUrl] = useState("");
+  const displayKey = revealed ? apiKey : "YOUR_API_KEY";
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
 
   const sections = [
     { id: "overview", title: "Overview" },
@@ -266,9 +271,18 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 </span>
                 <Badge variant="warning">Keep this secret</Badge>
               </div>
-              <code className="block font-mono text-amber-900 dark:text-amber-300 bg-white/60 dark:bg-white/10 px-4 py-3 rounded-lg text-sm break-all">
-                {displayKey}
-              </code>
+              <div className="flex items-center gap-2 bg-white/60 dark:bg-white/10 px-4 py-3 rounded-lg overflow-hidden">
+                <code className="font-mono text-amber-900 dark:text-amber-300 text-sm truncate flex-1">
+                  {revealed ? apiKey : "•".repeat(apiKey.length)}
+                </code>
+                <button
+                  onClick={() => setRevealed((r) => !r)}
+                  className="shrink-0 p-1 rounded text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+                  aria-label={revealed ? "Hide API key" : "Reveal API key"}
+                >
+                  {revealed ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                </button>
+              </div>
             </div>
             <div className="bg-gray-900 rounded-xl p-4">
               <code className="text-gray-100 font-mono text-sm">X-API-Key: {displayKey}</code>
