@@ -4,75 +4,48 @@ import { getNotificationEmails } from "@/lib/beaver/user";
 import { sendEventNotification } from "@/lib/email/resend";
 import type { APIContext, APIRoute } from "astro";
 
-export const POST: APIRoute = async ({ request }: APIContext) => {
+const MAX_BATCH_SIZE = 100;
+
+type EventPayload = Record<string, unknown>;
+
+async function processOne(payload: EventPayload, apiKey: string) {
+  const { name, title, description, icon, channel, tags, notify } = payload;
+
+  if (!name) {
+    return { ok: false as const, error: "name is a required field." };
+  }
+  if (typeof name !== "string" || !EVENT_NAME_REGEX.test(name)) {
+    return {
+      ok: false as const,
+      error: "name must follow the object.action convention (e.g. server.status_changed).",
+    };
+  }
+  if (name.split(".")[0] === RESERVED_OBJECT) {
+    return { ok: false as const, error: "'legacy' is a reserved object name." };
+  }
+  if (!title || typeof title !== "string" || title.trim() === "") {
+    return { ok: false as const, error: "title is a required field." };
+  }
+  if (!channel) {
+    return { ok: false as const, error: "channel is a required field." };
+  }
+
+  let tagObj;
+  if (tags) {
+    try {
+      tagObj = typeof tags === "string" ? JSON.parse(tags) : tags;
+    } catch {
+      return { ok: false as const, error: "tags object is not valid JSON." };
+    }
+  }
+
   try {
-    const apiKey = request.headers.get("X-API-Key");
-
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "X-API-Key header is required." }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const { name, title, description, icon, channel, tags, notify } = await request.json();
-
-    if (!name) {
-      return new Response(JSON.stringify({ error: "name is a required field." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    if (typeof name !== "string" || !EVENT_NAME_REGEX.test(name)) {
-      return new Response(
-        JSON.stringify({
-          error: "name must follow the object.action convention (e.g. server.status_changed).",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-    if (name.split(".")[0] === RESERVED_OBJECT) {
-      return new Response(JSON.stringify({ error: "'legacy' is a reserved object name." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    if (!title || typeof title !== "string" || title.trim() === "") {
-      return new Response(JSON.stringify({ error: "title is a required field." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    if (!channel) {
-      return new Response(JSON.stringify({ error: "channel is a required field." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    let tagObj;
-
-    if (tags) {
-      try {
-        if (typeof tags === "string") {
-          tagObj = JSON.parse(tags);
-        } else {
-          tagObj = tags;
-        }
-      } catch {
-        return new Response(JSON.stringify({ error: "tags object is not valid JSON." }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-
     const event = await createEvent({
       name,
       title,
-      description,
-      icon,
-      channel,
+      description: typeof description === "string" ? description : undefined,
+      icon: typeof icon === "string" ? icon : undefined,
+      channel: channel as string,
       apiKey,
       tags: tagObj,
     });
@@ -87,7 +60,39 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       }
     }
 
-    return new Response(JSON.stringify(event), {
+    return { ok: true as const, event };
+  } catch (err) {
+    return {
+      ok: false as const,
+      error: err instanceof Error ? err.message : "An unknown error has occurred.",
+    };
+  }
+}
+
+export const POST: APIRoute = async ({ request }: APIContext) => {
+  try {
+    const apiKey = request.headers.get("X-API-Key");
+
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "X-API-Key header is required." }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await request.json();
+    const payloads: EventPayload[] = Array.isArray(body) ? body : [body];
+
+    if (payloads.length > MAX_BATCH_SIZE) {
+      return new Response(
+        JSON.stringify({ error: `Batch size cannot exceed ${MAX_BATCH_SIZE} events.` }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const results = await Promise.all(payloads.map((p) => processOne(p, apiKey)));
+
+    return new Response(JSON.stringify(results), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -99,7 +104,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       });
     }
     console.error(err);
-    return new Response(JSON.stringify({ error: "An unkown error has occurred." }), {
+    return new Response(JSON.stringify({ error: "An unknown error has occurred." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

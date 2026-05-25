@@ -139,8 +139,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
       children: [
         { id: "request-headers", title: "Request Headers" },
         { id: "request-body", title: "Request Body" },
-        { id: "example-request", title: "Example Request" },
-        { id: "success-response", title: "Success Response" },
+        { id: "example-request", title: "Single Event" },
+        { id: "batch-request", title: "Batch Events" },
+        { id: "success-response", title: "Response Format" },
         { id: "error-responses", title: "Error Responses" },
       ],
     },
@@ -281,7 +282,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Create Event
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
-              Send events to a specific channel in your project.
+              Send one event or a batch of up to 100 events to channels in your project. The
+              endpoint accepts either a single event object or an array — the response is always an
+              array of per-event results.
             </p>
             <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-5 mb-6">
               <p className="text-blue-800 dark:text-blue-300 font-semibold mb-2">
@@ -533,16 +536,16 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               </table>
             </div>
 
-            {/* Example Request */}
+            {/* Single Event Example */}
             <h3
               id="example-request"
               className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
-              Example Request
+              Single Event
             </h3>
             <div className="mb-8">
               <CodeBlock
-                title="cURL"
+                title="cURL — single event"
                 language="bash"
                 code={`curl -X POST ${baseUrl}/api/event \\
   -H "Content-Type: application/json" \\
@@ -561,32 +564,85 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               />
             </div>
 
-            {/* Success Response */}
+            {/* Batch Example */}
+            <h3
+              id="batch-request"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+            >
+              Batch Events
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Pass an array of up to{" "}
+              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">100</code> event objects
+              to ingest them in a single request. Each item is processed independently — a failure
+              on one does not affect the others.
+            </p>
+            <div className="mb-8">
+              <CodeBlock
+                title="cURL — batch"
+                language="bash"
+                code={`curl -X POST ${baseUrl}/api/event \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${displayKey}" \\
+  -d '[
+    {
+      "name": "user.signed_up",
+      "title": "Alice registered",
+      "channel": "signups"
+    },
+    {
+      "name": "payment.completed",
+      "title": "Alice paid $99.99",
+      "channel": "payments",
+      "tags": { "amount": 99.99 }
+    }
+  ]'`}
+              />
+            </div>
+
+            {/* Response Format */}
             <h3
               id="success-response"
               className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
             >
-              Success Response
+              Response Format
             </h3>
-            <div className="mb-8">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              The response is always an array — one entry per input event. Each entry has an{" "}
+              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded text-pink-600 dark:text-pink-400">
+                ok
+              </code>{" "}
+              field indicating success or failure.
+            </p>
+            <div className="space-y-4 mb-8">
               <CodeBlock
-                title="200 OK"
+                title="200 OK — all succeeded"
                 language="json"
-                code={`{
-  "id": 123,
-  "eventObject": "user",
-  "eventAction": "signed_up",
-  "title": "New user registered via Google",
-  "description": "New user registration",
-  "icon": "🎉",
-  "tags": {
-    "plan": "premium",
-    "source": "landing-page"
-  },
-  "projectId": 1,
-  "channelName": "signups",
-  "createdAt": "2024-01-15T10:30:00.000Z"
-}`}
+                code={`[
+  {
+    "ok": true,
+    "event": {
+      "id": 123,
+      "eventObject": "user",
+      "eventAction": "signed_up",
+      "title": "Alice registered",
+      "description": null,
+      "icon": null,
+      "tags": {},
+      "projectId": 1,
+      "channelName": "signups",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  }
+]`}
+              />
+              <CodeBlock
+                title="200 OK — partial failure (batch)"
+                language="json"
+                code={`[
+  { "ok": true, "event": { "id": 123, ... } },
+  { "ok": false, "error": "Channel with name unknown does not exist." }
+]`}
               />
             </div>
 
@@ -597,6 +653,14 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             >
               Error Responses
             </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              These top-level errors are returned when the request itself is invalid (missing auth,
+              oversized batch). Per-event errors are returned inline in the results array with{" "}
+              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">
+                {"{ ok: false, error }"}
+              </code>
+              .
+            </p>
             <div className="space-y-4">
               <CodeBlock
                 title="401 Unauthorized - Missing API key"
@@ -606,45 +670,10 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
 }`}
               />
               <CodeBlock
-                title="400 Bad Request - Missing required field"
+                title="400 Bad Request - Batch too large"
                 language="json"
                 code={`{
-  "error": "name is a required field."
-}`}
-              />
-              <CodeBlock
-                title="400 Bad Request - Missing title"
-                language="json"
-                code={`{
-  "error": "title is a required field."
-}`}
-              />
-              <CodeBlock
-                title="400 Bad Request - Non-conforming name"
-                language="json"
-                code={`{
-  "error": "name must follow the object.action convention (e.g. server.status_changed)."
-}`}
-              />
-              <CodeBlock
-                title="400 Bad Request - Reserved object"
-                language="json"
-                code={`{
-  "error": "'legacy' is a reserved object name."
-}`}
-              />
-              <CodeBlock
-                title="400 Bad Request - Invalid tags format"
-                language="json"
-                code={`{
-  "error": "tags object is not valid JSON."
-}`}
-              />
-              <CodeBlock
-                title="500 Internal Server Error - Invalid API key or channel"
-                language="json"
-                code={`{
-  "error": "Channel not found for the given API key."
+  "error": "Batch size cannot exceed 100 events."
 }`}
               />
             </div>
@@ -1160,41 +1189,42 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                   </span>
                   JavaScript / Node.js
                 </h3>
-                <CodeBlock
-                  title="sendEvent.js"
-                  language="javascript"
-                  code={`const API_KEY = '${displayKey}';
+                <div className="space-y-4">
+                  <CodeBlock
+                    title="sendEvent.js"
+                    language="javascript"
+                    code={`const API_KEY = '${displayKey}';
 
-async function sendEvent(eventData) {
+// Send one event or an array of events — always returns an array of results.
+async function sendEvent(events) {
   const response = await fetch('${baseUrl}/api/event', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-API-Key': API_KEY,
     },
-    body: JSON.stringify({
-      name: eventData.name,
-      title: eventData.title,
-      channel: eventData.channel,
-      description: eventData.description,
-      icon: eventData.icon,
-      tags: eventData.tags,
-    }),
+    body: JSON.stringify(events),
   });
 
   return response.json();
 }
 
-// Usage
+// Single event
 await sendEvent({
   name: 'payment.completed',
   title: 'Customer paid $99.99',
   channel: 'payments',
-  description: 'Customer completed checkout',
   icon: '💰',
-  tags: { amount: '99.99', currency: 'USD' }
-});`}
-                />
+  tags: { amount: 99.99, currency: 'USD' }
+});
+
+// Batch
+await sendEvent([
+  { name: 'user.signed_up',      title: 'Alice registered',    channel: 'signups' },
+  { name: 'payment.completed',   title: 'Alice paid $99.99',   channel: 'payments' },
+]);`}
+                  />
+                </div>
               </div>
 
               <div id="python">
