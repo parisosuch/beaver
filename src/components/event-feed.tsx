@@ -300,6 +300,33 @@ export default function EventFeed({
     };
   }, [projectID, channel, title, object, action, startDate, endDate, tags, sortBy, sortOrder]);
 
+  const scrollKey = `feed:scroll:${typeof window !== "undefined" ? window.location.pathname + window.location.search : ""}`;
+
+  useEffect(() => {
+    const saveScroll = (e: Event) => {
+      const dest = (e as CustomEvent & { to: URL }).to;
+      if (dest?.pathname.match(/\/events\/\d+$/)) {
+        const top = scrollContainerRef.current?.scrollTop ?? 0;
+        if (top > 0) sessionStorage.setItem(scrollKey, String(top));
+      }
+    };
+    document.addEventListener("astro:before-preparation", saveScroll);
+    return () => document.removeEventListener("astro:before-preparation", saveScroll);
+  }, [scrollKey]);
+
+  useEffect(() => {
+    if (loading) return;
+    const saved = sessionStorage.getItem(scrollKey);
+    if (!saved) return;
+    sessionStorage.removeItem(scrollKey);
+    const top = parseInt(saved);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollContainerRef.current?.scrollTo({ top, behavior: "instant" });
+      });
+    });
+  }, [loading, scrollKey]);
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (title) params.set("title", title);
