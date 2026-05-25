@@ -1,79 +1,19 @@
-import { getProjectEvents, type TagFilter } from "@/lib/beaver/event";
+import { getProjectEvents } from "@/lib/beaver/event";
+import { streamEvents, parseStreamFilter } from "@/lib/beaver/event-stream";
 
 export async function GET({ params, url }: { params: { projectID: string }; url: URL }) {
-  const { projectID } = params;
-  const title = url.searchParams.get("title");
-  const object = url.searchParams.get("object");
-  const action = url.searchParams.get("action");
+  const projectId = parseInt(params.projectID);
+  const filter = parseStreamFilter(url);
 
-  let startDate: Date | undefined;
-  let endDate: Date | undefined;
-  if (url.searchParams.get("startDate")) {
-    startDate = new Date(url.searchParams.get("startDate")!);
-  }
-  if (url.searchParams.get("endDate")) {
-    endDate = new Date(url.searchParams.get("endDate")!);
+  let afterId: number | undefined;
+  if (url.searchParams.get("afterId")) {
+    afterId = parseInt(url.searchParams.get("afterId")!);
   }
 
-  let tags: TagFilter[] = [];
-  if (url.searchParams.get("tags")) {
-    try {
-      tags = JSON.parse(url.searchParams.get("tags")!);
-    } catch {
-      // Invalid JSON, ignore
-    }
-  }
-
-  const headers = {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-    "X-Accel-Buffering": "no",
-    "Access-Control-Allow-Origin": "*",
-  };
-
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(encoder.encode(": ok\n\n"));
-
-      async function sendEvents() {
-        try {
-          var afterId;
-          if (url.searchParams.get("afterId")) {
-            afterId = parseInt(url.searchParams.get("afterId")!);
-          }
-
-          while (true) {
-            const events = await getProjectEvents(parseInt(projectID), {
-              title,
-              object,
-              action,
-              afterId,
-              startDate,
-              endDate,
-              tags,
-            });
-
-            if (events.length > 0) {
-              afterId = events.at(0)!.id;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(events)}\n\n`));
-            } else {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify([])}\n\n`));
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-          }
-        } catch (err) {
-          console.error("Error in SSE stream:", err);
-          controller.close();
-        }
-      }
-
-      sendEvents();
-    },
+  return streamEvents({
+    afterId,
+    filter,
+    matchScope: (msg) => msg.projectId === projectId,
+    fetchInitial: (id) => getProjectEvents(projectId, { ...filter, afterId: id }),
   });
-
-  return new Response(stream, { headers });
 }

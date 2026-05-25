@@ -4,6 +4,7 @@ import { EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
 import { getProject } from "@/lib/beaver/project";
 import { getNotificationEmails } from "@/lib/beaver/user";
 import { sendEventNotification } from "@/lib/email/resend";
+import { publishEvent } from "@/lib/beaver/event-bus";
 import { eq } from "drizzle-orm";
 import type { APIContext, APIRoute } from "astro";
 
@@ -124,6 +125,13 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
           };
         }),
       );
+    });
+
+    // Push to live SSE feeds — one publish per committed event. This is the
+    // single write chokepoint for ingested events; keep it in sync with any
+    // other event-insert path.
+    created.forEach((event, i) => {
+      publishEvent({ projectId: event.projectId, channelId: resolved[i].channel.id, event });
     });
 
     // Fire notifications outside the transaction
