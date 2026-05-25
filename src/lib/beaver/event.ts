@@ -123,6 +123,57 @@ function applyFilterConditions(conditions: any[], options: QueryOptions) {
   }
 }
 
+export type StreamFilter = {
+  title?: string | null;
+  object?: string | null;
+  action?: string | null;
+  startDate?: Date;
+  endDate?: Date;
+  tags?: TagFilter[];
+};
+
+function tagMatches(tags: TagPrimitive, filter: TagFilter): boolean {
+  if (!(filter.key in tags)) return false;
+  const raw = tags[filter.key];
+
+  if (filter.type === "number") {
+    const n = typeof raw === "number" ? raw : parseFloat(String(raw));
+    if (Number.isNaN(n)) return false;
+    const v = parseFloat(filter.value);
+    const op = filter.operator ?? "eq";
+    if (op === "gt") return n > v;
+    if (op === "lt") return n < v;
+    if (op === "between") return n >= v && n <= parseFloat(filter.value2 ?? filter.value);
+    return n === v;
+  }
+
+  return String(raw) === filter.value;
+}
+
+/**
+ * In-process mirror of `applyFilterConditions`, for matching a single event
+ * pushed via the event bus against an SSE stream's filters. Must stay in sync
+ * with the SQL semantics there (substring title, exact object/action,
+ * inclusive date bounds, and tag eq/gt/lt/between).
+ */
+export function eventMatchesFilters(event: EventWithChannelName, filter: StreamFilter): boolean {
+  if (filter.title && !event.title.toLowerCase().includes(filter.title.toLowerCase())) return false;
+  if (filter.object && event.eventObject !== filter.object) return false;
+  if (filter.action && event.eventAction !== filter.action) return false;
+
+  const createdAt = new Date(event.createdAt).getTime();
+  if (filter.startDate && createdAt < filter.startDate.getTime()) return false;
+  if (filter.endDate && createdAt > filter.endDate.getTime()) return false;
+
+  if (filter.tags?.length) {
+    for (const tag of filter.tags) {
+      if (!tagMatches(event.tags, tag)) return false;
+    }
+  }
+
+  return true;
+}
+
 function applyCursorAndPagination(conditions: any[], options: QueryOptions) {
   if (options.afterId) conditions.push(gt(events.id, options.afterId));
   if (options.beforeId) conditions.push(lt(events.id, options.beforeId));
