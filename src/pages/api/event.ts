@@ -7,8 +7,6 @@ import { sendEventNotification } from "@/lib/email/resend";
 import { eq } from "drizzle-orm";
 import type { APIContext, APIRoute } from "astro";
 
-const MAX_BATCH_SIZE = 100;
-
 type EventPayload = Record<string, unknown>;
 
 function validate(payload: EventPayload): string | null {
@@ -45,13 +43,6 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
 
     const body = await request.json();
     const payloads: EventPayload[] = Array.isArray(body) ? body : [body];
-
-    if (payloads.length > MAX_BATCH_SIZE) {
-      return new Response(
-        JSON.stringify({ error: `Batch size cannot exceed ${MAX_BATCH_SIZE} events.` }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
 
     // Validate all payloads before touching the DB
     for (let i = 0; i < payloads.length; i++) {

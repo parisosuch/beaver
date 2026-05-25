@@ -572,10 +572,9 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Batch Events
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Pass an array of up to{" "}
-              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">100</code> event objects
-              to ingest them in a single request. The batch is atomic — if any event fails
-              validation or insertion, the entire batch is rejected and nothing is written.
+              Pass an array of event objects to ingest them in a single request. The batch is atomic
+              — if any event fails validation or insertion, the entire batch is rejected and nothing
+              is written.
             </p>
             <div className="mb-8">
               <CodeBlock
@@ -652,13 +651,6 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 language="json"
                 code={`{
   "error": "X-API-Key header is required."
-}`}
-              />
-              <CodeBlock
-                title="400 Bad Request - Batch too large"
-                language="json"
-                code={`{
-  "error": "Batch size cannot exceed 100 events."
 }`}
               />
             </div>
