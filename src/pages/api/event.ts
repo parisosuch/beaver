@@ -1,72 +1,35 @@
-import { createEvent, EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
+import { db } from "@/lib/db/db";
+import { events, channels, eventTags } from "@/lib/db/schema";
+import { EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
 import { getProject } from "@/lib/beaver/project";
 import { getNotificationEmails } from "@/lib/beaver/user";
 import { sendEventNotification } from "@/lib/email/resend";
+import { eq } from "drizzle-orm";
 import type { APIContext, APIRoute } from "astro";
 
 const MAX_BATCH_SIZE = 100;
 
 type EventPayload = Record<string, unknown>;
 
-async function processOne(payload: EventPayload, apiKey: string) {
-  const { name, title, description, icon, channel, tags, notify } = payload;
+function validate(payload: EventPayload): string | null {
+  const { name, title, channel, tags } = payload;
 
-  if (!name) {
-    return { ok: false as const, error: "name is a required field." };
-  }
-  if (typeof name !== "string" || !EVENT_NAME_REGEX.test(name)) {
-    return {
-      ok: false as const,
-      error: "name must follow the object.action convention (e.g. server.status_changed).",
-    };
-  }
-  if (name.split(".")[0] === RESERVED_OBJECT) {
-    return { ok: false as const, error: "'legacy' is a reserved object name." };
-  }
-  if (!title || typeof title !== "string" || title.trim() === "") {
-    return { ok: false as const, error: "title is a required field." };
-  }
-  if (!channel) {
-    return { ok: false as const, error: "channel is a required field." };
-  }
-
-  let tagObj;
-  if (tags) {
+  if (!name) return "name is a required field.";
+  if (typeof name !== "string" || !EVENT_NAME_REGEX.test(name))
+    return "name must follow the object.action convention (e.g. server.status_changed).";
+  if (name.split(".")[0] === RESERVED_OBJECT) return "'legacy' is a reserved object name.";
+  if (!title || typeof title !== "string" || title.trim() === "")
+    return "title is a required field.";
+  if (!channel) return "channel is a required field.";
+  if (tags !== undefined && tags !== null) {
     try {
-      tagObj = typeof tags === "string" ? JSON.parse(tags) : tags;
+      if (typeof tags === "string") JSON.parse(tags);
+      else if (typeof tags !== "object") return "tags must be an object.";
     } catch {
-      return { ok: false as const, error: "tags object is not valid JSON." };
+      return "tags object is not valid JSON.";
     }
   }
-
-  try {
-    const event = await createEvent({
-      name,
-      title,
-      description: typeof description === "string" ? description : undefined,
-      icon: typeof icon === "string" ? icon : undefined,
-      channel: channel as string,
-      apiKey,
-      tags: tagObj,
-    });
-
-    if (notify === true) {
-      const emails = await getNotificationEmails(event.projectId);
-      if (emails.length > 0) {
-        const project = await getProject(event.projectId);
-        if (project) {
-          sendEventNotification(event, project.name, emails).catch(() => {});
-        }
-      }
-    }
-
-    return { ok: true as const, event };
-  } catch (err) {
-    return {
-      ok: false as const,
-      error: err instanceof Error ? err.message : "An unknown error has occurred.",
-    };
-  }
+  return null;
 }
 
 export const POST: APIRoute = async ({ request }: APIContext) => {
@@ -90,9 +53,100 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       );
     }
 
-    const results = await Promise.all(payloads.map((p) => processOne(p, apiKey)));
+    // Validate all payloads before touching the DB
+    for (let i = 0; i < payloads.length; i++) {
+      const err = validate(payloads[i]);
+      if (err) {
+        const msg = payloads.length > 1 ? `Event at index ${i}: ${err}` : err;
+        return new Response(JSON.stringify({ error: msg }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
 
-    return new Response(JSON.stringify(results), {
+    // Resolve channels and verify API key (reads, before transaction)
+    const resolved = await Promise.all(
+      payloads.map(async (p) => {
+        const channelName = p.channel as string;
+        const channelsRes = await db.select().from(channels).where(eq(channels.name, channelName));
+        if (channelsRes.length === 0) throw new Error(`Channel '${channelName}' does not exist.`);
+        const channel = channelsRes[0];
+        const project = await getProject(channel.projectId);
+        if (project.apiKey !== apiKey) throw new Error("Invalid API key.");
+        return { channel, project, payload: p };
+      }),
+    );
+
+    // Insert all events and their tags atomically
+    const created = await db.transaction(async (tx) => {
+      return Promise.all(
+        resolved.map(async ({ channel, project, payload }) => {
+          const [eventObject, eventAction] = (payload.name as string).split(".");
+          const title = payload.title as string;
+          const description =
+            typeof payload.description === "string" ? payload.description : undefined;
+          const icon = typeof payload.icon === "string" ? payload.icon : undefined;
+
+          const [event] = await tx
+            .insert(events)
+            .values({
+              eventObject,
+              eventAction,
+              title,
+              description,
+              icon,
+              projectId: project.id,
+              channelId: channel.id,
+            })
+            .returning();
+
+          let tags: Record<string, string | number | boolean> = {};
+          const rawTags = payload.tags;
+          if (rawTags) {
+            tags =
+              typeof rawTags === "string"
+                ? JSON.parse(rawTags)
+                : (rawTags as Record<string, string | number | boolean>);
+            const tagEntries = Object.entries(tags).map(([key, value]) => ({
+              eventId: event.id,
+              key,
+              value: String(value),
+              type: typeof value as "string" | "number" | "boolean",
+            }));
+            await tx.insert(eventTags).values(tagEntries);
+          }
+
+          return {
+            id: event.id,
+            eventObject: event.eventObject,
+            eventAction: event.eventAction,
+            title: event.title,
+            icon: event.icon,
+            description: event.description,
+            tags,
+            projectId: project.id,
+            channelName: channel.name,
+            createdAt: event.createdAt,
+            read: false,
+            bookmarked: false,
+          };
+        }),
+      );
+    });
+
+    // Fire notifications outside the transaction
+    created.forEach((event, i) => {
+      if (resolved[i].payload.notify === true) {
+        getNotificationEmails(event.projectId).then((emails) => {
+          if (emails.length > 0) {
+            sendEventNotification(event, resolved[i].project.name, emails).catch(() => {});
+          }
+        });
+      }
+    });
+
+    return new Response(JSON.stringify(created), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

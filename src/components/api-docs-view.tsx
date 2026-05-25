@@ -574,8 +574,8 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Pass an array of up to{" "}
               <code className="bg-gray-100 dark:bg-white/10 px-1 rounded">100</code> event objects
-              to ingest them in a single request. Each item is processed independently — a failure
-              on one does not affect the others.
+              to ingest them in a single request. The batch is atomic — if any event fails
+              validation or insertion, the entire batch is rejected and nothing is written.
             </p>
             <div className="mb-8">
               <CodeBlock
@@ -608,11 +608,7 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
               Response Format
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              The response is always an array — one entry per input event. Each entry has an{" "}
-              <code className="bg-gray-100 dark:bg-white/10 px-1 rounded text-pink-600 dark:text-pink-400">
-                ok
-              </code>{" "}
-              field indicating success or failure.
+              On success the response is always an array — one created event object per input.
             </p>
             <div className="space-y-4 mb-8">
               <CodeBlock
@@ -620,28 +616,17 @@ export default function ApiDocsView({ apiKey }: ApiDocsViewProps) {
                 language="json"
                 code={`[
   {
-    "ok": true,
-    "event": {
-      "id": 123,
-      "eventObject": "user",
-      "eventAction": "signed_up",
-      "title": "Alice registered",
-      "description": null,
-      "icon": null,
-      "tags": {},
-      "projectId": 1,
-      "channelName": "signups",
-      "createdAt": "2024-01-15T10:30:00.000Z"
-    }
+    "id": 123,
+    "eventObject": "user",
+    "eventAction": "signed_up",
+    "title": "Alice registered",
+    "description": null,
+    "icon": null,
+    "tags": {},
+    "projectId": 1,
+    "channelName": "signups",
+    "createdAt": "2024-01-15T10:30:00.000Z"
   }
-]`}
-              />
-              <CodeBlock
-                title="200 OK — partial failure (batch)"
-                language="json"
-                code={`[
-  { "ok": true, "event": { "id": 123, ... } },
-  { "ok": false, "error": "Channel with name unknown does not exist." }
 ]`}
               />
             </div>
