@@ -271,6 +271,9 @@ export default function EventFeed({
         if (unique.length > 0) {
           unique.forEach((e) => eventIdsRef.current.add(e.id));
           trickleQueueRef.current.push(...unique);
+          // The stream is already server-filtered to the current query, so every
+          // event received matches the pill's filter — keep the count live.
+          setEventCount((prev) => (prev === null ? prev : prev + unique.length));
           if (!trickleTimerRef.current) drainQueue();
         }
       });

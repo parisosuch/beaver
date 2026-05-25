@@ -1,6 +1,7 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { ChannelGroupWithChannels } from "@/lib/beaver/channel-group";
 import type { Project } from "@/lib/beaver/project";
+import type { EventWithChannelName } from "@/lib/beaver/event";
 import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
@@ -715,7 +716,17 @@ function PanelContent({
   const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
   const { user, signOut } = useAuth();
 
+  // Keep latest path + channel list available to the long-lived stream handler
+  // without reconnecting on every navigation.
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const channelsRef = useRef(currentChannels);
+  channelsRef.current = currentChannels;
+
   useEffect(() => {
+    let eventSource: EventSource | null = null;
+    let resync: ReturnType<typeof setInterval> | null = null;
+
     const fetchUnread = async () => {
       try {
         const res = await fetch(`/api/unread?projectId=${currentProject.id}`);
@@ -728,8 +739,52 @@ function PanelContent({
       }
     };
 
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 5_000);
+    const activeChannelId = (): number | null => {
+      const m = pathnameRef.current.match(/\/channels\/(\d+)(?:$|[/?])/);
+      return m ? parseInt(m[1]) : null;
+    };
+
+    const start = async () => {
+      // Seed from server truth, then maintain via the event bus push below.
+      await fetchUnread();
+      // Slow re-sync safety net: the bus is user-agnostic, so it can drive the
+      // unread *increment* but can't know when this user's read-state changed in
+      // another tab/device. A periodic refetch self-heals that drift (see #201).
+      resync = setInterval(fetchUnread, 60_000);
+
+      // Only push events written after now — skip the stream's catch-up backlog.
+      let maxId = 0;
+      try {
+        const res = await fetch("/api/events/max-id");
+        maxId = (await res.json()).maxId ?? 0;
+      } catch {
+        // ignore
+      }
+
+      eventSource = new EventSource(
+        `/api/events/project/${currentProject.id}/event-stream?afterId=${maxId}`,
+      );
+      eventSource.addEventListener("message", (e) => {
+        let events: EventWithChannelName[];
+        try {
+          events = JSON.parse(e.data);
+        } catch {
+          return;
+        }
+        const active = activeChannelId();
+        setUnreadCounts((prev) => {
+          const next = { ...prev };
+          for (const ev of events) {
+            const channel = channelsRef.current.find((c) => c.name === ev.channelName);
+            if (!channel || channel.id === active) continue; // viewing it → stays read
+            next[channel.id] = (next[channel.id] ?? 0) + 1;
+          }
+          return next;
+        });
+      });
+    };
+
+    start();
 
     const handleChannelRead = (e: CustomEvent<{ channelId: number }>) => {
       setUnreadCounts((prev) => ({ ...prev, [e.detail.channelId]: 0 }));
@@ -737,7 +792,8 @@ function PanelContent({
 
     window.addEventListener("channel:read", handleChannelRead as EventListener);
     return () => {
-      clearInterval(interval);
+      if (eventSource) eventSource.close();
+      if (resync) clearInterval(resync);
       window.removeEventListener("channel:read", handleChannelRead as EventListener);
     };
   }, [currentProject.id]);
