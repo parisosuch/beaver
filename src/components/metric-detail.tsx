@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import type { MetricWithValue, MetricType, MetricValue } from "@/lib/beaver/metric";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
@@ -6,8 +6,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { DatePicker } from "./ui/date-picker";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
-import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { ArrowLeftIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import {
   formatDistanceToNow,
@@ -167,6 +165,228 @@ function RangeSelector({
         </div>
       )}
     </div>
+  );
+}
+
+// ── Hand-rolled SVG chart (replaces recharts) ─────────────────────────────────
+
+function niceYTicks(min: number, max: number, count = 5): number[] {
+  if (min === max) return [min];
+  const range = max - min;
+  const step = range / (count - 1);
+  const mag = Math.pow(10, Math.floor(Math.log10(step)));
+  const niceStep = ([1, 2, 5, 10].find((s) => s * mag >= step) ?? 10) * mag;
+  const lo = Math.floor(min / niceStep) * niceStep;
+  const hi = Math.ceil(max / niceStep) * niceStep;
+  const ticks: number[] = [];
+  for (let t = lo; t <= hi + niceStep * 0.01; t = Math.round((t + niceStep) * 1e9) / 1e9) {
+    ticks.push(t);
+  }
+  return ticks;
+}
+
+function fmtTick(v: number): string {
+  if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+function SimpleChart({
+  data,
+  isBar,
+  unit,
+}: {
+  data: { label: string; value: number }[];
+  isBar: boolean;
+  unit?: string | null;
+}) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const gradId = useId();
+
+  const VW = 600,
+    VH = 256,
+    PL = 48,
+    PR = 8,
+    PT = 8,
+    PB = 32;
+  const CW = VW - PL - PR,
+    CH = VH - PT - PB;
+
+  const values = data.map((d) => d.value);
+  const yTicks = values.length ? niceYTicks(Math.min(...values), Math.max(...values)) : [0];
+  const yMin = yTicks[0],
+    yMax = yTicks[yTicks.length - 1];
+  const yRange = yMax - yMin || 1;
+
+  const toY = (v: number) => PT + CH - ((v - yMin) / yRange) * CH;
+  // Line/area: edge-to-edge so the path fills the full chart width.
+  const toLineX = (i: number) => PL + (data.length <= 1 ? CW / 2 : (i / (data.length - 1)) * CW);
+  // Bars: slot-based so every bar fits fully within [PL, PL+CW].
+  const slotW = CW / Math.max(data.length, 1);
+  const toBarX = (i: number) => PL + (i + 0.5) * slotW;
+  const toX = isBar ? toBarX : toLineX;
+
+  const xStep = Math.max(1, Math.ceil(data.length / 6));
+
+  const pts = data.map((d, i) => ({ x: toLineX(i), y: toY(d.value) }));
+  const linePath = pts
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
+  const areaPath = pts.length
+    ? `${linePath} L${(PL + CW).toFixed(1)},${(PT + CH).toFixed(1)} L${PL},${(PT + CH).toFixed(1)} Z`
+    : "";
+
+  const barGap = Math.max(2, slotW * 0.2);
+  const barW = Math.max(2, slotW - barGap);
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current || !data.length) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * VW;
+    const idx = data.reduce(
+      (best, _, i) => (Math.abs(toX(i) - svgX) < Math.abs(toX(best) - svgX) ? i : best),
+      0,
+    );
+    setHovered(idx);
+  };
+
+  const tip = hovered !== null ? data[hovered] : null;
+  const tipX = hovered !== null ? toX(hovered) : 0;
+  const tipY = hovered !== null ? toY(data[hovered].value) : 0;
+  const tipLeft = tipX > VW / 2;
+
+  return (
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${VW} ${VH}`}
+      width="100%"
+      height="100%"
+      className="text-foreground"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHovered(null)}
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="currentColor" stopOpacity={0.25} />
+          <stop offset="95%" stopColor="currentColor" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+
+      {/* Grid lines — behind data */}
+      {yTicks.map((t) => (
+        <line
+          key={t}
+          x1={PL}
+          y1={toY(t)}
+          x2={PL + CW}
+          y2={toY(t)}
+          stroke="currentColor"
+          strokeOpacity={0.1}
+        />
+      ))}
+
+      {/* Data — behind labels */}
+      {isBar ? (
+        data.map((d, i) => {
+          const y = toY(d.value);
+          return (
+            <rect
+              key={i}
+              x={toBarX(i) - barW / 2}
+              y={y}
+              width={barW}
+              height={Math.max(0, PT + CH - y)}
+              rx={2}
+              fill="currentColor"
+            />
+          );
+        })
+      ) : (
+        <>
+          <path d={areaPath} fill={`url(#${gradId})`} />
+          <path d={linePath} fill="none" stroke="currentColor" strokeWidth={1.5} />
+        </>
+      )}
+
+      {/* Axis labels — on top of data */}
+      {yTicks.map((t) => (
+        <text
+          key={t}
+          x={PL - 6}
+          y={toY(t)}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fontSize={11}
+          fill="currentColor"
+          fillOpacity={0.5}
+        >
+          {fmtTick(t)}
+        </text>
+      ))}
+
+      {data.map((d, i) => {
+        if (i !== 0 && i !== data.length - 1 && i % xStep !== 0) return null;
+        return (
+          <text
+            key={i}
+            x={toX(i)}
+            y={VH - 8}
+            textAnchor="middle"
+            fontSize={11}
+            fill="currentColor"
+            fillOpacity={0.5}
+          >
+            {d.label}
+          </text>
+        );
+      })}
+
+      {tip && (
+        <g>
+          <line
+            x1={tipX}
+            y1={PT}
+            x2={tipX}
+            y2={PT + CH}
+            stroke="currentColor"
+            strokeOpacity={0.2}
+            strokeDasharray="3 3"
+          />
+          <circle cx={tipX} cy={tipY} r={3.5} fill="currentColor" />
+          <rect
+            x={tipLeft ? tipX - 136 : tipX + 8}
+            y={Math.max(PT + 2, tipY - 26)}
+            width={128}
+            height={48}
+            rx={4}
+            fill="var(--background)"
+            stroke="currentColor"
+            strokeOpacity={0.15}
+          />
+          <text
+            x={tipLeft ? tipX - 72 : tipX + 72}
+            y={Math.max(PT + 16, tipY - 12)}
+            textAnchor="middle"
+            fontSize={11}
+            fill="currentColor"
+            fillOpacity={0.55}
+          >
+            {tip.label}
+          </text>
+          <text
+            x={tipLeft ? tipX - 72 : tipX + 72}
+            y={Math.max(PT + 34, tipY + 6)}
+            textAnchor="middle"
+            fontSize={13}
+            fontWeight="600"
+            fill="currentColor"
+          >
+            {formatValue(tip.value, unit)}
+          </text>
+        </g>
+      )}
+    </svg>
   );
 }
 
@@ -347,13 +567,6 @@ export default function MetricDetail({
     };
   })();
 
-  const chartConfig = {
-    value: {
-      label: unit ?? "Value",
-      theme: { light: "black", dark: "oklch(0.78 0 0)" },
-    },
-  };
-
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -459,51 +672,10 @@ export default function MetricDetail({
                 <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
                   No data in this range
                 </div>
-              ) : isBarChart ? (
-                <ChartContainer config={chartConfig} className="h-64 w-full">
-                  <BarChart data={timeseriesData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={40} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="value" fill="var(--color-value)" radius={2} />
-                  </BarChart>
-                </ChartContainer>
               ) : (
-                <ChartContainer config={chartConfig} className="h-64 w-full">
-                  <AreaChart
-                    data={timeseriesData}
-                    margin={{ top: 4, right: 4, bottom: 4, left: 4 }}
-                  >
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={40} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <defs>
-                      <linearGradient id="tsGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Area
-                      dataKey="value"
-                      stroke="var(--color-value)"
-                      fill="url(#tsGrad)"
-                      strokeWidth={1.5}
-                      dot={false}
-                    />
-                  </AreaChart>
-                </ChartContainer>
+                <div className="h-64 w-full">
+                  <SimpleChart data={timeseriesData} isBar={isBarChart} unit={unit} />
+                </div>
               )}
             </CardContent>
           </Card>

@@ -1,11 +1,9 @@
 import type { MetricWithValue, MetricType, ChartType } from "@/lib/beaver/metric";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
-import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { BarChart2Icon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useRef, useState } from "react";
-import { Skeleton } from "./ui/skeleton";
+import { Sparkline } from "./ui/sparkline";
 import { useTabLeader } from "@/lib/tab-leader";
 
 const VALUE_TWEEN_MS = 600;
@@ -75,84 +73,21 @@ function formatValue(value: number | null, unit?: string | null): string {
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
-function Sparkline({
-  data,
-  chartType,
-}: {
-  data: { value: number; timestamp: Date }[];
-  chartType: ChartType;
-}) {
-  // Recharts generates non-deterministic clipPath IDs and float-rounded path coords,
-  // which never match between SSR and CSR. Defer chart render to the client.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <Skeleton className="h-16 w-full" />;
+function bucketSparkline(
+  data: { value: number; timestamp: Date }[],
+  chartType: ChartType,
+): { value: number }[] {
+  if (chartType !== "bar") return data.map((d) => ({ value: d.value }));
+  const sums = new Map<string, number>();
+  const counts = new Map<string, number>();
+  for (const d of data) {
+    const key = new Date(d.timestamp).toISOString().slice(0, 10);
+    sums.set(key, (sums.get(key) ?? 0) + d.value);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-
-  if (data.length === 0) {
-    return (
-      <div className="h-16 flex items-center justify-center text-xs text-muted-foreground">
-        No data yet
-      </div>
-    );
-  }
-
-  // Bucket bar sparklines by day to avoid rendering hundreds of 1px-wide bars
-  const chartData =
-    chartType === "bar"
-      ? (() => {
-          const sums = new Map<string, number>();
-          const counts = new Map<string, number>();
-          for (const d of data) {
-            const key = new Date(d.timestamp).toISOString().slice(0, 10);
-            sums.set(key, (sums.get(key) ?? 0) + d.value);
-            counts.set(key, (counts.get(key) ?? 0) + 1);
-          }
-          return Array.from(sums.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, sum]) => ({ value: Math.round((sum / (counts.get(key) ?? 1)) * 10) / 10 }));
-        })()
-      : data.map((d) => ({ value: d.value }));
-
-  const config = {
-    value: { theme: { light: "black", dark: "oklch(0.78 0 0)" } },
-  };
-
-  return (
-    <ChartContainer config={config} className="h-16 w-full">
-      {chartType === "bar" ? (
-        <BarChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-          <XAxis hide />
-          <YAxis hide />
-          <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-          <Bar dataKey="value" fill="var(--color-value)" radius={2} />
-        </BarChart>
-      ) : (
-        <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-          <XAxis hide />
-          <YAxis hide />
-          <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-          <defs>
-            <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            dataKey="value"
-            stroke="var(--color-value)"
-            fill="url(#sparkGrad)"
-            strokeWidth={1.5}
-            dot={false}
-          />
-        </AreaChart>
-      )}
-    </ChartContainer>
-  );
+  return Array.from(sums.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, sum]) => ({ value: Math.round((sum / (counts.get(key) ?? 1)) * 10) / 10 }));
 }
 
 function MetricCard({
@@ -200,7 +135,7 @@ function MetricCard({
           {metric.type === "timeseries" && (
             <div className="mt-3">
               <Sparkline
-                data={sparkline ?? []}
+                data={bucketSparkline(sparkline ?? [], (metric.chartType ?? "line") as ChartType)}
                 chartType={(metric.chartType ?? "line") as ChartType}
               />
             </div>
