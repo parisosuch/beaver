@@ -34,6 +34,6 @@ const backUrl = projects.length > 0 ? `/dashboard/${projects[0].id}/feed` : "/";
     </script>
   </head>
   <body>
-    <AdminUsersView client:load initialUsers={allUsers} currentUserId={user.id} backUrl={backUrl} />
+    <AdminUsersView client:visible initialUsers={allUsers} currentUserId={user.id} backUrl={backUrl} />
   </body>
 </html>

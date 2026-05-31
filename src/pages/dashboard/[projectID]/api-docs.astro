@@ -9,5 +9,5 @@ const project = await getProject(parseInt(projectID!));
 ---
 
 <Layout projectID={projectID!}>
-  <ApiDocsView client:load apiKey={project.apiKey} />
+  <ApiDocsView client:idle apiKey={project.apiKey} />
 </Layout>
