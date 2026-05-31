@@ -137,6 +137,7 @@ function MetricCard({
               <Sparkline
                 data={bucketSparkline(sparkline ?? [], (metric.chartType ?? "line") as ChartType)}
                 chartType={(metric.chartType ?? "line") as ChartType}
+                hasAnyData={metric.currentValue !== null}
               />
             </div>
           )}
