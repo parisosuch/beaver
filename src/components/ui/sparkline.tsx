@@ -12,9 +12,11 @@ function bounds(values: number[]): { min: number; max: number } {
 export function Sparkline({
   data,
   chartType,
+  hasAnyData = false,
 }: {
   data: { value: number }[];
   chartType: ChartType;
+  hasAnyData?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const gradId = useId();
@@ -24,7 +26,7 @@ export function Sparkline({
   if (data.length === 0) {
     return (
       <div className="h-16 flex items-center justify-center text-xs text-muted-foreground">
-        No data yet
+        {hasAnyData ? "No recent data" : "No data yet"}
       </div>
     );
   }
