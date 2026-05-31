@@ -18,7 +18,7 @@ const sparklines = await getMetricSparklines(timeseriesIds, subDays(new Date(), 
 
 <Layout projectID={projectID!}>
   <MetricsOverview
-    client:load
+    client:visible
     metrics={metrics}
     sparklines={sparklines}
     projectId={project.id}

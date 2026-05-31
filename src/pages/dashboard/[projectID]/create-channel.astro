@@ -6,5 +6,5 @@ const { projectID } = Astro.params;
 ---
 
 <Layout projectID={projectID!}>
-  <CreateChannelView client:load projectId={parseInt(projectID!)} />
+  <CreateChannelView client:idle projectId={parseInt(projectID!)} />
 </Layout>
