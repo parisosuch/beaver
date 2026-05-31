@@ -6,6 +6,7 @@ import { BarChart2Icon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
+import { useTabLeader } from "@/lib/tab-leader";
 
 const VALUE_TWEEN_MS = 600;
 
@@ -221,28 +222,41 @@ export default function MetricsOverview({
 }) {
   const [metrics, setMetrics] = useState(initialMetrics);
   const [sparklines, setSparklines] = useState(initialSparklines);
+  const isLeader = useTabLeader(`metrics:${projectId}`);
 
   useEffect(() => {
+    const bc = new BroadcastChannel(`beaver:metrics:${projectId}`);
     let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/metrics?projectId=${projectId}&includeSparklines=true`);
-        if (!res.ok) return;
-        const data = await res.json();
+    if (isLeader) {
+      const poll = async () => {
+        try {
+          const res = await fetch(`/api/metrics?projectId=${projectId}&includeSparklines=true`);
+          if (!res.ok || cancelled) return;
+          const data = await res.json();
+          if (cancelled) return;
+          setMetrics(data.metrics);
+          setSparklines(data.sparklines);
+          bc.postMessage({ metrics: data.metrics, sparklines: data.sparklines });
+        } catch {}
+      };
+      poll();
+      intervalId = setInterval(poll, POLL_INTERVAL_MS);
+    } else {
+      bc.onmessage = (e: MessageEvent) => {
         if (cancelled) return;
-        setMetrics(data.metrics);
-        setSparklines(data.sparklines);
-      } catch {}
-    };
+        setMetrics(e.data.metrics);
+        setSparklines(e.data.sparklines);
+      };
+    }
 
-    poll();
-    const id = setInterval(poll, POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      if (intervalId) clearInterval(intervalId);
+      bc.close();
     };
-  }, [projectId]);
+  }, [projectId, isLeader]);
 
   return (
     <div className="px-4 md:px-8 py-4 md:py-8 w-full">
