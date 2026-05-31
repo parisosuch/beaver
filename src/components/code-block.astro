@@ -36,7 +36,9 @@ const { code, lang = "bash", title } = Astro.props;
       </div>
     )
   }
-  <Code code={code.trim()} lang={lang} theme="night-owl" />
+  <div class="[&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:text-sm [&_pre]:leading-relaxed [&_pre]:m-0">
+    <Code code={code.trim()} lang={lang} theme="night-owl" />
+  </div>
   <button
     class="copy-btn absolute top-2 right-2 p-2 rounded-lg bg-gray-700/50 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-600 text-gray-300 hover:text-white"
     data-code={code.trim()}
