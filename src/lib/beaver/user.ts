@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 export type DatabaseUser = {
   id: number;
   userName: string;
+  fullName: string | null;
   email: string | null;
   isAdmin: boolean;
   canCreateProjects: boolean;
@@ -17,6 +18,7 @@ export type DatabaseUser = {
 export type User = {
   id: number;
   userName: string;
+  fullName: string | null;
   email: string | null;
   isAdmin: boolean;
   canCreateProjects: boolean;
@@ -28,6 +30,7 @@ export type User = {
 const userSelect = {
   id: users.id,
   userName: users.userName,
+  fullName: users.fullName,
   email: users.email,
   isAdmin: users.isAdmin,
   canCreateProjects: users.canCreateProjects,
@@ -170,6 +173,10 @@ export async function updatePassword(id: number, newPassword: string): Promise<v
 
 export async function updateUserEmail(id: number, email: string | null): Promise<void> {
   await db.update(users).set({ email }).where(eq(users.id, id));
+}
+
+export async function updateUserFullName(id: number, fullName: string | null): Promise<void> {
+  await db.update(users).set({ fullName }).where(eq(users.id, id));
 }
 
 export async function setProjectNotifications(

@@ -132,6 +132,7 @@ export const users = sqliteTable("users", {
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   canCreateProjects: integer("can_create_projects", { mode: "boolean" }).notNull().default(false),
   userName: text("username").notNull(),
+  fullName: text("full_name"),
   email: text("email"),
   password: text("password").notNull(),
   mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
