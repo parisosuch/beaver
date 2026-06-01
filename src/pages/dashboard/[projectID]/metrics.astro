@@ -1,6 +1,8 @@
 ---
 import Layout from "@/layouts/layout.astro";
-import MetricsOverview from "@/components/metrics-overview";
+import MetricsPoller from "@/components/metrics-poller";
+import MetricTweenValue from "@/components/metric-tween-value";
+import { Sparkline } from "@/components/ui/sparkline";
 import { getMetrics, getMetricSparklines } from "@/lib/beaver/metric";
 import { getProject } from "@/lib/beaver/project";
 import { subDays } from "date-fns";
@@ -9,18 +11,125 @@ const { projectID } = Astro.params;
 const project = await getProject(parseInt(projectID!));
 const metrics = await getMetrics(parseInt(projectID!));
 
-const timeseriesIds = metrics
-  .filter((m) => m.type === "timeseries")
-  .map((m) => m.id);
-
+const timeseriesIds = metrics.filter((m) => m.type === "timeseries").map((m) => m.id);
 const sparklines = await getMetricSparklines(timeseriesIds, subDays(new Date(), 7));
+
+const TYPE_COLORS: Record<string, string> = {
+  gauge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  counter: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  timeseries: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+};
+const TYPE_LABELS: Record<string, string> = {
+  gauge: "Gauge",
+  counter: "Counter",
+  timeseries: "Timeseries",
+};
+
+function bucketSparkline(
+  data: { value: number; timestamp: Date }[],
+  chartType: string,
+): { value: number }[] {
+  if (chartType !== "bar") return data.map((d) => ({ value: d.value }));
+  const sums = new Map<string, number>();
+  const counts = new Map<string, number>();
+  for (const d of data) {
+    const key = new Date(d.timestamp).toISOString().slice(0, 10);
+    sums.set(key, (sums.get(key) ?? 0) + d.value);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return Array.from(sums.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, sum]) => ({ value: Math.round((sum / (counts.get(key) ?? 1)) * 10) / 10 }));
+}
 ---
 
 <Layout projectID={projectID!}>
-  <MetricsOverview
-    client:visible
-    metrics={metrics}
-    sparklines={sparklines}
-    projectId={project.id}
-  />
+  <!-- Invisible poller island: one per page, owns polling + BroadcastChannel leader -->
+  <MetricsPoller client:load projectId={project.id} />
+
+  <div class="px-4 md:px-8 py-4 md:py-8 w-full">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-semibold">Metrics</h1>
+    </div>
+
+    {metrics.length === 0 ? (
+      <div class="flex flex-col items-center justify-center gap-3 py-24 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground">
+          <line x1="18" x2="18" y1="20" y2="10" /><line x1="12" x2="12" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="14" />
+        </svg>
+        <p class="text-muted-foreground">No metrics yet.</p>
+        <a
+          href={`/dashboard/${projectID}/settings`}
+          class="text-sm underline underline-offset-2 text-muted-foreground hover:text-foreground"
+        >
+          Create one in settings
+        </a>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {metrics.map((metric) => {
+          const isClickable = metric.type === "timeseries";
+          const isTweenable = metric.type === "gauge" || metric.type === "counter";
+          const sparklineData = bucketSparkline(
+            sparklines[metric.id] ?? [],
+            metric.chartType ?? "line",
+          );
+          const Wrapper = isClickable ? "a" : "div";
+          return (
+            <Wrapper
+              href={isClickable ? `/dashboard/${projectID}/metrics/${metric.id}` : undefined}
+              class="block"
+            >
+              <div
+                class={`h-full rounded-lg border bg-card text-card-foreground shadow-sm ${isClickable ? "hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer" : ""}`}
+              >
+                <!-- Card header: static, paints from SSR -->
+                <div class="flex flex-col space-y-1.5 p-6 pb-2">
+                  <div class="flex items-start justify-between gap-2">
+                    <h3 class="text-base font-medium truncate leading-none tracking-tight">
+                      {metric.name}
+                    </h3>
+                    <span class={`text-xs font-medium px-2 py-0.5 rounded shrink-0 ${TYPE_COLORS[metric.type]}`}>
+                      {TYPE_LABELS[metric.type]}
+                    </span>
+                  </div>
+                  {metric.description && (
+                    <p class="text-xs text-muted-foreground truncate">{metric.description}</p>
+                  )}
+                </div>
+                <!-- Card content -->
+                <div class="p-6 pt-0">
+                  {isTweenable ? (
+                    <!-- Tween island: tiny, replaces only the value + timestamp -->
+                    <MetricTweenValue
+                      client:visible
+                      metricId={metric.id}
+                      initialValue={metric.currentValue}
+                      initialUpdatedAt={metric.lastUpdatedAt ? metric.lastUpdatedAt.toString() : null}
+                      unit={metric.unit}
+                      showUpdatedAt={true}
+                    />
+                  ) : (
+                    <p class="text-2xl font-semibold tabular-nums">
+                      {metric.currentValue !== null ? metric.currentValue : "—"}
+                    </p>
+                  )}
+                  {metric.type === "timeseries" && (
+                    <div class="mt-3">
+                      <Sparkline
+                        client:visible
+                        data={sparklineData}
+                        chartType={(metric.chartType ?? "line") as "line" | "bar"}
+                        hasAnyData={metric.currentValue !== null}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Wrapper>
+          );
+        })}
+      </div>
+    )}
+  </div>
 </Layout>
