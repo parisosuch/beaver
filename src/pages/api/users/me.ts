@@ -1,4 +1,4 @@
-import { updateUserEmail } from "@/lib/beaver/user";
+import { updateUserEmail, updateUserFullName } from "@/lib/beaver/user";
 import type { APIContext } from "astro";
 
 export async function PATCH({ locals, request }: APIContext) {
@@ -9,9 +9,15 @@ export async function PATCH({ locals, request }: APIContext) {
     });
   }
 
-  const { email } = await request.json();
+  const body = await request.json();
 
-  await updateUserEmail(user.id, email ?? null);
+  if ("email" in body) {
+    await updateUserEmail(user.id, body.email ?? null);
+  }
+  if ("fullName" in body) {
+    await updateUserFullName(user.id, body.fullName?.trim() || null);
+  }
+
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "Content-Type": "application/json" },
   });
