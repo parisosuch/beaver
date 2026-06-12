@@ -4,7 +4,6 @@ import type { Project } from "@/lib/beaver/project";
 import { useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import APIKey from "./api-key";
-import ChangePasswordForm from "./change-password-form";
 import ChannelSettings from "./channel-settings";
 import MetricSettings from "./metric-settings";
 import NotificationSettings from "./notification-settings";
@@ -54,7 +53,6 @@ export default function SettingsTabs({
         {isOwner && <TabsTrigger value="members">Members</TabsTrigger>}
         <TabsTrigger value="metrics">Metrics</TabsTrigger>
         <TabsTrigger value="notifications">Notifications</TabsTrigger>
-        <TabsTrigger value="account">Account</TabsTrigger>
         {isOwner && (
           <TabsTrigger value="danger" className="text-destructive">
             Danger Zone
@@ -105,10 +103,6 @@ export default function SettingsTabs({
             initialEnabled={initialEnabled}
           />
         )}
-      </TabsContent>
-
-      <TabsContent value="account" className="mt-6 md:mt-0">
-        {show("account") && <ChangePasswordForm />}
       </TabsContent>
 
       {isOwner && (
