@@ -38,6 +38,7 @@ import {
   MenuIcon,
   PlusIcon,
   Settings,
+  UserIcon,
   UsersIcon,
   XIcon,
 } from "lucide-react";
@@ -840,6 +841,7 @@ function PanelContent({
   const isMetricsActive = () => pathname.startsWith(`/dashboard/${project.id}/metrics`);
   const isSettingsActive = () => pathname === `/dashboard/${project.id}/settings`;
   const isApiDocsActive = () => pathname === `/dashboard/${project.id}/api-docs`;
+  const isAccountActive = () => pathname === `/dashboard/${project.id}/account`;
 
   const navCss =
     "flex px-3 py-2 space-x-2 items-center hover:bg-gray-100 dark:hover:bg-white/8 hover:cursor-pointer hover:font-medium rounded ";
@@ -945,6 +947,14 @@ function PanelContent({
             <p>API Docs</p>
           </a>
         )}
+        <a
+          className={isAccountActive() ? activeNavCss : navCss}
+          href={`/dashboard/${project.id}/account`}
+          onClick={() => onNavigate?.()}
+        >
+          <UserIcon size={20} />
+          <p>Account</p>
+        </a>
         {user?.isAdmin && (
           <a
             className={pathname === "/admin/users" ? activeNavCss : navCss}
