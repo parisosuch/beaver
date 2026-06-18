@@ -636,3 +636,7 @@ export async function createEvent({
     bookmarked: false,
   };
 }
+
+export async function deleteEvent(id: number): Promise<void> {
+  await db.delete(events).where(eq(events.id, id));
+}

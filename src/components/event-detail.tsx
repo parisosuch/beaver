@@ -2,9 +2,17 @@ import type { EventWithChannelName } from "@/lib/beaver/event";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import { ArrowLeftIcon, BookmarkIcon, CheckIcon, LinkIcon } from "lucide-react";
+import { ArrowLeftIcon, BookmarkIcon, CheckIcon, LinkIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | boolean }) {
   const displayValue = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
@@ -18,11 +26,19 @@ function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | 
   );
 }
 
-export default function EventDetail({ event }: { event: EventWithChannelName }) {
+export default function EventDetail({
+  event,
+  canDelete = false,
+}: {
+  event: EventWithChannelName;
+  canDelete?: boolean;
+}) {
   const tags = Object.entries(event.tags);
   const [bookmarked, setBookmarked] = useState(event.bookmarked);
   const [bookmarking, setBookmarking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleBookmark = async () => {
     setBookmarking(true);
@@ -43,6 +59,19 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.href = `/dashboard/${event.projectId}/feed`;
+      }
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
   };
 
   useEffect(() => {
@@ -136,6 +165,23 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                     <TooltipContent>{copied ? "Copied!" : "Copy link"}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                {canDelete && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setConfirmDelete(true)}
+                          className="shrink-0 hover:cursor-pointer text-destructive hover:text-destructive"
+                        >
+                          <Trash2Icon size={18} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete event</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -163,6 +209,25 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
           )}
         </Card>
       </div>
+
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete event?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete &ldquo;{event.title}&rdquo;. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
