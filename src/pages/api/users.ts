@@ -6,6 +6,25 @@ import {
   setUserAdmin,
   setCanCreateProjects,
 } from "@/lib/beaver/user";
+import { addProjectMember, type Role } from "@/lib/beaver/project-member";
+
+const VALID_ROLES: Role[] = ["owner", "maintainer", "guest"];
+
+type ProjectAssignment = { projectId: number; role: Role };
+
+function parseProjectAssignments(input: unknown): ProjectAssignment[] | null {
+  if (input === undefined) return [];
+  if (!Array.isArray(input)) return null;
+
+  const assignments: ProjectAssignment[] = [];
+  for (const entry of input) {
+    const projectId = Number(entry?.projectId);
+    const role = entry?.role;
+    if (!Number.isInteger(projectId) || !VALID_ROLES.includes(role)) return null;
+    assignments.push({ projectId, role });
+  }
+  return assignments;
+}
 
 function requireAdmin(context: APIContext): Response | null {
   if (!context.locals.user?.isAdmin) {
@@ -40,7 +59,7 @@ export const POST: APIRoute = async (context) => {
   if (denied) return denied;
 
   try {
-    const { userName, canCreateProjects } = await context.request.json();
+    const { userName, canCreateProjects, projectAssignments } = await context.request.json();
 
     if (!userName?.trim()) {
       return new Response(JSON.stringify({ error: "userName is required." }), {
@@ -49,7 +68,20 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
+    const assignments = parseProjectAssignments(projectAssignments);
+    if (assignments === null) {
+      return new Response(JSON.stringify({ error: "Invalid project assignments." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const user = await createUserAccount(userName.trim(), canCreateProjects ?? false);
+
+    for (const { projectId, role } of assignments) {
+      await addProjectMember(projectId, user.id, role);
+    }
+
     return new Response(JSON.stringify(user), {
       status: 200,
       headers: { "Content-Type": "application/json" },
