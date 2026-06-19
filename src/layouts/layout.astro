@@ -9,6 +9,7 @@ import {
   getProjectsForUser,
   getUserProjectRole,
 } from "@/lib/beaver/project-member";
+import { getUserByUsername } from "@/lib/beaver/user";
 import { ClientRouter, fade } from "astro:transitions";
 
 interface Props {
@@ -30,9 +31,12 @@ const channelGroupsData = await getChannelGroups(project.id);
 const userRole = user.isAdmin
   ? "owner"
   : await getUserProjectRole(project.id, user.id);
+
+const dbUser = await getUserByUsername(user.userName);
+const themePalette = dbUser?.themePalette ?? "default";
 ---
 
-<html lang="en">
+<html lang="en" data-theme={themePalette}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

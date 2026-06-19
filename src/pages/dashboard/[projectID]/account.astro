@@ -32,6 +32,7 @@ const dbUser = await getUserByUsername(user.userName);
           client:load
           initialFullName={dbUser?.fullName ?? null}
           initialCompactMode={dbUser?.compactMode ?? false}
+          initialThemePalette={dbUser?.themePalette ?? "default"}
           username={user.userName}
         />
       </div>
