@@ -267,11 +267,11 @@ export const PUT: APIRoute = async (context: APIContext) => {
       );
     }
 
-    const newKey = await rotateApiKey(parseInt(projectID));
-    return new Response(JSON.stringify({ apiKey: newKey }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    const { newKey, previousKeyExpiresAt } = await rotateApiKey(parseInt(projectID));
+    return new Response(
+      JSON.stringify({ apiKey: newKey, previousKeyExpiresAt: previousKeyExpiresAt.toISOString() }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
   } catch (err) {
     if (err instanceof Error) {
       return new Response(JSON.stringify({ error: err.message }), {

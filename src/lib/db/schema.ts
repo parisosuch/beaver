@@ -7,6 +7,8 @@ export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").unique().notNull(),
   apiKey: text("api_key").unique().notNull(), // for external logging API
+  previousApiKey: text("previous_api_key"), // kept valid during grace period after rotation
+  previousApiKeyExpiresAt: integer("previous_api_key_expires_at", { mode: "timestamp_ms" }),
   rateLimitPerMinute: integer("rate_limit_per_minute"), // null = unlimited
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
