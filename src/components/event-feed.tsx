@@ -184,9 +184,9 @@ export default function EventFeed({
           `&cursorAction=${encodeURIComponent(lastEvent.eventAction)}` +
           `&cursorId=${lastEvent.id}`;
       } else if (order === "asc") {
-        endpoint += `&afterId=${lastEvent.id}`;
+        endpoint += `&afterCreatedAt=${new Date(lastEvent.createdAt).getTime()}&afterId=${lastEvent.id}`;
       } else {
-        endpoint += `&beforeId=${lastEvent.id}`;
+        endpoint += `&beforeCreatedAt=${new Date(lastEvent.createdAt).getTime()}&beforeId=${lastEvent.id}`;
       }
     }
 
@@ -355,7 +355,10 @@ export default function EventFeed({
     fetch("/api/unread", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelName: channel.name, projectId: channel.projectId }),
+      body: JSON.stringify({
+        channelName: channel.name,
+        projectId: channel.projectId,
+      }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -413,6 +416,8 @@ export default function EventFeed({
   });
 
   const virtualItems = virtualizer.getVirtualItems();
+  const lastVisibleIndex =
+    virtualItems.length > 0 ? virtualItems[virtualItems.length - 1].index : -1;
 
   useEffect(() => {
     if (loading || didScrollToDivider.current || dividerRowIndex === -1) return;
@@ -420,27 +425,42 @@ export default function EventFeed({
     virtualizer.scrollToIndex(dividerRowIndex, { align: "center" });
   }, [loading, dividerRowIndex]);
 
+  // Depend on the primitive last-visible-index, not `virtualItems` itself — that
+  // array gets a new reference on nearly every render (including ones unrelated to
+  // scrolling, like the loading-state flips below), which would otherwise re-run
+  // this effect far more often than the scroll position actually changes.
   useEffect(() => {
-    if (loading || virtualItems.length === 0) return;
-    const lastItem = virtualItems[virtualItems.length - 1];
+    if (loading || lastVisibleIndex === -1) return;
     if (
-      lastItem.index >= rows.length - 5 &&
+      lastVisibleIndex >= rows.length - 5 &&
       !loadingMoreRef.current &&
       hasMoreRef.current &&
       eventsRef.current.length > 0
     ) {
+      // Set the ref synchronously, not just the state — `loadingMoreRef.current` is
+      // otherwise only synced from `loadingMore` on the next render, leaving a window
+      // where this effect can re-fire on a subsequent scroll-driven render and kick
+      // off a second fetch with the same cursor before the first one's guard takes
+      // effect.
+      loadingMoreRef.current = true;
       setLoadingMore(true);
       getEvents().then((res) => {
-        if (res.length > 0) {
-          res.forEach((e) => eventIdsRef.current.add(e.id));
-          setEvents((prev) => [...prev, ...res]);
-        } else {
+        const unique = res.filter((e) => !eventIdsRef.current.has(e.id));
+        if (unique.length > 0) {
+          unique.forEach((e) => eventIdsRef.current.add(e.id));
+          setEvents((prev) => [...prev, ...unique]);
+        }
+        // Treat "nothing new" the same as "no more data". Otherwise a page that
+        // comes back fully duplicate (cursor not advancing) leaves hasMoreRef
+        // stuck true while state never grows, so the proximity check below
+        // immediately re-triggers the same fetch forever.
+        if (unique.length === 0) {
           hasMoreRef.current = false;
         }
         setLoadingMore(false);
       });
     }
-  }, [virtualItems, loading]);
+  }, [lastVisibleIndex, rows.length, loading]);
 
   const handleExport = (format: "json" | "csv") => {
     const base =
