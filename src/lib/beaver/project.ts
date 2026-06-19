@@ -1,11 +1,13 @@
 import { db } from "../db/db";
 import { projects, projectMembers } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, and, gt } from "drizzle-orm";
 
 export type Project = {
   id: number;
   name: string;
   apiKey: string;
+  previousApiKey: string | null;
+  previousApiKeyExpiresAt: Date | null;
   rateLimitPerMinute: number | null;
   createdAt: Date | null;
   ownerId: number;
@@ -64,14 +66,38 @@ export async function setRateLimit(projectId: number, rateLimitPerMinute: number
   return res[0];
 }
 
-export async function rotateApiKey(projectId: number): Promise<string> {
+const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+export async function rotateApiKey(
+  projectId: number,
+): Promise<{ newKey: string; previousKeyExpiresAt: Date }> {
+  const [current] = await db
+    .select({ apiKey: projects.apiKey })
+    .from(projects)
+    .where(eq(projects.id, projectId));
   const newKey = crypto.randomUUID();
-  await db.update(projects).set({ apiKey: newKey }).where(eq(projects.id, projectId));
-  return newKey;
+  const previousKeyExpiresAt = new Date(Date.now() + GRACE_PERIOD_MS);
+  await db
+    .update(projects)
+    .set({
+      apiKey: newKey,
+      previousApiKey: current.apiKey,
+      previousApiKeyExpiresAt: previousKeyExpiresAt,
+    })
+    .where(eq(projects.id, projectId));
+  return { newKey, previousKeyExpiresAt };
 }
 
 export async function getProjectByApiKey(apiKey: string) {
-  const [project] = await db.select().from(projects).where(eq(projects.apiKey, apiKey));
-
+  const now = new Date();
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(
+      or(
+        eq(projects.apiKey, apiKey),
+        and(eq(projects.previousApiKey, apiKey), gt(projects.previousApiKeyExpiresAt, now)),
+      ),
+    );
   return project;
 }
