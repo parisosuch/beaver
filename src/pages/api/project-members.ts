@@ -31,6 +31,15 @@ export const GET: APIRoute = async (context: APIContext) => {
     });
   }
 
+  // Member management (and the full user list it returns) is owner-only.
+  const viewerRole = await getUserProjectRole(projectId, context.locals.user.id);
+  if (!canManage(viewerRole, context.locals.user.isAdmin)) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const [members, allUsers] = await Promise.all([getProjectMembers(projectId), getAllUsers()]);
 

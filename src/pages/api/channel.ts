@@ -5,9 +5,17 @@ import {
   reorderChannels,
   updateChannel,
 } from "@/lib/beaver/channel";
+import {
+  canAccessProject,
+  canManageProject,
+  forbidden,
+  projectIdForChannel,
+  unauthorized,
+} from "@/lib/beaver/authz";
 import type { APIContext, APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ request }: APIContext) => {
+export const GET: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const url = new URL(request.url);
 
@@ -19,6 +27,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    if (!(await canAccessProject(locals.user, parseInt(project_id)))) return forbidden();
 
     const projects = await getChannels(parseInt(project_id));
 
@@ -41,7 +51,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { name, project_id, description } = await request.json();
 
@@ -51,6 +62,8 @@ export const POST: APIRoute = async ({ request }) => {
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required to create channel." }));
     }
+
+    if (!(await canManageProject(locals.user, parseInt(project_id)))) return forbidden();
 
     const splitName = name.replace(" ", "-");
 
@@ -77,7 +90,8 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-export const PATCH: APIRoute = async ({ request }) => {
+export const PATCH: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { channels } = await request.json();
 
@@ -86,6 +100,17 @@ export const PATCH: APIRoute = async ({ request }) => {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Every channel referenced must belong to a project the user can manage.
+    const projectIds = new Set<number>();
+    for (const item of channels) {
+      const pid = await projectIdForChannel(parseInt(item.id));
+      if (pid === null) return forbidden();
+      projectIds.add(pid);
+    }
+    for (const pid of projectIds) {
+      if (!(await canManageProject(locals.user, pid))) return forbidden();
     }
 
     await reorderChannels(channels);
@@ -109,7 +134,8 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
 };
 
-export const PUT: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { channelId, name, description } = await request.json();
 
@@ -119,6 +145,10 @@ export const PUT: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const projectId = await projectIdForChannel(parseInt(channelId));
+    if (projectId === null) return forbidden();
+    if (!(await canManageProject(locals.user, projectId))) return forbidden();
 
     const channel = await updateChannel(parseInt(channelId), { name, description });
 
@@ -141,7 +171,8 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { channelID } = await request.json();
 
@@ -151,6 +182,10 @@ export const DELETE: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const projectId = await projectIdForChannel(parseInt(channelID));
+    if (projectId === null) return forbidden();
+    if (!(await canManageProject(locals.user, projectId))) return forbidden();
 
     const channel = await deleteChannel(parseInt(channelID));
 

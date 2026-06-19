@@ -1,4 +1,5 @@
 import { coalesceChannels } from "@/lib/beaver/channel";
+import { canManageProject, forbidden, projectIdForChannel } from "@/lib/beaver/authz";
 import type { APIContext, APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request, locals }: APIContext) => {
@@ -25,6 +26,14 @@ export const POST: APIRoute = async ({ request, locals }: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    // Both channels must live in the same project, and the user must manage it.
+    const sourceProject = await projectIdForChannel(parseInt(sourceId));
+    const targetProject = await projectIdForChannel(parseInt(targetId));
+    if (sourceProject === null || targetProject === null || sourceProject !== targetProject) {
+      return forbidden();
+    }
+    if (!(await canManageProject(locals.user, sourceProject))) return forbidden();
 
     const channel = await coalesceChannels(sourceId, targetId, survivingName.trim());
 

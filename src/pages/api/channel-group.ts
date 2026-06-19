@@ -5,9 +5,17 @@ import {
   renameChannelGroup,
   reorderGroups,
 } from "@/lib/beaver/channel-group";
+import {
+  canAccessProject,
+  canManageProject,
+  forbidden,
+  projectIdForChannelGroup,
+  unauthorized,
+} from "@/lib/beaver/authz";
 import type { APIContext, APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ request }: APIContext) => {
+export const GET: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const url = new URL(request.url);
     const project_id = url.searchParams.get("project_id");
@@ -18,6 +26,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    if (!(await canAccessProject(locals.user, parseInt(project_id)))) return forbidden();
 
     const groups = await getChannelGroups(parseInt(project_id));
 
@@ -39,7 +49,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { name, project_id } = await request.json();
 
@@ -49,6 +60,8 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    if (!(await canManageProject(locals.user, parseInt(project_id)))) return forbidden();
 
     const group = await createChannelGroup(name, parseInt(project_id));
 
@@ -71,7 +84,8 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // Reorder groups
-export const PATCH: APIRoute = async ({ request }) => {
+export const PATCH: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { groups } = await request.json();
 
@@ -80,6 +94,17 @@ export const PATCH: APIRoute = async ({ request }) => {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Every group referenced must belong to a project the user can manage.
+    const projectIds = new Set<number>();
+    for (const item of groups) {
+      const pid = await projectIdForChannelGroup(parseInt(item.id));
+      if (pid === null) return forbidden();
+      projectIds.add(pid);
+    }
+    for (const pid of projectIds) {
+      if (!(await canManageProject(locals.user, pid))) return forbidden();
     }
 
     await reorderGroups(groups);
@@ -103,7 +128,8 @@ export const PATCH: APIRoute = async ({ request }) => {
 };
 
 // Rename group
-export const PUT: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { id, name } = await request.json();
 
@@ -113,6 +139,10 @@ export const PUT: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const projectId = await projectIdForChannelGroup(parseInt(id));
+    if (projectId === null) return forbidden();
+    if (!(await canManageProject(locals.user, projectId))) return forbidden();
 
     await renameChannelGroup(parseInt(id), name);
 
@@ -134,7 +164,8 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { id } = await request.json();
 
@@ -144,6 +175,10 @@ export const DELETE: APIRoute = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const projectId = await projectIdForChannelGroup(parseInt(id));
+    if (projectId === null) return forbidden();
+    if (!(await canManageProject(locals.user, projectId))) return forbidden();
 
     await deleteChannelGroup(parseInt(id));
 

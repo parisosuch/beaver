@@ -3,6 +3,7 @@ import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
 import { getProjectsForUser, getUserProjectRole } from "./lib/beaver/project-member";
+import { projectIdForChannel, projectIdForMetric } from "./lib/beaver/authz";
 import { logRequest, logError } from "./lib/logger";
 
 // Routes that don't require authentication
@@ -17,19 +18,29 @@ const AUTH_REDIRECT_ROUTES = ["/login", "/onboarding"];
 // Route for forced password change
 const CHANGE_PASSWORD_ROUTE = "/change-password";
 
-// Pull the project id out of a path that is scoped to a single project, so the
-// middleware can verify membership before the request reaches the page/handler.
-// Covers dashboard pages (/dashboard/{id}/...) and project-scoped API routes
-// (/api/.../project/{id}/...). Routes that carry the project id in the body or
-// query (e.g. /api/project, /api/project-members) authorize themselves.
-function extractProjectId(pathname: string): number | null {
+// Resolve the project a request is scoped to from its path, so the middleware
+// can verify membership before the request reaches the page/handler. Covers:
+//   - dashboard pages          /dashboard/{id}/...
+//   - project-scoped APIs       /api/.../project/{id}/...
+//   - channel-scoped APIs       /api/.../channel/{id}/...   (channel → project)
+//   - metric value APIs         /api/metrics/{id}/...       (metric  → project)
+// Returns null when the path is not project-scoped (those routes carry the id
+// in the body/query and authorize themselves). Channel/metric ids that don't
+// resolve return null and fall through to the handler's own 404.
+async function resolveProjectId(pathname: string): Promise<number | null> {
   const dashboard = pathname.match(/^\/dashboard\/(\d+)(?:\/|$)/);
   if (dashboard) return parseInt(dashboard[1]);
 
-  if (pathname.startsWith("/api/")) {
-    const api = pathname.match(/\/project\/(\d+)(?:\/|$)/);
-    if (api) return parseInt(api[1]);
-  }
+  if (!pathname.startsWith("/api/")) return null;
+
+  const project = pathname.match(/\/project\/(\d+)(?:\/|$)/);
+  if (project) return parseInt(project[1]);
+
+  const channel = pathname.match(/\/channel\/(\d+)(?:\/|$)/);
+  if (channel) return projectIdForChannel(parseInt(channel[1]));
+
+  const metric = pathname.match(/^\/api\/metrics\/(\d+)(?:\/|$)/);
+  if (metric) return projectIdForMetric(parseInt(metric[1]));
 
   return null;
 }
@@ -171,10 +182,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // only access a project they belong to. Admins may access any project. This
   // is enforced centrally here so every project-scoped page and API route is
   // covered, rather than relying on each handler to remember to check.
-  const projectId = extractProjectId(pathname);
-  if (projectId !== null && !payload.isAdmin) {
-    const role = await getUserProjectRole(projectId, payload.userId);
-    if (role === null) {
+  if (!payload.isAdmin) {
+    const projectId = await resolveProjectId(pathname);
+    if (projectId !== null && (await getUserProjectRole(projectId, payload.userId)) === null) {
       if (isApi) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403,
