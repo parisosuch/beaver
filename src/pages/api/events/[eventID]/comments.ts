@@ -1,5 +1,6 @@
 import type { APIContext, APIRoute } from "astro";
 import { getComments, createComment } from "@/lib/beaver/comment";
+import { canAccessProject, forbidden, projectIdForEvent } from "@/lib/beaver/authz";
 
 export const GET: APIRoute = async ({ locals, params }: APIContext) => {
   if (!locals.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -7,6 +8,9 @@ export const GET: APIRoute = async ({ locals, params }: APIContext) => {
   const eventId = parseInt(params.eventID!);
   if (isNaN(eventId))
     return new Response(JSON.stringify({ error: "Invalid event ID" }), { status: 400 });
+
+  const projectId = await projectIdForEvent(eventId);
+  if (projectId === null || !(await canAccessProject(locals.user, projectId))) return forbidden();
 
   const comments = await getComments(eventId);
   return new Response(JSON.stringify(comments), {
@@ -20,6 +24,9 @@ export const POST: APIRoute = async ({ locals, params, request }: APIContext) =>
   const eventId = parseInt(params.eventID!);
   if (isNaN(eventId))
     return new Response(JSON.stringify({ error: "Invalid event ID" }), { status: 400 });
+
+  const projectId = await projectIdForEvent(eventId);
+  if (projectId === null || !(await canAccessProject(locals.user, projectId))) return forbidden();
 
   const { body } = await request.json();
   if (!body?.trim()) {

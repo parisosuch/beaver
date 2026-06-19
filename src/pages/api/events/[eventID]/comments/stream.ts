@@ -1,4 +1,6 @@
 import { subscribeComments } from "@/lib/beaver/comment-bus";
+import { canAccessProject, forbidden, projectIdForEvent } from "@/lib/beaver/authz";
+import type { APIContext } from "astro";
 
 const KEEPALIVE_MS = 15000;
 
@@ -9,8 +11,14 @@ const SSE_HEADERS = {
   "X-Accel-Buffering": "no",
 };
 
-export function GET({ params }: { params: { eventID: string } }) {
-  const eventId = parseInt(params.eventID);
+export async function GET({ params, locals }: APIContext) {
+  if (!locals.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+
+  const eventId = parseInt(params.eventID!);
+
+  const projectId = await projectIdForEvent(eventId);
+  if (projectId === null || !(await canAccessProject(locals.user, projectId))) return forbidden();
+
   const encoder = new TextEncoder();
 
   let unsubscribe: (() => void) | null = null;

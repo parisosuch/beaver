@@ -1,4 +1,5 @@
 import { toggleReaction } from "@/lib/beaver/reaction";
+import { canAccessProject, forbidden, projectIdForEvent } from "@/lib/beaver/authz";
 import type { APIContext, APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ locals, request, params }: APIContext) => {
@@ -11,6 +12,9 @@ export const POST: APIRoute = async ({ locals, request, params }: APIContext) =>
   if (isNaN(eventId)) {
     return new Response(JSON.stringify({ error: "Invalid event ID" }), { status: 400 });
   }
+
+  const projectId = await projectIdForEvent(eventId);
+  if (projectId === null || !(await canAccessProject(user, projectId))) return forbidden();
 
   const { emoji } = await request.json();
   if (!emoji || typeof emoji !== "string") {
