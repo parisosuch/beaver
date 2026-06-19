@@ -36,7 +36,12 @@ export type Event = {
   createdAt: Date;
 };
 
-export type ReactionSummary = { emoji: string; count: number; userReacted: boolean };
+export type ReactionSummary = {
+  emoji: string;
+  count: number;
+  userReacted: boolean;
+  users: string[];
+};
 
 export type EventWithChannelName = {
   id: number;

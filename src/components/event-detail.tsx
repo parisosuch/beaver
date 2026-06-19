@@ -227,14 +227,14 @@ export default function EventDetail({
 
           <CardContent>
             <div className="flex flex-wrap items-center gap-2">
-              <ReactionBar eventId={event.id} initialReactions={reactions} />
+              <ReactionBar reactions={reactions} onToggle={handleReact} />
               <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 px-2 rounded-full">
                     <SmilePlusIcon size={14} />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 [animation:none]!" align="start">
                   <EmojiPicker onSelect={handleReact} />
                 </PopoverContent>
               </Popover>
