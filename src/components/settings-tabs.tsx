@@ -2,10 +2,12 @@ import type { Channel } from "@/lib/beaver/channel";
 import type { MetricWithValue } from "@/lib/beaver/metric";
 import type { Project } from "@/lib/beaver/project";
 import type { AlertRuleWithChannel } from "@/lib/beaver/alert-rule";
+import type { AuditEntry } from "@/lib/beaver/audit-log";
 import { useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import APIKey from "./api-key";
 import AlertSettings from "./alert-settings";
+import AuditLog from "./audit-log";
 import ChannelSettings from "./channel-settings";
 import MetricSettings from "./metric-settings";
 import NotificationSettings from "./notification-settings";
@@ -19,6 +21,7 @@ interface Props {
   channels: Channel[];
   metrics: MetricWithValue[];
   alertRules: AlertRuleWithChannel[];
+  auditLog: AuditEntry[];
   isOwner: boolean;
   currentUserId: number;
   initialEmail: string | null;
@@ -33,6 +36,7 @@ export default function SettingsTabs({
   channels,
   metrics,
   alertRules,
+  auditLog,
   isOwner,
   currentUserId,
   initialEmail,
@@ -59,6 +63,7 @@ export default function SettingsTabs({
         <TabsTrigger value="metrics">Metrics</TabsTrigger>
         <TabsTrigger value="alerts">Alerts</TabsTrigger>
         <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        {isOwner && <TabsTrigger value="audit">Audit Log</TabsTrigger>}
         {isOwner && (
           <TabsTrigger value="danger" className="text-destructive">
             Danger Zone
@@ -118,6 +123,12 @@ export default function SettingsTabs({
           />
         )}
       </TabsContent>
+
+      {isOwner && (
+        <TabsContent value="audit" className="mt-6 md:mt-0">
+          {show("audit") && <AuditLog entries={auditLog} />}
+        </TabsContent>
+      )}
 
       {isOwner && (
         <TabsContent value="danger" className="mt-6 md:mt-0">

@@ -9,6 +9,7 @@ import {
   setRateLimit,
 } from "@/lib/beaver/project";
 import { getUserProjectRole, getProjectsForUser } from "@/lib/beaver/project-member";
+import { logAuditEntry } from "@/lib/beaver/audit-log";
 
 export const GET: APIRoute = async (context: APIContext) => {
   if (!context.locals.user) {
@@ -132,6 +133,12 @@ export const PATCH: APIRoute = async (context: APIContext) => {
         });
       }
       updated = await renameProject(parseInt(projectID), name.trim());
+      logAuditEntry({
+        projectId: parseInt(projectID),
+        userId: context.locals.user.id,
+        action: "project.renamed",
+        metadata: { from: project.name, to: name.trim() },
+      });
     }
 
     if (rateLimitPerMinute !== undefined) {
@@ -147,6 +154,12 @@ export const PATCH: APIRoute = async (context: APIContext) => {
         );
       }
       updated = await setRateLimit(parseInt(projectID), rateLimitPerMinute);
+      logAuditEntry({
+        projectId: parseInt(projectID),
+        userId: context.locals.user.id,
+        action: "rate_limit.changed",
+        metadata: { from: project.rateLimitPerMinute, to: rateLimitPerMinute },
+      });
     }
 
     return new Response(JSON.stringify(updated), {
@@ -268,6 +281,11 @@ export const PUT: APIRoute = async (context: APIContext) => {
     }
 
     const { newKey, previousKeyExpiresAt } = await rotateApiKey(parseInt(projectID));
+    logAuditEntry({
+      projectId: parseInt(projectID),
+      userId: context.locals.user.id,
+      action: "api_key.rotated",
+    });
     return new Response(
       JSON.stringify({ apiKey: newKey, previousKeyExpiresAt: previousKeyExpiresAt.toISOString() }),
       { status: 200, headers: { "Content-Type": "application/json" } },
