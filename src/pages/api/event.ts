@@ -3,6 +3,7 @@ import { events, channels, eventTags } from "@/lib/db/schema";
 import { EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
 import { getProject } from "@/lib/beaver/project";
 import { getNotificationEmailsForChannel } from "@/lib/beaver/channel-notification";
+import { checkAndDispatchAlerts } from "@/lib/beaver/alert-rule";
 import { sendEventNotification } from "@/lib/email/send";
 import { publishEvent } from "@/lib/beaver/event-bus";
 import { eq } from "drizzle-orm";
@@ -143,6 +144,12 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
           }
         });
       }
+    });
+
+    // Check alert rules outside the transaction
+    created.forEach((event, i) => {
+      const { channel, project } = resolved[i];
+      checkAndDispatchAlerts(channel, project, event).catch(() => {});
     });
 
     return new Response(JSON.stringify(created), {
