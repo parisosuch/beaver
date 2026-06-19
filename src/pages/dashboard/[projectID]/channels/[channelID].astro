@@ -2,8 +2,11 @@
 import Layout from "@/layouts/layout.astro";
 import EventFeed from "@/components/event-feed";
 import { getChannel } from "@/lib/beaver/channel";
+import { getUserByUsername } from "@/lib/beaver/user";
 
 const { projectID, channelID } = Astro.params;
+const user = Astro.locals.user!;
+const dbUser = await getUserByUsername(user.userName);
 
 const url = new URL(Astro.request.url);
 const searchParams = url.searchParams;
@@ -34,5 +37,6 @@ const channel = await getChannel(parseInt(channelID!));
     tags={tags}
     sortBy={sortBy}
     sortOrder={sortOrder}
+    compact={dbUser?.compactMode ?? false}
   />
 </Layout>

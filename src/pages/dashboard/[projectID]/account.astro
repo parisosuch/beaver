@@ -31,6 +31,7 @@ const dbUser = await getUserByUsername(user.userName);
         <AccountSettings
           client:load
           initialFullName={dbUser?.fullName ?? null}
+          initialCompactMode={dbUser?.compactMode ?? false}
           username={user.userName}
         />
       </div>

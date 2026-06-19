@@ -1,8 +1,11 @@
 ---
 import Layout from "@/layouts/layout.astro";
 import EventFeed from "@/components/event-feed";
+import { getUserByUsername } from "@/lib/beaver/user";
 
 const { projectID } = Astro.params;
+const user = Astro.locals.user!;
+const dbUser = await getUserByUsername(user.userName);
 
 const url = new URL(Astro.request.url);
 const searchParams = url.searchParams;
@@ -31,5 +34,6 @@ const sortOrder = searchParams.get("sortOrder");
     tags={tags}
     sortBy={sortBy}
     sortOrder={sortOrder}
+    compact={dbUser?.compactMode ?? false}
   />
 </Layout>

@@ -17,6 +17,7 @@ export default function BookmarksFeed({
   endDate,
   tags,
   channelId,
+  compact = false,
 }: {
   projectID: number;
   channels: Channel[];
@@ -27,6 +28,7 @@ export default function BookmarksFeed({
   endDate?: string | null;
   tags?: string | null;
   channelId?: string | null;
+  compact?: boolean;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,9 +138,11 @@ export default function BookmarksFeed({
             <p>No bookmarks yet.</p>
           </div>
         ) : (
-          <div className="px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto flex flex-col gap-4">
+          <div
+            className={`px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto flex flex-col ${compact ? "gap-2" : "gap-4"}`}
+          >
             {events.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} compact={compact} />
             ))}
           </div>
         )}

@@ -60,6 +60,7 @@ export default function EventFeed({
   tags,
   sortBy,
   sortOrder,
+  compact = false,
 }: {
   type: "channel" | "project";
   projectID?: number;
@@ -72,6 +73,7 @@ export default function EventFeed({
   tags?: string | null;
   sortBy?: string | null;
   sortOrder?: string | null;
+  compact?: boolean;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
@@ -409,7 +411,7 @@ export default function EventFeed({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: (i) => (rows[i]?.kind === "divider" ? 32 : 112),
+    estimateSize: (i) => (rows[i]?.kind === "divider" ? 32 : compact ? 42 : 112),
     overscan: 5,
     getItemKey: (i) =>
       rows[i]?.kind === "divider" ? "divider" : rows[i]?.kind === "event" ? rows[i].event.id : i,
@@ -636,7 +638,7 @@ export default function EventFeed({
                       left: 0,
                       width: "100%",
                       transform: `translateY(${virtualRow.start}px)`,
-                      paddingBottom: "16px",
+                      paddingBottom: compact ? "8px" : "16px",
                     }}
                   >
                     {row.kind === "divider" ? (
@@ -649,11 +651,14 @@ export default function EventFeed({
                       <div
                         className={
                           row.isNew
-                            ? "animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out"
+                            ? `animate-in fade-in duration-300 ease-out ${compact ? "slide-in-from-bottom-2" : "slide-in-from-bottom-10"}`
                             : undefined
                         }
+                        onAnimationEnd={
+                          row.isNew ? () => newEventIdsRef.current.delete(row.event.id) : undefined
+                        }
                       >
-                        <EventCard event={row.event} />
+                        <EventCard event={row.event} compact={compact} />
                       </div>
                     )}
                   </div>
