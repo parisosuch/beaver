@@ -1,8 +1,16 @@
 import { createMetric, deleteMetric, getMetrics, updateMetric } from "@/lib/beaver/metric";
 import type { MetricType, ChartType } from "@/lib/beaver/metric";
+import {
+  canAccessProject,
+  canManageProject,
+  forbidden,
+  projectIdForMetric,
+  unauthorized,
+} from "@/lib/beaver/authz";
 import type { APIContext, APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ request }: APIContext) => {
+export const GET: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const url = new URL(request.url);
     const projectId = url.searchParams.get("projectId");
@@ -11,6 +19,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
       return json({ error: "projectId is a required query parameter." }, 400);
     }
 
+    if (!(await canAccessProject(locals.user, parseInt(projectId)))) return forbidden();
+
     const metrics = await getMetrics(parseInt(projectId));
     return json(metrics);
   } catch (err) {
@@ -18,13 +28,16 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }: APIContext) => {
+export const POST: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { projectId, name, description, unit, type, chartType } = await request.json();
 
     if (!projectId) return json({ error: "projectId is required." }, 400);
     if (!name) return json({ error: "name is required." }, 400);
     if (!type) return json({ error: "type is required." }, 400);
+
+    if (!(await canManageProject(locals.user, parseInt(projectId)))) return forbidden();
 
     const validTypes: MetricType[] = ["gauge", "counter", "timeseries"];
     if (!validTypes.includes(type)) {
@@ -52,11 +65,16 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
   }
 };
 
-export const PUT: APIRoute = async ({ request }: APIContext) => {
+export const PUT: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { metricId, name, description, unit } = await request.json();
 
     if (!metricId) return json({ error: "metricId is required." }, 400);
+
+    const projectId = await projectIdForMetric(parseInt(metricId));
+    if (projectId === null) return forbidden();
+    if (!(await canManageProject(locals.user, projectId))) return forbidden();
 
     const metric = await updateMetric(parseInt(metricId), {
       name: name ? name.trim().toLowerCase().replace(/\s+/g, "-") : undefined,
@@ -70,11 +88,16 @@ export const PUT: APIRoute = async ({ request }: APIContext) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request }: APIContext) => {
+export const DELETE: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { metricId } = await request.json();
 
     if (!metricId) return json({ error: "metricId is required." }, 400);
+
+    const projectId = await projectIdForMetric(parseInt(metricId));
+    if (projectId === null) return forbidden();
+    if (!(await canManageProject(locals.user, projectId))) return forbidden();
 
     await deleteMetric(parseInt(metricId));
     return json({ ok: true });
