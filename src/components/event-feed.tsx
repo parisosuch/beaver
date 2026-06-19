@@ -184,11 +184,9 @@ export default function EventFeed({
           `&cursorAction=${encodeURIComponent(lastEvent.eventAction)}` +
           `&cursorId=${lastEvent.id}`;
       } else if (order === "asc") {
-        endpoint +=
-          `&afterCreatedAt=${new Date(lastEvent.createdAt).getTime()}&afterId=${lastEvent.id}`;
+        endpoint += `&afterCreatedAt=${new Date(lastEvent.createdAt).getTime()}&afterId=${lastEvent.id}`;
       } else {
-        endpoint +=
-          `&beforeCreatedAt=${new Date(lastEvent.createdAt).getTime()}&beforeId=${lastEvent.id}`;
+        endpoint += `&beforeCreatedAt=${new Date(lastEvent.createdAt).getTime()}&beforeId=${lastEvent.id}`;
       }
     }
 
