@@ -108,7 +108,7 @@ export function streamEvents(opts: {
         const initial = await fetchInitial(afterId);
         if (initial.length > 0) {
           lastSentId = Math.max(lastSentId, ...initial.map((e) => e.id));
-          send(initial);
+          send([...initial].sort((a, b) => a.id - b.id));
         }
       } catch (err) {
         console.error("Error fetching initial events for stream:", err);
@@ -116,7 +116,7 @@ export function streamEvents(opts: {
 
       // Flush events that arrived during the catch-up read. Synchronous with
       // the caughtUp flip, so a concurrent publish can't slip past unbuffered.
-      const pending = buffer.filter((e) => e.id > lastSentId).sort((a, b) => b.id - a.id);
+      const pending = buffer.filter((e) => e.id > lastSentId).sort((a, b) => a.id - b.id);
       caughtUp = true;
       if (pending.length > 0) {
         lastSentId = Math.max(lastSentId, ...pending.map((e) => e.id));
