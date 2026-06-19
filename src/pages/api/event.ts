@@ -3,7 +3,7 @@ import { events, channels, eventTags } from "@/lib/db/schema";
 import { EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
 import { getProject } from "@/lib/beaver/project";
 import { getNotificationEmailsForChannel } from "@/lib/beaver/channel-notification";
-import { sendEventNotification } from "@/lib/email/resend";
+import { sendEventNotification } from "@/lib/email/send";
 import { publishEvent } from "@/lib/beaver/event-bus";
 import { eq } from "drizzle-orm";
 import type { APIContext, APIRoute } from "astro";

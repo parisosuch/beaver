@@ -35,6 +35,7 @@ import {
   FolderPlusIcon,
   InboxIcon,
   LogOutIcon,
+  MailIcon,
   MenuIcon,
   PlusIcon,
   Settings,
@@ -963,6 +964,16 @@ function PanelContent({
           >
             <UsersIcon size={20} />
             <p>Users</p>
+          </a>
+        )}
+        {user?.isAdmin && (
+          <a
+            className={pathname === "/admin/settings" ? activeNavCss : navCss}
+            href="/admin/settings"
+            onClick={() => onNavigate?.()}
+          >
+            <MailIcon size={20} />
+            <p>Email Settings</p>
           </a>
         )}
       </div>
