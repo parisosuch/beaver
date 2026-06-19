@@ -294,6 +294,35 @@ export const emailSettings = sqliteTable("email_settings", {
     .notNull(),
 });
 
+// --- ALERT RULES ---
+export const alertRules = sqliteTable(
+  "alert_rules",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    eventObject: text("event_object").notNull(),
+    eventAction: text("event_action").notNull(),
+    threshold: integer("threshold").notNull(),
+    windowMinutes: integer("window_minutes").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    lastTriggeredAt: integer("last_triggered_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    channelIdx: index("alert_rules_channel_id_idx").on(table.channelId),
+    channelObjActIdx: index("alert_rules_channel_id_event_object_event_action_idx").on(
+      table.channelId,
+      table.eventObject,
+      table.eventAction,
+    ),
+  }),
+);
+
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -332,6 +361,7 @@ export const channelRelations = relations(channels, ({ one, many }) => ({
     references: [channelGroups.id],
   }),
   events: many(events),
+  alertRules: many(alertRules),
 }));
 
 export const eventRelations = relations(events, ({ one }) => ({
@@ -397,6 +427,13 @@ export const channelNotificationSubscriptionRelations = relations(
     }),
   }),
 );
+
+export const alertRuleRelations = relations(alertRules, ({ one }) => ({
+  channel: one(channels, {
+    fields: [alertRules.channelId],
+    references: [channels.id],
+  }),
+}));
 
 export const metricRelations = relations(metrics, ({ one, many }) => ({
   project: one(projects, {

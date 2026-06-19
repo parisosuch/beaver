@@ -92,3 +92,70 @@ export function buildEmailHtml(event: EventWithChannelName, projectName: string)
 </body>
 </html>`;
 }
+
+export type AlertEmailParams = {
+  ruleName: string;
+  eventObject: string;
+  eventAction: string;
+  count: number;
+  threshold: number;
+  windowMinutes: number;
+  projectName: string;
+  channelName: string;
+};
+
+export function buildAlertEmailHtml(params: AlertEmailParams): string {
+  const eventName = `${params.eventObject}.${params.eventAction}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${params.ruleName}</title>
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#7c2d12;padding:24px 32px;border-radius:12px 12px 0 0;">
+              <p style="margin:0;font-size:13px;font-weight:600;color:#fed7aa;letter-spacing:0.08em;text-transform:uppercase;">Beaver Alert</p>
+              <p style="margin:4px 0 0;font-size:13px;color:#fdba74;">
+                ${params.projectName} &middot; #${params.channelName}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background:#ffffff;padding:32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+              <p style="margin:0 0 6px;font-size:12px;font-family:monospace;color:#9ca3af;letter-spacing:0.05em;">${eventName}</p>
+              <h1 style="margin:0;font-size:22px;font-weight:700;color:#111827;line-height:1.3;">${params.ruleName}</h1>
+              <p style="margin:8px 0 0;font-size:15px;color:#6b7280;line-height:1.6;">
+                ${params.count} events matched in the last ${params.windowMinutes} minute${params.windowMinutes === 1 ? "" : "s"}, exceeding the threshold of ${params.threshold}.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f4f4f5;padding:20px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+                You're receiving this because you enabled event notifications for
+                <strong style="color:#6b7280;">#${params.channelName}</strong> in
+                <strong style="color:#6b7280;">${params.projectName}</strong>.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}

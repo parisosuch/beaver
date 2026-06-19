@@ -1,9 +1,11 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { MetricWithValue } from "@/lib/beaver/metric";
 import type { Project } from "@/lib/beaver/project";
+import type { AlertRuleWithChannel } from "@/lib/beaver/alert-rule";
 import { useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import APIKey from "./api-key";
+import AlertSettings from "./alert-settings";
 import ChannelSettings from "./channel-settings";
 import MetricSettings from "./metric-settings";
 import NotificationSettings from "./notification-settings";
@@ -15,6 +17,7 @@ interface Props {
   project: Project;
   channels: Channel[];
   metrics: MetricWithValue[];
+  alertRules: AlertRuleWithChannel[];
   isOwner: boolean;
   currentUserId: number;
   initialEmail: string | null;
@@ -28,6 +31,7 @@ export default function SettingsTabs({
   project,
   channels,
   metrics,
+  alertRules,
   isOwner,
   currentUserId,
   initialEmail,
@@ -52,6 +56,7 @@ export default function SettingsTabs({
         <TabsTrigger value="channels">Channels</TabsTrigger>
         {isOwner && <TabsTrigger value="members">Members</TabsTrigger>}
         <TabsTrigger value="metrics">Metrics</TabsTrigger>
+        <TabsTrigger value="alerts">Alerts</TabsTrigger>
         <TabsTrigger value="notifications">Notifications</TabsTrigger>
         {isOwner && (
           <TabsTrigger value="danger" className="text-destructive">
@@ -93,6 +98,10 @@ export default function SettingsTabs({
 
       <TabsContent value="metrics" className="mt-6 md:mt-0">
         {show("metrics") && <MetricSettings metrics={metrics} projectId={project.id} />}
+      </TabsContent>
+
+      <TabsContent value="alerts" className="mt-6 md:mt-0">
+        {show("alerts") && <AlertSettings channels={channels} initialRules={alertRules} />}
       </TabsContent>
 
       <TabsContent value="notifications" className="mt-6 md:mt-0">
