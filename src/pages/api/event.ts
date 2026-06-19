@@ -2,7 +2,7 @@ import { db } from "@/lib/db/db";
 import { events, channels, eventTags } from "@/lib/db/schema";
 import { EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
 import { getProject } from "@/lib/beaver/project";
-import { getNotificationEmails } from "@/lib/beaver/user";
+import { getNotificationEmailsForChannel } from "@/lib/beaver/channel-notification";
 import { sendEventNotification } from "@/lib/email/resend";
 import { publishEvent } from "@/lib/beaver/event-bus";
 import { eq } from "drizzle-orm";
@@ -137,7 +137,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
     // Fire notifications outside the transaction
     created.forEach((event, i) => {
       if (resolved[i].payload.notify === true) {
-        getNotificationEmails(event.projectId).then((emails) => {
+        getNotificationEmailsForChannel(resolved[i].channel.id).then((emails) => {
           if (emails.length > 0) {
             sendEventNotification(event, resolved[i].project.name, emails).catch(() => {});
           }

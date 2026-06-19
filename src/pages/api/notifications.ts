@@ -1,4 +1,4 @@
-import { setProjectNotifications } from "@/lib/beaver/user";
+import { setChannelNotification, setChannelNotifications } from "@/lib/beaver/channel-notification";
 import type { APIContext } from "astro";
 
 export async function POST({ locals, request }: APIContext) {
@@ -9,14 +9,26 @@ export async function POST({ locals, request }: APIContext) {
     });
   }
 
-  const { projectId, enabled } = await request.json();
-  if (typeof projectId !== "number" || typeof enabled !== "boolean") {
+  const body = await request.json();
+
+  if (Array.isArray(body.channelIds) && typeof body.enabled === "boolean") {
+    if (!body.channelIds.every((id: unknown) => typeof id === "number")) {
+      return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
+    }
+    await setChannelNotifications(user.id, body.channelIds, body.enabled);
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const { channelId, enabled } = body;
+  if (typeof channelId !== "number" || typeof enabled !== "boolean") {
     return new Response(JSON.stringify({ error: "Invalid request" }), {
       status: 400,
     });
   }
 
-  await setProjectNotifications(user.id, projectId, enabled);
+  await setChannelNotification(user.id, channelId, enabled);
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "Content-Type": "application/json" },
   });

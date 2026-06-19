@@ -4,8 +4,9 @@ import Layout from "@/layouts/layout.astro";
 import { getMetrics } from "@/lib/beaver/metric";
 import { getChannels } from "@/lib/beaver/channel";
 import { getProject } from "@/lib/beaver/project";
-import { getUserProjectRole, getProjectMembership } from "@/lib/beaver/project-member";
+import { getUserProjectRole } from "@/lib/beaver/project-member";
 import { getUserByUsername } from "@/lib/beaver/user";
+import { getChannelSubscriptions } from "@/lib/beaver/channel-notification";
 
 const { projectID } = Astro.params;
 const user = Astro.locals.user!;
@@ -23,7 +24,7 @@ if (userRole === "guest" || userRole === null) {
 const channels = await getChannels(parseInt(projectID!));
 const metrics = await getMetrics(parseInt(projectID!));
 const dbUser = await getUserByUsername(user.userName);
-const membership = await getProjectMembership(project.id, user.id);
+const subscribedChannelIds = await getChannelSubscriptions(user.id, project.id);
 
 const isOwner = userRole === "owner";
 ---
@@ -43,7 +44,7 @@ const isOwner = userRole === "owner";
           isOwner={isOwner}
           currentUserId={user.id}
           initialEmail={dbUser?.email ?? null}
-          initialEnabled={membership?.notificationsEnabled ?? false}
+          subscribedChannelIds={subscribedChannelIds}
         />
       </div>
     </div>
