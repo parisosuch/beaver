@@ -8,8 +8,21 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 
 const CONFIRM_PHRASE = "rotate api key";
 
+function formatExpiry(date: Date): string {
+  const diffMs = date.getTime() - Date.now();
+  const diffH = Math.ceil(diffMs / (1000 * 60 * 60));
+  if (diffH <= 1) return "less than 1 hour";
+  if (diffH < 24) return `${diffH} hours`;
+  return date.toLocaleString();
+}
+
 export default function APIKey({ project }: { project: Project }) {
   const [apiKey, setApiKey] = useState(project.apiKey);
+  const [previousKeyExpiresAt, setPreviousKeyExpiresAt] = useState<Date | null>(
+    project.previousApiKeyExpiresAt && new Date(project.previousApiKeyExpiresAt) > new Date()
+      ? new Date(project.previousApiKeyExpiresAt)
+      : null,
+  );
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
@@ -38,6 +51,7 @@ export default function APIKey({ project }: { project: Project }) {
         return;
       }
       setApiKey(data.apiKey);
+      setPreviousKeyExpiresAt(new Date(data.previousKeyExpiresAt));
       setRevealed(false);
       setRotateOpen(false);
       setConfirmText("");
@@ -48,7 +62,7 @@ export default function APIKey({ project }: { project: Project }) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-2 min-w-0 max-w-full">
+      <div className="flex flex-col gap-1.5 min-w-0 max-w-full">
         <div className="border px-3 py-1.5 rounded flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
           <p className="font-mono text-sm truncate min-w-0">
             {revealed ? apiKey : "•".repeat(apiKey.length)}
@@ -87,6 +101,14 @@ export default function APIKey({ project }: { project: Project }) {
             <TooltipContent>Rotate API key</TooltipContent>
           </Tooltip>
         </div>
+        {previousKeyExpiresAt && (
+          <p className="text-xs text-muted-foreground">
+            Previous key valid for another{" "}
+            <span className="font-medium text-amber-600 dark:text-amber-400">
+              {formatExpiry(previousKeyExpiresAt)}
+            </span>
+          </p>
+        )}
       </div>
 
       <Dialog
@@ -105,8 +127,9 @@ export default function APIKey({ project }: { project: Project }) {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              This will immediately invalidate your current API key. Any integrations using the old
-              key will stop working until updated.
+              A new API key will be issued. Your current key will remain valid for{" "}
+              <span className="font-medium text-foreground">24 hours</span> so you have time to
+              update your integrations without downtime.
             </p>
             <div className="space-y-2">
               <label className="text-sm font-medium">
