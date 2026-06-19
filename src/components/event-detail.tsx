@@ -1,4 +1,5 @@
 import type { EventWithChannelName, ReactionSummary } from "@/lib/beaver/event";
+import EventComments from "./event-comments";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
@@ -38,9 +39,11 @@ function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | 
 export default function EventDetail({
   event,
   canDelete = false,
+  currentUserId,
 }: {
   event: EventWithChannelName;
   canDelete?: boolean;
+  currentUserId: number;
 }) {
   const tags = Object.entries(event.tags);
   const [bookmarked, setBookmarked] = useState(event.bookmarked);
@@ -239,6 +242,17 @@ export default function EventDetail({
                 </PopoverContent>
               </Popover>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <EventComments
+              eventId={event.id}
+              projectId={event.projectId}
+              currentUserId={currentUserId}
+              canModerate={canDelete}
+            />
           </CardContent>
         </Card>
       </div>

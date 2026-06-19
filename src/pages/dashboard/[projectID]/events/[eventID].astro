@@ -18,5 +18,5 @@ const canDelete = role === "owner" || role === "maintainer";
 ---
 
 <Layout projectID={projectID!}>
-  <EventDetail client:visible event={event} canDelete={canDelete} />
+  <EventDetail client:visible event={event} canDelete={canDelete} currentUserId={user.id} />
 </Layout>
