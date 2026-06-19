@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { getAdminUsers } from "./lib/beaver/user";
 import { verifyToken } from "./lib/auth/jwt";
 import { getSessionByToken } from "./lib/auth/session";
-import { getProjectsForUser } from "./lib/beaver/project-member";
+import { getProjectsForUser, getUserProjectRole } from "./lib/beaver/project-member";
 import { logRequest, logError } from "./lib/logger";
 
 // Routes that don't require authentication
@@ -16,6 +16,23 @@ const AUTH_REDIRECT_ROUTES = ["/login", "/onboarding"];
 
 // Route for forced password change
 const CHANGE_PASSWORD_ROUTE = "/change-password";
+
+// Pull the project id out of a path that is scoped to a single project, so the
+// middleware can verify membership before the request reaches the page/handler.
+// Covers dashboard pages (/dashboard/{id}/...) and project-scoped API routes
+// (/api/.../project/{id}/...). Routes that carry the project id in the body or
+// query (e.g. /api/project, /api/project-members) authorize themselves.
+function extractProjectId(pathname: string): number | null {
+  const dashboard = pathname.match(/^\/dashboard\/(\d+)(?:\/|$)/);
+  if (dashboard) return parseInt(dashboard[1]);
+
+  if (pathname.startsWith("/api/")) {
+    const api = pathname.match(/\/project\/(\d+)(?:\/|$)/);
+    if (api) return parseInt(api[1]);
+  }
+
+  return null;
+}
 
 function isPublicRoute(pathname: string): boolean {
   // Check exact public routes
@@ -148,6 +165,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
     pathname !== CHANGE_PASSWORD_ROUTE
   ) {
     return context.redirect(CHANGE_PASSWORD_ROUTE);
+  }
+
+  // Project-level authorization. Authentication alone is not enough: a user may
+  // only access a project they belong to. Admins may access any project. This
+  // is enforced centrally here so every project-scoped page and API route is
+  // covered, rather than relying on each handler to remember to check.
+  const projectId = extractProjectId(pathname);
+  if (projectId !== null && !payload.isAdmin) {
+    const role = await getUserProjectRole(projectId, payload.userId);
+    if (role === null) {
+      if (isApi) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      // Send non-members back to a project they can actually see.
+      return context.redirect((await getAuthedRedirect(context)) ?? "/login");
+    }
   }
 
   if (isApi) {
