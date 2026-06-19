@@ -1,6 +1,6 @@
 import { db } from "../db/db";
-import { users, sessions, projectMembers } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { users, sessions } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 export type DatabaseUser = {
   id: number;
@@ -177,27 +177,4 @@ export async function updateUserEmail(id: number, email: string | null): Promise
 
 export async function updateUserFullName(id: number, fullName: string | null): Promise<void> {
   await db.update(users).set({ fullName }).where(eq(users.id, id));
-}
-
-export async function setProjectNotifications(
-  userId: number,
-  projectId: number,
-  enabled: boolean,
-): Promise<void> {
-  await db
-    .update(projectMembers)
-    .set({ notificationsEnabled: enabled })
-    .where(and(eq(projectMembers.userId, userId), eq(projectMembers.projectId, projectId)));
-}
-
-export async function getNotificationEmails(projectId: number): Promise<string[]> {
-  const rows = await db
-    .select({ email: users.email })
-    .from(projectMembers)
-    .innerJoin(users, eq(projectMembers.userId, users.id))
-    .where(
-      and(eq(projectMembers.projectId, projectId), eq(projectMembers.notificationsEnabled, true)),
-    );
-
-  return rows.flatMap((r) => (r.email ? [r.email] : []));
 }

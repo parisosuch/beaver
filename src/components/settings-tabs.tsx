@@ -18,7 +18,7 @@ interface Props {
   isOwner: boolean;
   currentUserId: number;
   initialEmail: string | null;
-  initialEnabled: boolean;
+  subscribedChannelIds: number[];
 }
 
 const row = "flex flex-col sm:flex-row sm:items-center w-full sm:justify-between gap-2";
@@ -31,7 +31,7 @@ export default function SettingsTabs({
   isOwner,
   currentUserId,
   initialEmail,
-  initialEnabled,
+  subscribedChannelIds,
 }: Props) {
   const createdAt = project.createdAt ? new Date(project.createdAt).toLocaleDateString() : "—";
   const defaultTab = isOwner ? "general" : "channels";
@@ -98,9 +98,9 @@ export default function SettingsTabs({
       <TabsContent value="notifications" className="mt-6 md:mt-0">
         {show("notifications") && (
           <NotificationSettings
-            projectId={project.id}
+            channels={channels}
             initialEmail={initialEmail}
-            initialEnabled={initialEnabled}
+            subscribedChannelIds={subscribedChannelIds}
           />
         )}
       </TabsContent>

@@ -156,9 +156,6 @@ export const projectMembers = sqliteTable(
     role: text("role", { enum: ["owner", "maintainer", "guest"] })
       .notNull()
       .default("guest"),
-    notificationsEnabled: integer("notifications_enabled", { mode: "boolean" })
-      .notNull()
-      .default(false),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(unixepoch() * 1000)`)
       .notNull(),
@@ -169,6 +166,30 @@ export const projectMembers = sqliteTable(
       table.userId,
     ),
     userIdIdx: index("project_members_user_id_idx").on(table.userId),
+  }),
+);
+
+// --- CHANNEL NOTIFICATION SUBSCRIPTIONS ---
+export const channelNotificationSubscriptions = sqliteTable(
+  "channel_notification_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    userChannelIdx: uniqueIndex("channel_notification_subscriptions_user_channel_idx").on(
+      table.userId,
+      table.channelId,
+    ),
+    channelIdIdx: index("channel_notification_subscriptions_channel_id_idx").on(table.channelId),
   }),
 );
 
@@ -345,6 +366,20 @@ export const channelReadRelations = relations(channelReads, ({ one }) => ({
     references: [channels.id],
   }),
 }));
+
+export const channelNotificationSubscriptionRelations = relations(
+  channelNotificationSubscriptions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [channelNotificationSubscriptions.userId],
+      references: [users.id],
+    }),
+    channel: one(channels, {
+      fields: [channelNotificationSubscriptions.channelId],
+      references: [channels.id],
+    }),
+  }),
+);
 
 export const metricRelations = relations(metrics, ({ one, many }) => ({
   project: one(projects, {
