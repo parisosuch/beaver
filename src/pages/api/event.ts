@@ -1,12 +1,13 @@
 import { db } from "@/lib/db/db";
 import { events, channels, eventTags } from "@/lib/db/schema";
 import { EVENT_NAME_REGEX, RESERVED_OBJECT } from "@/lib/beaver/event";
-import { getProject } from "@/lib/beaver/project";
+import { getProjectByApiKey } from "@/lib/beaver/project";
+import { consumeRateLimit } from "@/lib/beaver/rate-limit";
 import { getNotificationEmailsForChannel } from "@/lib/beaver/channel-notification";
 import { checkAndDispatchAlerts } from "@/lib/beaver/alert-rule";
 import { sendEventNotification } from "@/lib/email/send";
 import { publishEvent } from "@/lib/beaver/event-bus";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { APIContext, APIRoute } from "astro";
 
 type EventPayload = Record<string, unknown>;
@@ -43,6 +44,29 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       });
     }
 
+    const project = await getProjectByApiKey(apiKey);
+    if (!project) {
+      return new Response(JSON.stringify({ error: "Invalid API key." }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Reject floods before they reach the DB at all.
+    const rateLimit = consumeRateLimit(project.id, project.rateLimitPerMinute);
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Slow down your request rate." }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(rateLimit.retryAfterSeconds),
+          },
+        },
+      );
+    }
+
     const body = await request.json();
     const payloads: EventPayload[] = Array.isArray(body) ? body : [body];
 
@@ -58,23 +82,23 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       }
     }
 
-    // Resolve channels and verify API key (reads, before transaction)
+    // Resolve channels, scoped to this project (reads, before transaction)
     const resolved = await Promise.all(
       payloads.map(async (p) => {
         const channelName = p.channel as string;
-        const channelsRes = await db.select().from(channels).where(eq(channels.name, channelName));
+        const channelsRes = await db
+          .select()
+          .from(channels)
+          .where(and(eq(channels.projectId, project.id), eq(channels.name, channelName)));
         if (channelsRes.length === 0) throw new Error(`Channel '${channelName}' does not exist.`);
-        const channel = channelsRes[0];
-        const project = await getProject(channel.projectId);
-        if (project.apiKey !== apiKey) throw new Error("Invalid API key.");
-        return { channel, project, payload: p };
+        return { channel: channelsRes[0], payload: p };
       }),
     );
 
     // Insert all events and their tags atomically
     const created = await db.transaction(async (tx) => {
       return Promise.all(
-        resolved.map(async ({ channel, project, payload }) => {
+        resolved.map(async ({ channel, payload }) => {
           const [eventObject, eventAction] = (payload.name as string).split(".");
           const title = payload.title as string;
           const description =
@@ -141,7 +165,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
       if (resolved[i].payload.notify === true) {
         getNotificationEmailsForChannel(resolved[i].channel.id).then((emails) => {
           if (emails.length > 0) {
-            sendEventNotification(event, resolved[i].project.name, emails).catch(() => {});
+            sendEventNotification(event, project.name, emails).catch(() => {});
           }
         });
       }
@@ -149,8 +173,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
 
     // Check alert rules outside the transaction
     created.forEach((event, i) => {
-      const { channel, project } = resolved[i];
-      checkAndDispatchAlerts(channel, project, event).catch(() => {});
+      checkAndDispatchAlerts(resolved[i].channel, project, event).catch(() => {});
     });
 
     return new Response(JSON.stringify(created), {

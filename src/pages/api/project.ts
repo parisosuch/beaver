@@ -6,6 +6,7 @@ import {
   getProjects,
   renameProject,
   rotateApiKey,
+  setRateLimit,
 } from "@/lib/beaver/project";
 import { getUserProjectRole, getProjectsForUser } from "@/lib/beaver/project-member";
 
@@ -90,10 +91,16 @@ export const PATCH: APIRoute = async (context: APIContext) => {
   }
 
   try {
-    const { projectID, name } = await context.request.json();
+    const { projectID, name, rateLimitPerMinute } = await context.request.json();
 
-    if (!projectID || !name?.trim()) {
-      return new Response(JSON.stringify({ error: "projectID and name are required." }), {
+    if (!projectID) {
+      return new Response(JSON.stringify({ error: "projectID is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (name === undefined && rateLimitPerMinute === undefined) {
+      return new Response(JSON.stringify({ error: "name or rateLimitPerMinute is required." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -109,13 +116,39 @@ export const PATCH: APIRoute = async (context: APIContext) => {
 
     const role = await getUserProjectRole(parseInt(projectID), context.locals.user.id);
     if (!context.locals.user.isAdmin && role !== "owner") {
-      return new Response(JSON.stringify({ error: "Only the project owner can rename it." }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Only the project owner can update project settings." }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    const updated = await renameProject(parseInt(projectID), name.trim());
+    let updated = project;
+
+    if (name !== undefined) {
+      if (!name?.trim()) {
+        return new Response(JSON.stringify({ error: "name cannot be empty." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      updated = await renameProject(parseInt(projectID), name.trim());
+    }
+
+    if (rateLimitPerMinute !== undefined) {
+      const isValid =
+        rateLimitPerMinute === null ||
+        (typeof rateLimitPerMinute === "number" &&
+          Number.isInteger(rateLimitPerMinute) &&
+          rateLimitPerMinute > 0);
+      if (!isValid) {
+        return new Response(
+          JSON.stringify({ error: "rateLimitPerMinute must be a positive integer or null." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      updated = await setRateLimit(parseInt(projectID), rateLimitPerMinute);
+    }
+
     return new Response(JSON.stringify(updated), {
       status: 200,
       headers: { "Content-Type": "application/json" },

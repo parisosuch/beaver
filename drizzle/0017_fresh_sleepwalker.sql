@@ -1,0 +1,1 @@
+ALTER TABLE `projects` ADD `rate_limit_per_minute` integer;

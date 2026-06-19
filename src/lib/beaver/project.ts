@@ -6,6 +6,7 @@ export type Project = {
   id: number;
   name: string;
   apiKey: string;
+  rateLimitPerMinute: number | null;
   createdAt: Date | null;
   ownerId: number;
 };
@@ -49,6 +50,16 @@ export async function renameProject(projectId: number, name: string) {
 
 export async function deleteProject(projectId: number) {
   const res = await db.delete(projects).where(eq(projects.id, projectId)).returning();
+
+  return res[0];
+}
+
+export async function setRateLimit(projectId: number, rateLimitPerMinute: number | null) {
+  const res = await db
+    .update(projects)
+    .set({ rateLimitPerMinute })
+    .where(eq(projects.id, projectId))
+    .returning();
 
   return res[0];
 }
