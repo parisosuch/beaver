@@ -23,6 +23,8 @@ export async function GET({
     let limit;
     let beforeId;
     let afterId;
+    let beforeCreatedAt: Date | undefined;
+    let afterCreatedAt: Date | undefined;
     let cursorObject: string | undefined;
     let cursorAction: string | undefined;
     let cursorId: number | undefined;
@@ -35,6 +37,12 @@ export async function GET({
     }
     if (url.searchParams.get("afterId")) {
       afterId = parseInt(url.searchParams.get("afterId")!);
+    }
+    if (url.searchParams.get("beforeCreatedAt")) {
+      beforeCreatedAt = new Date(Number(url.searchParams.get("beforeCreatedAt")!));
+    }
+    if (url.searchParams.get("afterCreatedAt")) {
+      afterCreatedAt = new Date(Number(url.searchParams.get("afterCreatedAt")!));
     }
     if (
       url.searchParams.get("cursorObject") &&
@@ -76,6 +84,8 @@ export async function GET({
         limit,
         beforeId,
         afterId,
+        beforeCreatedAt,
+        afterCreatedAt,
         cursorObject,
         cursorAction,
         cursorId,
