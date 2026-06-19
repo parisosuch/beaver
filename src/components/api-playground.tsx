@@ -106,12 +106,12 @@ export default function ApiPlayground({
             <p className="text-xs text-muted-foreground">Must follow object.action format</p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="pg-channel">
+            <Label>
               Channel <span className="text-destructive">*</span>
             </Label>
             {channels.length > 0 ? (
               <Select value={channelName} onValueChange={setChannelName}>
-                <SelectTrigger id="pg-channel">
+                <SelectTrigger>
                   <SelectValue placeholder="Select channel" />
                 </SelectTrigger>
                 <SelectContent>
