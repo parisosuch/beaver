@@ -1,4 +1,4 @@
-import { updateUserEmail, updateUserFullName } from "@/lib/beaver/user";
+import { updateUserCompactMode, updateUserEmail, updateUserFullName } from "@/lib/beaver/user";
 import type { APIContext } from "astro";
 
 export async function PATCH({ locals, request }: APIContext) {
@@ -16,6 +16,9 @@ export async function PATCH({ locals, request }: APIContext) {
   }
   if ("fullName" in body) {
     await updateUserFullName(user.id, body.fullName?.trim() || null);
+  }
+  if ("compactMode" in body) {
+    await updateUserCompactMode(user.id, !!body.compactMode);
   }
 
   return new Response(JSON.stringify({ ok: true }), {

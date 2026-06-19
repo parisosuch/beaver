@@ -12,6 +12,7 @@ export type DatabaseUser = {
   password: string;
   mustChangePassword: boolean;
   tempPassword: string | null;
+  compactMode: boolean;
   createdAt: Date | null;
 };
 
@@ -24,6 +25,7 @@ export type User = {
   canCreateProjects: boolean;
   mustChangePassword: boolean;
   tempPassword: string | null;
+  compactMode: boolean;
   createdAt: Date | null;
 };
 
@@ -36,6 +38,7 @@ const userSelect = {
   canCreateProjects: users.canCreateProjects,
   mustChangePassword: users.mustChangePassword,
   tempPassword: users.tempPassword,
+  compactMode: users.compactMode,
   createdAt: users.createdAt,
 };
 
@@ -177,4 +180,8 @@ export async function updateUserEmail(id: number, email: string | null): Promise
 
 export async function updateUserFullName(id: number, fullName: string | null): Promise<void> {
   await db.update(users).set({ fullName }).where(eq(users.id, id));
+}
+
+export async function updateUserCompactMode(id: number, compactMode: boolean): Promise<void> {
+  await db.update(users).set({ compactMode }).where(eq(users.id, id));
 }

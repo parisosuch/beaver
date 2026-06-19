@@ -2,9 +2,12 @@
 import Layout from "@/layouts/layout.astro";
 import BookmarksFeed from "@/components/bookmarks-feed";
 import { getChannels } from "@/lib/beaver/channel";
+import { getUserByUsername } from "@/lib/beaver/user";
 
 const { projectID } = Astro.params;
 const channels = await getChannels(parseInt(projectID!));
+const user = Astro.locals.user!;
+const dbUser = await getUserByUsername(user.userName);
 
 const title = Astro.url.searchParams.get("title");
 const object = Astro.url.searchParams.get("object");
@@ -27,5 +30,6 @@ const channelId = Astro.url.searchParams.get("channelId");
     endDate={endDate}
     tags={tags}
     channelId={channelId}
+    compact={dbUser?.compactMode ?? false}
   />
 </Layout>

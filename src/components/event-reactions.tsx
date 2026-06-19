@@ -131,47 +131,68 @@ function formatReactors(names: string[]): string {
 
 // Controlled: the parent owns the reaction state (a single source of truth shared
 // with the emoji picker), so adding several reactions in a row stays in sync.
+//
+// `max` bounds how many pills render — needed in single-line layouts (the compact
+// card row) where the bar sits in a non-shrinking flex slot and an unbounded number
+// of distinct emoji would push the rest of the row out past the card's clipped edge
+// instead of wrapping. Omit it where wrapping onto extra lines is fine.
 export function ReactionBar({
   reactions,
   onToggle,
+  max,
 }: {
   reactions: ReactionSummary[];
   onToggle: (emoji: string) => void;
+  max?: number;
 }) {
   if (reactions.length === 0) return null;
+
+  const sorted = [...reactions].sort((a, b) => b.count - a.count);
+  const visible = max ? sorted.slice(0, max) : sorted;
+  const overflow = max ? sorted.slice(max) : [];
 
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-wrap gap-1">
-        {[...reactions]
-          .sort((a, b) => b.count - a.count)
-          .map((r) => (
-            <Tooltip key={r.emoji}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onToggle(r.emoji);
-                  }}
-                  className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm transition-colors ${
-                    r.userReacted
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
-                      : "bg-gray-100 text-foreground hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20"
-                  }`}
-                >
-                  <span>{r.emoji}</span>
-                  <span className="text-xs text-muted-foreground">{r.count}</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-56">
-                <span className="font-medium">{formatReactors(r.users)}</span>
-                <span className="text-primary-foreground/70"> reacted with </span>
+        {visible.map((r) => (
+          <Tooltip key={r.emoji}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggle(r.emoji);
+                }}
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm transition-colors ${
+                  r.userReacted
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
+                    : "bg-gray-100 text-foreground hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20"
+                }`}
+              >
                 <span>{r.emoji}</span>
-              </TooltipContent>
-            </Tooltip>
-          ))}
+                <span className="text-xs text-muted-foreground">{r.count}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-56">
+              <span className="font-medium">{formatReactors(r.users)}</span>
+              <span className="text-primary-foreground/70"> reacted with </span>
+              <span>{r.emoji}</span>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+        {overflow.length > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs text-muted-foreground dark:bg-white/10">
+                +{overflow.length}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-56">
+              {overflow.map((r) => `${r.emoji} ${r.count}`).join("  ")}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   );
