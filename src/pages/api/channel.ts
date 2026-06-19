@@ -7,9 +7,17 @@ import {
   updateChannel,
 } from "@/lib/beaver/channel";
 import { logAuditEntry } from "@/lib/beaver/audit-log";
+import {
+  canAccessProject,
+  canManageProject,
+  forbidden,
+  projectIdForChannel,
+  unauthorized,
+} from "@/lib/beaver/authz";
 import type { APIContext, APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ request }: APIContext) => {
+export const GET: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const url = new URL(request.url);
 
@@ -21,6 +29,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    if (!(await canAccessProject(locals.user, parseInt(project_id)))) return forbidden();
 
     const projects = await getChannels(parseInt(project_id));
 
@@ -43,9 +53,10 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
   }
 };
 
-export const POST: APIRoute = async (context: APIContext) => {
+export const POST: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
-    const { name, project_id, description } = await context.request.json();
+    const { name, project_id, description } = await request.json();
 
     if (!name) {
       return new Response(JSON.stringify({ error: "name is required to create channel." }));
@@ -54,24 +65,26 @@ export const POST: APIRoute = async (context: APIContext) => {
       return new Response(JSON.stringify({ error: "project_id is required to create channel." }));
     }
 
+    if (!(await canManageProject(locals.user, parseInt(project_id)))) return forbidden();
+
     const splitName = name.replace(" ", "-");
 
     const channel = await createChannel(splitName, project_id, description);
 
-    if (context.locals.user) {
-      logAuditEntry({
-        projectId: project_id,
-        userId: context.locals.user.id,
-        action: "channel.created",
-        targetType: "channel",
-        targetId: channel.id,
-        targetName: channel.name,
-      });
-    }
+    logAuditEntry({
+      projectId: project_id,
+      userId: locals.user.id,
+      action: "channel.created",
+      targetType: "channel",
+      targetId: channel.id,
+      targetName: channel.name,
+    });
 
     return new Response(JSON.stringify(channel), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
   } catch (err) {
     if (err instanceof Error) {
@@ -88,7 +101,8 @@ export const POST: APIRoute = async (context: APIContext) => {
   }
 };
 
-export const PATCH: APIRoute = async ({ request }) => {
+export const PATCH: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
     const { channels } = await request.json();
 
@@ -97,6 +111,17 @@ export const PATCH: APIRoute = async ({ request }) => {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Every channel referenced must belong to a project the user can manage.
+    const projectIds = new Set<number>();
+    for (const item of channels) {
+      const pid = await projectIdForChannel(parseInt(item.id));
+      if (pid === null) return forbidden();
+      projectIds.add(pid);
+    }
+    for (const pid of projectIds) {
+      if (!(await canManageProject(locals.user, pid))) return forbidden();
     }
 
     await reorderChannels(channels);
@@ -120,9 +145,10 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
 };
 
-export const PUT: APIRoute = async (context: APIContext) => {
+export const PUT: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
-    const { channelId, name, description } = await context.request.json();
+    const { channelId, name, description } = await request.json();
 
     if (!channelId) {
       return new Response(JSON.stringify({ error: "channelId is required." }), {
@@ -132,12 +158,15 @@ export const PUT: APIRoute = async (context: APIContext) => {
     }
 
     const existing = await getChannel(parseInt(channelId));
+    if (!existing) return forbidden();
+    if (!(await canManageProject(locals.user, existing.projectId))) return forbidden();
+
     const channel = await updateChannel(parseInt(channelId), { name, description });
 
-    if (context.locals.user && existing && name && name !== existing.name) {
+    if (name && name !== existing.name) {
       logAuditEntry({
         projectId: existing.projectId,
-        userId: context.locals.user.id,
+        userId: locals.user.id,
         action: "channel.renamed",
         targetType: "channel",
         targetId: existing.id,
@@ -165,9 +194,10 @@ export const PUT: APIRoute = async (context: APIContext) => {
   }
 };
 
-export const DELETE: APIRoute = async (context: APIContext) => {
+export const DELETE: APIRoute = async ({ request, locals }: APIContext) => {
+  if (!locals.user) return unauthorized();
   try {
-    const { channelID } = await context.request.json();
+    const { channelID } = await request.json();
 
     if (!channelID) {
       return new Response(JSON.stringify({ error: "channelID is required." }), {
@@ -177,18 +207,19 @@ export const DELETE: APIRoute = async (context: APIContext) => {
     }
 
     const existing = await getChannel(parseInt(channelID));
+    if (!existing) return forbidden();
+    if (!(await canManageProject(locals.user, existing.projectId))) return forbidden();
+
     const channel = await deleteChannel(parseInt(channelID));
 
-    if (context.locals.user && existing) {
-      logAuditEntry({
-        projectId: existing.projectId,
-        userId: context.locals.user.id,
-        action: "channel.deleted",
-        targetType: "channel",
-        targetId: existing.id,
-        targetName: existing.name,
-      });
-    }
+    logAuditEntry({
+      projectId: existing.projectId,
+      userId: locals.user.id,
+      action: "channel.deleted",
+      targetType: "channel",
+      targetId: existing.id,
+      targetName: existing.name,
+    });
 
     return new Response(JSON.stringify({ channel }), {
       status: 200,
