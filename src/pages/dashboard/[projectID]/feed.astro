@@ -2,6 +2,7 @@
 import Layout from "@/layouts/layout.astro";
 import EventFeed from "@/components/event-feed";
 import { getUserByUsername } from "@/lib/beaver/user";
+import { getUserProjectRole } from "@/lib/beaver/project-member";
 
 const { projectID } = Astro.params;
 const user = Astro.locals.user!;
@@ -19,6 +20,9 @@ const tags = searchParams.get("tags");
 const sortBy = searchParams.get("sortBy");
 const sortOrder = searchParams.get("sortOrder");
 
+const userRole = user.isAdmin
+  ? "owner"
+  : await getUserProjectRole(parseInt(projectID!), user.id);
 ---
 
 <Layout projectID={projectID!}>
@@ -26,6 +30,7 @@ const sortOrder = searchParams.get("sortOrder");
     client:load
     type="project"
     projectID={parseInt(projectID!)}
+    userRole={userRole}
     title={title}
     object={object}
     action={action}

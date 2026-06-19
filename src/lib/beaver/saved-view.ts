@@ -11,6 +11,11 @@ export type SavedView = {
   createdAt: Date;
 };
 
+export async function getSavedViewById(id: number): Promise<SavedView | null> {
+  const [row] = await db.select().from(savedViews).where(eq(savedViews.id, id));
+  return (row as SavedView) ?? null;
+}
+
 export async function getSavedViews(projectId: number, userId: number): Promise<SavedView[]> {
   return db
     .select()

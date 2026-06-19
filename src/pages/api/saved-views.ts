@@ -1,5 +1,6 @@
 import type { APIContext, APIRoute } from "astro";
 import { getSavedViews, createSavedView } from "@/lib/beaver/saved-view";
+import { getUserProjectRole } from "@/lib/beaver/project-member";
 
 export const GET: APIRoute = async (context: APIContext) => {
   if (!context.locals.user) {
@@ -30,6 +31,13 @@ export const POST: APIRoute = async (context: APIContext) => {
     return new Response(JSON.stringify({ error: "projectId, name, and params are required." }), {
       status: 400,
     });
+  }
+
+  if (!context.locals.user.isAdmin) {
+    const role = await getUserProjectRole(projectId, context.locals.user.id);
+    if (role === "guest" || role === null) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+    }
   }
 
   const view = await createSavedView(projectId, context.locals.user.id, name.trim(), params);

@@ -33,11 +33,13 @@ export default function SavedViewsMenu({
   currentParams,
   basePath,
   hasActiveFilters,
+  canManageViews,
 }: {
   projectId: number;
   currentParams: string;
   basePath: string;
   hasActiveFilters: boolean;
+  canManageViews: boolean;
 }) {
   const [views, setViews] = useState<SavedView[]>([]);
   const [saving, setSaving] = useState(false);
@@ -111,7 +113,7 @@ export default function SavedViewsMenu({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
               onClick={() => confirmDelete && handleDelete(confirmDelete.id)}
             >
               Delete
@@ -149,23 +151,25 @@ export default function SavedViewsMenu({
                   }}
                 >
                   <span className="truncate">{view.name}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDelete(view);
-                    }}
-                    className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-destructive"
-                    aria-label={`Delete ${view.name}`}
-                  >
-                    <TrashIcon className="size-3.5" />
-                  </button>
+                  {canManageViews && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDelete(view);
+                      }}
+                      className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-destructive"
+                      aria-label={`Delete ${view.name}`}
+                    >
+                      <TrashIcon className="size-3.5" />
+                    </button>
+                  )}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
             </>
           )}
 
-          {hasActiveFilters && !showNameInput && (
+          {hasActiveFilters && canManageViews && !showNameInput && (
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault();
@@ -203,9 +207,9 @@ export default function SavedViewsMenu({
             </div>
           )}
 
-          {!hasActiveFilters && views.length === 0 && (
+          {views.length === 0 && (
             <div className="px-2 py-3 text-xs text-muted-foreground text-center">
-              Apply filters to save a view.
+              {canManageViews ? "Apply filters to save a view." : "No saved views."}
             </div>
           )}
         </DropdownMenuContent>

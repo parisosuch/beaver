@@ -53,6 +53,7 @@ export default function EventFeed({
   type,
   projectID,
   channel,
+  userRole,
   title,
   object,
   action,
@@ -66,6 +67,7 @@ export default function EventFeed({
   type: "channel" | "project";
   projectID?: number;
   channel?: Channel;
+  userRole?: string | null;
   title?: string | null;
   object?: string | null;
   action?: string | null;
@@ -601,6 +603,7 @@ export default function EventFeed({
               currentParams={currentParams}
               basePath={getBasePath()}
               hasActiveFilters={hasActiveFilters}
+              canManageViews={userRole !== "guest" && userRole != null}
             />
           )}
         </div>
