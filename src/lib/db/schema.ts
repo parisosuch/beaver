@@ -211,6 +211,32 @@ export const channelReads = sqliteTable(
   }),
 );
 
+// --- EVENT REACTIONS ---
+export const eventReactions = sqliteTable(
+  "event_reactions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    eventUserEmojiIdx: uniqueIndex("event_reactions_event_user_emoji_idx").on(
+      table.eventId,
+      table.userId,
+      table.emoji,
+    ),
+    eventIdIdx: index("event_reactions_event_id_idx").on(table.eventId),
+  }),
+);
+
 // --- BOOKMARKS ---
 export const bookmarks = sqliteTable(
   "bookmarks",
@@ -447,5 +473,16 @@ export const metricValueRelations = relations(metricValues, ({ one }) => ({
   metric: one(metrics, {
     fields: [metricValues.metricId],
     references: [metrics.id],
+  }),
+}));
+
+export const eventReactionRelations = relations(eventReactions, ({ one }) => ({
+  event: one(events, {
+    fields: [eventReactions.eventId],
+    references: [events.id],
+  }),
+  user: one(users, {
+    fields: [eventReactions.userId],
+    references: [users.id],
   }),
 }));

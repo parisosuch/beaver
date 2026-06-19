@@ -1,8 +1,15 @@
-import type { EventWithChannelName } from "@/lib/beaver/event";
+import type { EventWithChannelName, ReactionSummary } from "@/lib/beaver/event";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import { ArrowLeftIcon, BookmarkIcon, CheckIcon, LinkIcon, Trash2Icon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  BookmarkIcon,
+  CheckIcon,
+  LinkIcon,
+  SmilePlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import {
@@ -13,6 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { EmojiPicker, ReactionBar, postReaction, applyToggle } from "./event-reactions";
 
 function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | boolean }) {
   const displayValue = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
@@ -39,6 +48,14 @@ export default function EventDetail({
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reactions, setReactions] = useState<ReactionSummary[]>(event.reactions);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleReact = async (emoji: string) => {
+    setPickerOpen(false);
+    const updated = await postReaction(event.id, emoji);
+    if (updated) setReactions((prev) => applyToggle(prev, updated));
+  };
 
   const handleBookmark = async () => {
     setBookmarking(true);
@@ -207,6 +224,22 @@ export default function EventDetail({
               </div>
             </CardContent>
           )}
+
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-2">
+              <ReactionBar reactions={reactions} onToggle={handleReact} />
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 px-2 rounded-full">
+                    <SmilePlusIcon size={14} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 [animation:none]!" align="start">
+                  <EmojiPicker onSelect={handleReact} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
