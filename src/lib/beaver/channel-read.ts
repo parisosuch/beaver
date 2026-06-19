@@ -2,6 +2,17 @@ import { db } from "../db/db";
 import { channelReads } from "../db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
+// Read a channel's lastReadAt for a user without modifying it. Returns null if
+// the user has never marked this channel read.
+export async function getChannelLastRead(userId: number, channelId: number): Promise<Date | null> {
+  const rows = await db
+    .select({ lastReadAt: channelReads.lastReadAt })
+    .from(channelReads)
+    .where(and(eq(channelReads.userId, userId), eq(channelReads.channelId, channelId)))
+    .limit(1);
+  return rows[0]?.lastReadAt ?? null;
+}
+
 // Mark a channel as read for a user. Returns the previous lastReadAt (or null
 // if the user has never read this channel before).
 export async function markChannelRead(userId: number, channelId: number): Promise<Date | null> {

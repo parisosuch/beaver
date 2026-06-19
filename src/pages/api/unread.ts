@@ -1,4 +1,4 @@
-import { markChannelRead, getUnreadCounts } from "@/lib/beaver/channel-read";
+import { markChannelRead, getUnreadCounts, getChannelLastRead } from "@/lib/beaver/channel-read";
 import { db } from "@/lib/db/db";
 import { channels } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -10,6 +10,19 @@ export async function GET({ locals, url }: APIContext) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
     });
+  }
+
+  // Read-only lookup of a single channel's last-read time (does not mark read).
+  const channelId = url.searchParams.get("channelId");
+  if (channelId) {
+    const lastReadAt = await getChannelLastRead(user.id, parseInt(channelId));
+    return new Response(
+      JSON.stringify({
+        channelId: parseInt(channelId),
+        lastReadAt: lastReadAt?.toISOString() ?? null,
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    );
   }
 
   const projectId = url.searchParams.get("projectId");

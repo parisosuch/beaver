@@ -16,7 +16,6 @@ export default function UnreadCountsPoller({
 }) {
   const isLeader = useTabLeader(`unread:${projectId}`);
   const channelsRef = useRef(initialChannels);
-  const pathnameRef = useRef("");
   const countsRef = useRef<Record<number, number>>({});
 
   // Sync channels list as channels are added/removed
@@ -32,20 +31,6 @@ export default function UnreadCountsPoller({
     return () => {
       window.removeEventListener("channel:created", onCreated as EventListener);
       window.removeEventListener("channel:deleted", onDeleted as EventListener);
-    };
-  }, []);
-
-  // Track current pathname for "am I viewing this channel?" check
-  useEffect(() => {
-    pathnameRef.current = window.location.pathname;
-    const handleNav = () => {
-      pathnameRef.current = window.location.pathname;
-    };
-    document.addEventListener("astro:page-load", handleNav);
-    window.addEventListener("popstate", handleNav);
-    return () => {
-      document.removeEventListener("astro:page-load", handleNav);
-      window.removeEventListener("popstate", handleNav);
     };
   }, []);
 
@@ -65,17 +50,14 @@ export default function UnreadCountsPoller({
     let eventSource: EventSource | null = null;
     let resync: ReturnType<typeof setInterval> | null = null;
 
-    const activeChannelId = (): number | null => {
-      const m = pathnameRef.current.match(/\/channels\/(\d+)(?:$|[/?])/);
-      return m ? parseInt(m[1]) : null;
-    };
-
+    // Reads are now explicit (the user clicks "Mark as read"), so simply viewing
+    // a channel no longer suppresses its unread badge — every channel, including
+    // the one in view, counts new events until the user marks it read.
     const applyEvents = (events: EventWithChannelName[]) => {
-      const active = activeChannelId();
       const next = { ...countsRef.current };
       for (const ev of events) {
         const channel = channelsRef.current.find((c) => c.name === ev.channelName);
-        if (!channel || channel.id === active) continue;
+        if (!channel) continue;
         next[channel.id] = (next[channel.id] ?? 0) + 1;
       }
       countsRef.current = next;
