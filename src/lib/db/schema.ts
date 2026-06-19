@@ -511,6 +511,27 @@ export const eventReactionRelations = relations(eventReactions, ({ one }) => ({
 }));
 
 // ---- SAVED VIEWS ----
+// ---- EVENT COMMENTS ----
+export const eventComments = sqliteTable("event_comments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
+export const eventCommentRelations = relations(eventComments, ({ one }) => ({
+  event: one(events, { fields: [eventComments.eventId], references: [events.id] }),
+  user: one(users, { fields: [eventComments.userId], references: [users.id] }),
+}));
+
+// ---- SAVED VIEWS ----
 export const savedViews = sqliteTable("saved_views", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   projectId: integer("project_id")
