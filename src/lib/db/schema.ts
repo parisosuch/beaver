@@ -277,6 +277,23 @@ export const metricValues = sqliteTable(
   }),
 );
 
+// --- EMAIL SETTINGS ---
+export const emailSettings = sqliteTable("email_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  provider: text("provider", { enum: ["resend", "smtp"] })
+    .notNull()
+    .default("resend"),
+  smtpHost: text("smtp_host"),
+  smtpPort: integer("smtp_port"),
+  smtpUsername: text("smtp_username"),
+  smtpPassword: text("smtp_password"),
+  smtpSecure: integer("smtp_secure", { mode: "boolean" }).notNull().default(true),
+  smtpFromEmail: text("smtp_from_email"),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
