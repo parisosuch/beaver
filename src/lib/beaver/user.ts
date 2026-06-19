@@ -13,6 +13,7 @@ export type DatabaseUser = {
   mustChangePassword: boolean;
   tempPassword: string | null;
   compactMode: boolean;
+  themePalette: string;
   createdAt: Date | null;
 };
 
@@ -26,6 +27,7 @@ export type User = {
   mustChangePassword: boolean;
   tempPassword: string | null;
   compactMode: boolean;
+  themePalette: string;
   createdAt: Date | null;
 };
 
@@ -39,6 +41,7 @@ const userSelect = {
   mustChangePassword: users.mustChangePassword,
   tempPassword: users.tempPassword,
   compactMode: users.compactMode,
+  themePalette: users.themePalette,
   createdAt: users.createdAt,
 };
 
@@ -184,4 +187,14 @@ export async function updateUserFullName(id: number, fullName: string | null): P
 
 export async function updateUserCompactMode(id: number, compactMode: boolean): Promise<void> {
   await db.update(users).set({ compactMode }).where(eq(users.id, id));
+}
+
+export const THEME_PALETTES = ["default", "blue", "violet", "green", "rose"] as const;
+export type ThemePalette = (typeof THEME_PALETTES)[number];
+
+export async function updateUserThemePalette(id: number, themePalette: string): Promise<void> {
+  const palette = (THEME_PALETTES as readonly string[]).includes(themePalette)
+    ? themePalette
+    : "default";
+  await db.update(users).set({ themePalette: palette }).where(eq(users.id, id));
 }

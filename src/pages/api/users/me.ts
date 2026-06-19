@@ -1,4 +1,9 @@
-import { updateUserCompactMode, updateUserEmail, updateUserFullName } from "@/lib/beaver/user";
+import {
+  updateUserCompactMode,
+  updateUserEmail,
+  updateUserFullName,
+  updateUserThemePalette,
+} from "@/lib/beaver/user";
 import type { APIContext } from "astro";
 
 export async function PATCH({ locals, request }: APIContext) {
@@ -19,6 +24,9 @@ export async function PATCH({ locals, request }: APIContext) {
   }
   if ("compactMode" in body) {
     await updateUserCompactMode(user.id, !!body.compactMode);
+  }
+  if ("themePalette" in body) {
+    await updateUserThemePalette(user.id, String(body.themePalette));
   }
 
   return new Response(JSON.stringify({ ok: true }), {

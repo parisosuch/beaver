@@ -141,6 +141,7 @@ export const users = sqliteTable("users", {
   mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
   tempPassword: text("temp_password"),
   compactMode: integer("compact_mode", { mode: "boolean" }).notNull().default(false),
+  themePalette: text("theme_palette").notNull().default("default"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
