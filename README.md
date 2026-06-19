@@ -2,6 +2,49 @@
 
 An event tracking and logging dashboard built with Astro, React, and SQLite.
 
+## Deploy
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/parisosuch/beaver)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/parisosuch/beaver)
+
+### Render
+
+Click the button above. Render reads `render.yaml` from the repo root — it provisions a web service and a 1 GB persistent disk for the SQLite database automatically. `JWT_SECRET` is generated for you.
+
+> **Note:** Persistent disks require a paid Render plan. On the free tier the database resets on each deploy.
+
+### Railway
+
+Click the button above. Railway detects the Dockerfile and `railway.json` automatically. After the first deploy, add one environment variable in the Railway dashboard:
+
+| Variable     | Value                               |
+| :----------- | :---------------------------------- |
+| `JWT_SECRET` | output of `openssl rand -base64 32` |
+
+Mount a Railway Volume at `/app/data` to persist the SQLite database across deploys.
+
+### Fly.io
+
+A `fly.toml` is included. Three commands to deploy:
+
+```sh
+fly auth login
+fly secrets set JWT_SECRET="$(openssl rand -base64 32)"
+fly deploy
+```
+
+A 1 GB volume named `beaver_data` is created automatically on first deploy for the SQLite database.
+
+### Coolify
+
+Beaver deploys from its Dockerfile with no extra config needed.
+
+1. In Coolify, add a new **Docker** resource and point it at this repository.
+2. Set the `JWT_SECRET` environment variable to a secure random string.
+3. Mount a persistent volume at `/app/data` so the SQLite database survives redeploys.
+
+---
+
 ## Prerequisites
 
 - [Bun](https://bun.sh/) (v1.0 or later)

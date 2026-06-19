@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: beaver
+    runtime: docker
+    plan: starter
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 4321
+      - key: HOST
+        value: 0.0.0.0
+    disk:
+      name: beaver-data
+      mountPath: /app/data
+      sizeGB: 1
