@@ -509,3 +509,19 @@ export const eventReactionRelations = relations(eventReactions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ---- SAVED VIEWS ----
+export const savedViews = sqliteTable("saved_views", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  params: text("params").notNull(), // JSON-encoded URLSearchParams
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});

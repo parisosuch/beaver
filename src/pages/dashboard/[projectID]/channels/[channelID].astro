@@ -3,6 +3,7 @@ import Layout from "@/layouts/layout.astro";
 import EventFeed from "@/components/event-feed";
 import { getChannel } from "@/lib/beaver/channel";
 import { getUserByUsername } from "@/lib/beaver/user";
+import { getUserProjectRole } from "@/lib/beaver/project-member";
 
 const { projectID, channelID } = Astro.params;
 const user = Astro.locals.user!;
@@ -21,6 +22,10 @@ const sortBy = searchParams.get("sortBy");
 const sortOrder = searchParams.get("sortOrder");
 
 const channel = await getChannel(parseInt(channelID!));
+
+const userRole = user.isAdmin
+  ? "owner"
+  : await getUserProjectRole(parseInt(projectID!), user.id);
 ---
 
 <Layout projectID={projectID!}>
@@ -29,6 +34,7 @@ const channel = await getChannel(parseInt(channelID!));
     type="channel"
     projectID={parseInt(projectID!)}
     channel={channel}
+    userRole={userRole}
     title={title}
     object={object}
     action={action}
