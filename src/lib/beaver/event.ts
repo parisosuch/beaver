@@ -67,6 +67,8 @@ type QueryOptions = {
   action?: string | null;
   afterId?: number;
   beforeId?: number;
+  afterCreatedAt?: Date;
+  beforeCreatedAt?: Date;
   cursorObject?: string;
   cursorAction?: string;
   cursorId?: number;
@@ -124,8 +126,29 @@ function applyFilterConditions(conditions: any[], options: QueryOptions) {
 }
 
 function applyCursorAndPagination(conditions: any[], options: QueryOptions) {
-  if (options.afterId) conditions.push(gt(events.id, options.afterId));
-  if (options.beforeId) conditions.push(lt(events.id, options.beforeId));
+  // Composite (createdAt, id) cursor for date-sort pagination. Falls back to
+  // plain id comparison when no date is provided (used by the SSE stream).
+  if (options.afterCreatedAt !== undefined && options.afterId !== undefined) {
+    conditions.push(
+      or(
+        gt(events.createdAt, options.afterCreatedAt),
+        and(eq(events.createdAt, options.afterCreatedAt), gt(events.id, options.afterId)),
+      ),
+    );
+  } else if (options.afterId) {
+    conditions.push(gt(events.id, options.afterId));
+  }
+
+  if (options.beforeCreatedAt !== undefined && options.beforeId !== undefined) {
+    conditions.push(
+      or(
+        lt(events.createdAt, options.beforeCreatedAt),
+        and(eq(events.createdAt, options.beforeCreatedAt), lt(events.id, options.beforeId)),
+      ),
+    );
+  } else if (options.beforeId) {
+    conditions.push(lt(events.id, options.beforeId));
+  }
 
   if (
     options.cursorObject !== undefined &&
