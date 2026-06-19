@@ -17,8 +17,8 @@ Click the button above. Render reads `render.yaml` from the repo root — it pro
 
 Click the button above. Railway detects the Dockerfile and `railway.json` automatically. After the first deploy, add one environment variable in the Railway dashboard:
 
-| Variable | Value |
-| :------- | :---- |
+| Variable     | Value                               |
+| :----------- | :---------------------------------- |
 | `JWT_SECRET` | output of `openssl rand -base64 32` |
 
 Mount a Railway Volume at `/app/data` to persist the SQLite database across deploys.
