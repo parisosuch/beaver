@@ -134,6 +134,13 @@
       "when": 1781902699342,
       "tag": "0018_mushy_silk_fever",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1781903262659,
+      "tag": "0019_striped_hex",
+      "breakpoints": true
     }
   ]
 }

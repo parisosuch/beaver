@@ -8,6 +8,7 @@ import { getUserProjectRole } from "@/lib/beaver/project-member";
 import { getUserByUsername } from "@/lib/beaver/user";
 import { getChannelSubscriptions } from "@/lib/beaver/channel-notification";
 import { getAlertRulesForProject } from "@/lib/beaver/alert-rule";
+import { getAuditLog } from "@/lib/beaver/audit-log";
 
 const { projectID } = Astro.params;
 const user = Astro.locals.user!;
@@ -29,6 +30,7 @@ const subscribedChannelIds = await getChannelSubscriptions(user.id, project.id);
 const alertRules = await getAlertRulesForProject(project.id);
 
 const isOwner = userRole === "owner";
+const auditLog = isOwner ? await getAuditLog(project.id) : [];
 ---
 
 <Layout projectID={projectID!}>
@@ -44,6 +46,7 @@ const isOwner = userRole === "owner";
           channels={channels}
           metrics={metrics}
           alertRules={alertRules}
+          auditLog={auditLog}
           isOwner={isOwner}
           currentUserId={user.id}
           initialEmail={dbUser?.email ?? null}

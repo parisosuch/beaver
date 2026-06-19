@@ -365,6 +365,25 @@ export const sessions = sqliteTable("sessions", {
     .notNull(),
 });
 
+// ---- AUDIT LOG ----
+export const auditLog = sqliteTable("audit_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull(), // e.g. "api_key.rotated", "channel.created"
+  targetType: text("target_type"), // "channel" | "member" | null (project-level)
+  targetId: integer("target_id"),
+  targetName: text("target_name"), // snapshot so deletes don't lose context
+  metadata: text("metadata"), // JSON string for extra detail (old/new values, role, etc.)
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
 // ---- RELATIONS ----
 export const projectRelations = relations(projects, ({ many }) => ({
   channels: many(channels),
