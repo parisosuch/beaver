@@ -18,6 +18,7 @@ import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
 import EventFilterDialog from "./event-filter-dialog";
 import EventSearchBar from "./event-search-bar";
+import SavedViewsMenu from "./saved-views-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   DropdownMenu,
@@ -384,7 +385,27 @@ export default function EventFeed({
     return () => window.removeEventListener("channel:read", handler as EventListener);
   }, []);
 
-  const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
+  const hasActiveFilters = !!(
+    title ||
+    object ||
+    action ||
+    startDate ||
+    endDate ||
+    parsedTags.length > 0
+  );
+
+  const currentParams = (() => {
+    const p = new URLSearchParams();
+    if (title) p.set("title", title);
+    if (object) p.set("object", object);
+    if (action) p.set("action", action);
+    if (startDate) p.set("startDate", startDate);
+    if (endDate) p.set("endDate", endDate);
+    if (parsedTags.length > 0) p.set("tags", JSON.stringify(parsedTags));
+    if (sortBy) p.set("sortBy", sortBy);
+    if (sortOrder) p.set("sortOrder", sortOrder);
+    return p.toString();
+  })();
   const hasNewEvents =
     lastReadDate != null && events.some((e) => new Date(e.createdAt) > lastReadDate);
 
@@ -574,6 +595,14 @@ export default function EventFeed({
               <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {projectID && (
+            <SavedViewsMenu
+              projectId={projectID}
+              currentParams={currentParams}
+              basePath={getBasePath()}
+              hasActiveFilters={hasActiveFilters}
+            />
+          )}
         </div>
       </div>
 
