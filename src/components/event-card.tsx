@@ -19,7 +19,6 @@ const EventCard = memo(function EventCard({ event }: { event: EventWithChannelNa
   const handleMouseEnter = () => {
     if (prefetched.current) return;
     prefetched.current = true;
-
     const link = document.createElement("link");
     link.rel = "prefetch";
     link.href = eventUrl;
@@ -34,43 +33,47 @@ const EventCard = memo(function EventCard({ event }: { event: EventWithChannelNa
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div>
-          <a href={eventUrl} onMouseEnter={handleMouseEnter}>
-            <Card className="p-4 md:p-8 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
-              <div className="flex items-center space-x-4">
-                <div className="bg-gray-100 dark:bg-white/10 p-2 rounded-md">
-                  <p className="text-xl">{event.icon ? `${event.icon} ` : "🪵"}</p>
+        <Card className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors overflow-hidden cursor-pointer">
+          <a href={eventUrl} onMouseEnter={handleMouseEnter} className="block p-4 md:p-8">
+            <div className="flex items-center space-x-4">
+              <div className="bg-gray-100 dark:bg-white/10 p-2 rounded-md">
+                <p className="text-xl">{event.icon ? `${event.icon} ` : "🪵"}</p>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-0.5">
+                  <span>{event.eventObject}</span>
+                  <span>·</span>
+                  <span>{event.eventAction}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-0.5">
-                    <span>{event.eventObject}</span>
-                    <span>·</span>
-                    <span>{event.eventAction}</span>
-                  </div>
-                  <h2 className="text-xl font-medium truncate">{event.title}</h2>
-                  <div className="flex space-x-2 items-center text-sm text-muted-foreground">
-                    <p># {event.channelName}</p>
-                    <p>{getEventTime(new Date(event.createdAt))}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {event.bookmarked && (
-                    <BookmarkIcon size={14} className="fill-current text-muted-foreground" />
-                  )}
-                  {!event.read && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                <h2 className="text-xl font-medium truncate">{event.title}</h2>
+                <div className="flex space-x-2 items-center text-sm text-muted-foreground">
+                  <p># {event.channelName}</p>
+                  <p>{getEventTime(new Date(event.createdAt))}</p>
                 </div>
               </div>
-            </Card>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {event.bookmarked && (
+                  <BookmarkIcon size={14} className="fill-current text-muted-foreground" />
+                )}
+                {!event.read && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+              </div>
+            </div>
           </a>
           {reactions.length > 0 && (
-            <div className="px-1 pt-1.5 pb-0.5">
+            <div
+              className="px-4 pb-3 md:px-8"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <ReactionBar eventId={event.id} initialReactions={reactions} />
             </div>
           )}
-        </div>
+        </Card>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-auto p-0">
-        <ContextMenuLabel className="px-2 pt-2 pb-1 text-xs text-muted-foreground font-normal">
+      <ContextMenuContent className="p-0 overflow-hidden">
+        <ContextMenuLabel className="px-3 pt-2 pb-1 text-xs text-muted-foreground font-normal">
           React
         </ContextMenuLabel>
         <EmojiPicker onSelect={handleReact} />

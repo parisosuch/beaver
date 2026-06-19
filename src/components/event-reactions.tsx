@@ -1,26 +1,13 @@
 import type { ReactionSummary } from "@/lib/beaver/event";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+// @ts-ignore — no bundled types for @emoji-mart/react
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 
-export const EMOJI_LIST = [
-  "👍",
-  "👎",
-  "❤️",
-  "😄",
-  "😮",
-  "😢",
-  "😡",
-  "🎉",
-  "🔥",
-  "✅",
-  "❌",
-  "🚀",
-  "💯",
-  "👏",
-  "🤔",
-  "💡",
-];
-
-async function postReaction(eventId: number, emoji: string): Promise<ReactionSummary | null> {
+export async function postReaction(
+  eventId: number,
+  emoji: string,
+): Promise<ReactionSummary | null> {
   const res = await fetch(`/api/events/${eventId}/reactions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,30 +17,27 @@ async function postReaction(eventId: number, emoji: string): Promise<ReactionSum
   return res.json();
 }
 
-function applyToggle(prev: ReactionSummary[], updated: ReactionSummary): ReactionSummary[] {
+export function applyToggle(prev: ReactionSummary[], updated: ReactionSummary): ReactionSummary[] {
   const filtered = prev.filter((r) => r.emoji !== updated.emoji);
   if (updated.count === 0) return filtered;
   return [...filtered, updated];
 }
 
 export function EmojiPicker({ onSelect }: { onSelect: (emoji: string) => void }) {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
+  }, []);
+
   return (
-    <div className="grid grid-cols-8 gap-0.5 p-1">
-      {EMOJI_LIST.map((emoji) => (
-        <button
-          key={emoji}
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onSelect(emoji);
-          }}
-          className="text-base p-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/10 transition-colors leading-none"
-        >
-          {emoji}
-        </button>
-      ))}
-    </div>
+    <Picker
+      data={data}
+      theme={theme}
+      previewPosition="none"
+      skinTonePosition="search"
+      onEmojiSelect={(emoji: { native: string }) => onSelect(emoji.native)}
+    />
   );
 }
 
@@ -99,5 +83,3 @@ export function ReactionBar({
     </div>
   );
 }
-
-export { postReaction, applyToggle };
