@@ -9,7 +9,7 @@ import {
   getProjectsForUser,
   getUserProjectRole,
 } from "@/lib/beaver/project-member";
-import { ClientRouter } from "astro:transitions";
+import { ClientRouter, fade } from "astro:transitions";
 
 interface Props {
   projectID: string;
@@ -76,7 +76,7 @@ const userRole = user.isAdmin
         isAdmin={user.isAdmin}
         canCreateProjects={user.canCreateProjects}
       />
-      <div class="flex-1 min-w-0">
+      <div class="flex-1 min-w-0" transition:animate={fade({ duration: "0.18s" })}>
         <slot />
       </div>
     </div>

@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDownIcon, ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import {
@@ -81,9 +82,15 @@ function SortableChannel({
       >
         <span className="truncate"># {channel.name}</span>
         {unreadCount > 0 && !isActive && (
-          <span className="ml-2 shrink-0 text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-tight">
+          <motion.span
+            key={unreadCount}
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 600, damping: 22 }}
+            className="ml-2 shrink-0 text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-tight"
+          >
             {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
+          </motion.span>
         )}
       </a>
     </div>
