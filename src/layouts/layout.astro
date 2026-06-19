@@ -1,6 +1,7 @@
 ---
 import "@/styles/global.css";
 import SidePanel from "@/components/side-panel";
+import CommandPalette from "@/components/command-palette";
 import { getProject, getProjects } from "@/lib/beaver/project";
 import { getChannels } from "@/lib/beaver/channel";
 import { getChannelGroups } from "@/lib/beaver/channel-group";
@@ -78,5 +79,13 @@ const userRole = user.isAdmin
         <slot />
       </div>
     </div>
+    <CommandPalette
+      client:load
+      currentProject={project}
+      currentProjects={projects}
+      currentChannels={channels}
+      userRole={userRole ?? "guest"}
+      transition:persist
+    />
   </body>
 </html>
