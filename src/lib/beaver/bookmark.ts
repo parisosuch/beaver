@@ -75,5 +75,6 @@ export async function getBookmarkedEvents(
     tags: fetchedTags[e.id] || {},
     read: true,
     bookmarked: true,
+    reactions: [],
   }));
 }

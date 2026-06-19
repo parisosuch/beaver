@@ -123,6 +123,7 @@ export const POST: APIRoute = async ({ request }: APIContext) => {
             createdAt: event.createdAt,
             read: false,
             bookmarked: false,
+            reactions: [],
           };
         }),
       );

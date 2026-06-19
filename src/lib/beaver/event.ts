@@ -1,6 +1,7 @@
 import { db } from "../db/db";
 import { events, channels, eventTags, channelReads, bookmarks } from "../db/schema";
 import { getEventTags } from "./event-tags";
+import { getEventReactions } from "./reaction";
 import { eq, ne, and, or, asc, desc, like, gt, lt, gte, lte, exists, max, sql } from "drizzle-orm";
 import { getProject } from "./project";
 
@@ -35,6 +36,8 @@ export type Event = {
   createdAt: Date;
 };
 
+export type ReactionSummary = { emoji: string; count: number; userReacted: boolean };
+
 export type EventWithChannelName = {
   id: number;
   eventObject: string;
@@ -48,6 +51,7 @@ export type EventWithChannelName = {
   tags: TagPrimitive;
   read: boolean;
   bookmarked: boolean;
+  reactions: ReactionSummary[];
 };
 
 export type TagFilter = {
@@ -267,11 +271,15 @@ export async function getChannelEvents(
     .limit(options.limit ?? 100);
 
   const eventIds = eventData.map((event) => event.id);
-  const fetchedTags = await getEventTags(eventIds);
+  const [fetchedTags, fetchedReactions] = await Promise.all([
+    getEventTags(eventIds),
+    getEventReactions(eventIds, userId),
+  ]);
 
   return eventData.map((event) => ({
     ...event,
     tags: fetchedTags[event.id] || {},
+    reactions: fetchedReactions[event.id] || [],
     read: Boolean(event.read),
     bookmarked: Boolean(event.bookmarked),
   }));
@@ -336,11 +344,15 @@ export async function getProjectEvents(
     .limit(options.limit ?? 100);
 
   const eventIds = eventData.map((event) => event.id);
-  const fetchedTags = await getEventTags(eventIds);
+  const [fetchedTags, fetchedReactions] = await Promise.all([
+    getEventTags(eventIds),
+    getEventReactions(eventIds, userId),
+  ]);
 
   return eventData.map((event) => ({
     ...event,
     tags: fetchedTags[event.id] || {},
+    reactions: fetchedReactions[event.id] || [],
     read: Boolean(event.read),
     bookmarked: Boolean(event.bookmarked),
   })) as EventWithChannelName[];
@@ -436,11 +448,15 @@ export async function getEvent(
   }
 
   const event = eventData[0];
-  const tags = await getEventTags([event.id]);
+  const [tags, reactions] = await Promise.all([
+    getEventTags([event.id]),
+    getEventReactions([event.id], userId),
+  ]);
 
   return {
     ...event,
     tags: tags[event.id] || {},
+    reactions: reactions[event.id] || [],
     read: Boolean(event.read),
     bookmarked: Boolean(event.bookmarked),
   };
@@ -491,6 +507,7 @@ export async function exportChannelEvents(
     tags: fetchedTags[e.id] || {},
     read: false,
     bookmarked: false,
+    reactions: [],
   }));
 }
 
@@ -523,6 +540,7 @@ export async function exportProjectEvents(
     tags: fetchedTags[e.id] || {},
     read: false,
     bookmarked: false,
+    reactions: [],
   }));
 }
 
@@ -634,6 +652,7 @@ export async function createEvent({
     createdAt: event.createdAt,
     read: false,
     bookmarked: false,
+    reactions: [],
   };
 }
 
