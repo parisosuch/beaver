@@ -1,0 +1,682 @@
+import type { Channel } from "@/lib/beaver/channel";
+import type { ChannelGroupWithChannels } from "@/lib/beaver/channel-group";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragStartEvent,
+  type DragOverEvent,
+  type DragEndEvent,
+  type UniqueIdentifier,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ChevronDownIcon, ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Input } from "./ui/input";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "./ui/context-menu";
+
+// ─── ID helpers ───────────────────────────────────────────────────────────────
+const grpId = (id: number) => `grp-${id}` as UniqueIdentifier;
+const chId = (id: number) => `ch-${id}` as UniqueIdentifier;
+const parseGrpId = (uid: UniqueIdentifier) => parseInt((uid as string).slice(4));
+const parseChId = (uid: UniqueIdentifier) => parseInt((uid as string).slice(3));
+const isGrp = (uid: UniqueIdentifier) => (uid as string).startsWith("grp-");
+const isCh = (uid: UniqueIdentifier) => (uid as string).startsWith("ch-");
+
+// ─── Sortable channel ─────────────────────────────────────────────────────────
+function SortableChannel({
+  channel,
+  projectId,
+  isActive,
+  onNavigate,
+  indent = false,
+  unreadCount = 0,
+}: {
+  channel: Channel;
+  projectId: number;
+  isActive: boolean;
+  onNavigate?: () => void;
+  indent?: boolean;
+  unreadCount?: number;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: chId(channel.id),
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.3 : 1,
+      }}
+      {...attributes}
+      {...listeners}
+    >
+      <a
+        href={`/dashboard/${projectId}/channels/${channel.id}`}
+        onClick={() => onNavigate?.()}
+        draggable={false}
+        className={`flex text-lg items-center justify-between ${indent ? "pl-5 pr-3" : "px-3"} py-2 hover:font-medium cursor-grab active:cursor-grabbing ${
+          isActive
+            ? "bg-gray-100 dark:bg-white/8 rounded font-medium"
+            : "hover:bg-gray-100 dark:hover:bg-white/8 hover:rounded"
+        }`}
+      >
+        <span className="truncate"># {channel.name}</span>
+        {unreadCount > 0 && !isActive && (
+          <span className="ml-2 shrink-0 text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-tight">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </a>
+    </div>
+  );
+}
+
+// ─── Sortable group header ────────────────────────────────────────────────────
+function SortableGroup({
+  group,
+  collapsed,
+  onToggle,
+  onRename,
+  onDelete,
+  onNewGroup,
+  projectId,
+  pathname,
+  onNavigate,
+  channelItems,
+  dimChannels,
+  canEdit,
+  unreadCounts,
+}: {
+  group: ChannelGroupWithChannels;
+  collapsed: boolean;
+  onToggle: () => void;
+  onRename: (id: number) => void;
+  onDelete: (id: number) => void;
+  onNewGroup: () => void;
+  projectId: number;
+  pathname: string;
+  onNavigate?: () => void;
+  channelItems: UniqueIdentifier[];
+  dimChannels?: boolean;
+  canEdit: boolean;
+  unreadCounts: Record<number, number>;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: grpId(group.id),
+    disabled: !canEdit,
+  });
+
+  const isChannelActive = (id: number) => pathname === `/dashboard/${projectId}/channels/${id}`;
+
+  const headerButton = (
+    <button
+      {...(canEdit ? { ...attributes, ...listeners } : {})}
+      onClick={onToggle}
+      className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-colors select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
+    >
+      {collapsed ? (
+        <ChevronRightIcon size={12} className="shrink-0" />
+      ) : (
+        <ChevronDownIcon size={12} className="shrink-0" />
+      )}
+      <span className="truncate">{group.name}</span>
+    </button>
+  );
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.3 : 1,
+      }}
+      className="mt-2"
+    >
+      {canEdit ? (
+        <ContextMenu>
+          <ContextMenuTrigger asChild>{headerButton}</ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onSelect={() => onRename(group.id)}>Rename</ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={onNewGroup}>Add New Group</ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onSelect={() => onDelete(group.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              Delete Group
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      ) : (
+        headerButton
+      )}
+
+      {!collapsed && (
+        <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
+          <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
+            {group.channels.map((ch) => (
+              <SortableChannel
+                key={ch.id}
+                channel={ch}
+                projectId={projectId}
+                isActive={isChannelActive(ch.id)}
+                onNavigate={onNavigate}
+                indent
+                unreadCount={unreadCounts[ch.id] ?? 0}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      )}
+    </div>
+  );
+}
+
+// ─── Inline name input ────────────────────────────────────────────────────────
+function InlineNameInput({
+  defaultValue = "",
+  placeholder,
+  onConfirm,
+  onCancel,
+  className,
+}: {
+  defaultValue?: string;
+  placeholder: string;
+  onConfirm: (name: string) => void;
+  onCancel: () => void;
+  className?: string;
+}) {
+  const [value, setValue] = useState(defaultValue);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const committed = useRef(false);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const commit = () => {
+    if (committed.current) return;
+    committed.current = true;
+    const trimmed = value.trim();
+    if (trimmed) onConfirm(trimmed);
+    else onCancel();
+  };
+
+  return (
+    <Input
+      ref={inputRef}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      placeholder={placeholder}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") {
+          committed.current = true;
+          onCancel();
+        }
+      }}
+      onBlur={commit}
+      className={className}
+    />
+  );
+}
+
+// ─── Channel groups DnD list (includes section header) ───────────────────────
+export default function ChannelGroupsDnd({
+  initialUngrouped,
+  initialGroups,
+  projectId,
+  currentPath,
+  onNavigate,
+  canEdit,
+}: {
+  initialUngrouped: Channel[];
+  initialGroups: ChannelGroupWithChannels[];
+  projectId: number;
+  currentPath: string;
+  onNavigate?: () => void;
+  canEdit: boolean;
+}) {
+  const [ungrouped, setUngrouped] = useState<Channel[]>(initialUngrouped);
+  const [groups, setGroups] = useState<ChannelGroupWithChannels[]>(initialGroups);
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [isDraggingGroup, setIsDraggingGroup] = useState(false);
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [renamingGroupId, setRenamingGroupId] = useState<number | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
+  const [pathname, setPathname] = useState(currentPath);
+
+  const ungroupedRef = useRef(ungrouped);
+  const groupsRef = useRef(groups);
+  useEffect(() => {
+    ungroupedRef.current = ungrouped;
+  }, [ungrouped]);
+  useEffect(() => {
+    groupsRef.current = groups;
+  }, [groups]);
+
+  const snapshotRef = useRef<{ ungrouped: Channel[]; groups: ChannelGroupWithChannels[] } | null>(
+    null,
+  );
+  const collapsedSnapshotRef = useRef<Set<number>>(new Set());
+
+  // Sync pathname on navigation
+  useEffect(() => {
+    const handleNav = () => setPathname(window.location.pathname);
+    document.addEventListener("astro:page-load", handleNav);
+    window.addEventListener("popstate", handleNav);
+    return () => {
+      document.removeEventListener("astro:page-load", handleNav);
+      window.removeEventListener("popstate", handleNav);
+    };
+  }, []);
+
+  // Sync unread counts from the poller
+  useEffect(() => {
+    const handle = (e: CustomEvent<{ counts: Record<number, number> }>) => {
+      setUnreadCounts(e.detail.counts);
+    };
+    window.addEventListener("unread:updated", handle as EventListener);
+    return () => window.removeEventListener("unread:updated", handle as EventListener);
+  }, []);
+
+  // Create-group trigger from the static Astro button via custom event
+  useEffect(() => {
+    const handle = () => setCreatingGroup(true);
+    window.addEventListener("channel-group:create", handle);
+    return () => window.removeEventListener("channel-group:create", handle);
+  }, []);
+
+  // Channel list sync
+  useEffect(() => {
+    const onCreated = (e: CustomEvent<{ channel: Channel }>) => {
+      setUngrouped((prev) => [...prev, e.detail.channel]);
+    };
+    const onDeleted = (e: CustomEvent<{ id: number }>) => {
+      setUngrouped((prev) => prev.filter((c) => c.id !== e.detail.id));
+      setGroups((prev) =>
+        prev.map((g) => ({ ...g, channels: g.channels.filter((c) => c.id !== e.detail.id) })),
+      );
+    };
+    const onUpdated = (e: CustomEvent<{ id: number; name: string; description: string }>) => {
+      const patch = (c: Channel) =>
+        c.id === e.detail.id ? { ...c, name: e.detail.name, description: e.detail.description } : c;
+      setUngrouped((prev) => prev.map(patch));
+      setGroups((prev) => prev.map((g) => ({ ...g, channels: g.channels.map(patch) })));
+    };
+    window.addEventListener("channel:created", onCreated as EventListener);
+    window.addEventListener("channel:deleted", onDeleted as EventListener);
+    window.addEventListener("channel:updated", onUpdated as EventListener);
+    return () => {
+      window.removeEventListener("channel:created", onCreated as EventListener);
+      window.removeEventListener("channel:deleted", onDeleted as EventListener);
+      window.removeEventListener("channel:updated", onUpdated as EventListener);
+    };
+  }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: canEdit ? { distance: 6 } : { distance: 999999 },
+    }),
+  );
+
+  const findContainer = (id: UniqueIdentifier): "ungrouped" | number | null => {
+    const u = ungroupedRef.current;
+    const g = groupsRef.current;
+    if (id === "ungrouped") return "ungrouped";
+    if (isGrp(id)) return parseGrpId(id);
+    if (isCh(id)) {
+      const chNum = parseChId(id);
+      if (u.find((c) => c.id === chNum)) return "ungrouped";
+      for (const grp of g) {
+        if (grp.channels.find((c) => c.id === chNum)) return grp.id;
+      }
+    }
+    return null;
+  };
+
+  const getChannel = (id: UniqueIdentifier): Channel | undefined => {
+    const chNum = parseChId(id);
+    return (
+      ungroupedRef.current.find((c) => c.id === chNum) ??
+      groupsRef.current.flatMap((g) => g.channels).find((c) => c.id === chNum)
+    );
+  };
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveId(active.id);
+    snapshotRef.current = {
+      ungrouped: ungroupedRef.current.map((c) => ({ ...c })),
+      groups: groupsRef.current.map((g) => ({ ...g, channels: g.channels.map((c) => ({ ...c })) })),
+    };
+    if (isGrp(active.id)) {
+      setIsDraggingGroup(true);
+      collapsedSnapshotRef.current = new Set(collapsed);
+      setCollapsed(new Set(groupsRef.current.map((g) => g.id)));
+    }
+  };
+
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
+    if (!over || !isCh(active.id)) return;
+
+    const srcContainer = findContainer(active.id);
+    let dstContainer: "ungrouped" | number | null = null;
+
+    if (over.id === "ungrouped") {
+      dstContainer = "ungrouped";
+    } else if (isCh(over.id)) {
+      dstContainer = findContainer(over.id);
+    } else if (isGrp(over.id)) {
+      dstContainer = parseGrpId(over.id);
+    }
+
+    if (dstContainer === null || srcContainer === dstContainer) return;
+
+    const chNum = parseChId(active.id);
+    const channel = getChannel(active.id);
+    if (!channel) return;
+
+    setUngrouped((prev) => {
+      const without = prev.filter((c) => c.id !== chNum);
+      if (dstContainer !== "ungrouped") return without;
+      if (isCh(over.id)) {
+        const overNum = parseChId(over.id);
+        const overIdx = without.findIndex((c) => c.id === overNum);
+        const updated = [...without];
+        updated.splice(overIdx >= 0 ? overIdx : updated.length, 0, { ...channel, groupId: null });
+        return updated;
+      }
+      return [...without, { ...channel, groupId: null }];
+    });
+
+    setGroups((prev) =>
+      prev.map((g) => {
+        const without = g.channels.filter((c) => c.id !== chNum);
+        if (g.id !== dstContainer) return { ...g, channels: without };
+        if (isCh(over.id)) {
+          const overNum = parseChId(over.id);
+          const overIdx = without.findIndex((c) => c.id === overNum);
+          const updated = [...without];
+          updated.splice(overIdx >= 0 ? overIdx : updated.length, 0, { ...channel, groupId: g.id });
+          return { ...g, channels: updated };
+        }
+        return { ...g, channels: [...without, { ...channel, groupId: g.id }] };
+      }),
+    );
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveId(null);
+
+    if (!over) {
+      if (snapshotRef.current) {
+        setUngrouped(snapshotRef.current.ungrouped);
+        setGroups(snapshotRef.current.groups);
+      }
+      setIsDraggingGroup(false);
+      snapshotRef.current = null;
+      return;
+    }
+
+    if (isGrp(active.id)) {
+      setIsDraggingGroup(false);
+      setCollapsed(collapsedSnapshotRef.current);
+      if (!isGrp(over.id)) {
+        snapshotRef.current = null;
+        return;
+      }
+      const cur = groupsRef.current;
+      const oldIdx = cur.findIndex((g) => grpId(g.id) === active.id);
+      const newIdx = cur.findIndex((g) => grpId(g.id) === over.id);
+      if (oldIdx !== newIdx) {
+        const reordered = arrayMove(cur, oldIdx, newIdx);
+        setGroups(reordered);
+        fetch("/api/channel-group", {
+          method: "PATCH",
+          body: JSON.stringify({ groups: reordered.map((g, i) => ({ id: g.id, order: i })) }),
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      snapshotRef.current = null;
+      return;
+    }
+
+    if (isCh(active.id) && isCh(over.id) && active.id !== over.id) {
+      const chNum = parseChId(active.id);
+      const overNum = parseChId(over.id);
+      const srcContainer = findContainer(active.id);
+      const dstContainer = findContainer(over.id);
+
+      if (srcContainer === dstContainer) {
+        if (srcContainer === "ungrouped") {
+          setUngrouped((prev) => {
+            const oldIdx = prev.findIndex((c) => c.id === chNum);
+            const newIdx = prev.findIndex((c) => c.id === overNum);
+            return arrayMove(prev, oldIdx, newIdx);
+          });
+        } else if (typeof srcContainer === "number") {
+          setGroups((prev) =>
+            prev.map((g) => {
+              if (g.id !== srcContainer) return g;
+              const oldIdx = g.channels.findIndex((c) => c.id === chNum);
+              const newIdx = g.channels.findIndex((c) => c.id === overNum);
+              return { ...g, channels: arrayMove(g.channels, oldIdx, newIdx) };
+            }),
+          );
+        }
+      }
+    }
+
+    setTimeout(() => {
+      const u = ungroupedRef.current;
+      const g = groupsRef.current;
+      const allItems = [
+        ...u.map((c, i) => ({ id: c.id, order: i, groupId: null as null })),
+        ...g.flatMap((grp) =>
+          grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id })),
+        ),
+      ];
+      fetch("/api/channel", {
+        method: "PATCH",
+        body: JSON.stringify({ channels: allItems }),
+        headers: { "Content-Type": "application/json" },
+      });
+    }, 0);
+
+    snapshotRef.current = null;
+  };
+
+  const handleDragCancel = () => {
+    if (snapshotRef.current) {
+      setUngrouped(snapshotRef.current.ungrouped);
+      setGroups(snapshotRef.current.groups);
+    }
+    setCollapsed(collapsedSnapshotRef.current);
+    setActiveId(null);
+    setIsDraggingGroup(false);
+    snapshotRef.current = null;
+  };
+
+  const handleCreateGroup = async (name: string) => {
+    setCreatingGroup(false);
+    const res = await fetch("/api/channel-group", {
+      method: "POST",
+      body: JSON.stringify({ name, project_id: projectId }),
+      headers: { "Content-Type": "application/json" },
+    });
+    if (res.ok) {
+      const group = await res.json();
+      setGroups((prev) => [...prev, { ...group, channels: [] }]);
+    }
+  };
+
+  const handleRenameGroup = async (id: number, name: string) => {
+    setRenamingGroupId(null);
+    setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, name } : g)));
+    await fetch("/api/channel-group", {
+      method: "PUT",
+      body: JSON.stringify({ id, name }),
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const handleDeleteGroup = async (id: number) => {
+    const group = groupsRef.current.find((g) => g.id === id);
+    if (group) {
+      setUngrouped((prev) => [...prev, ...group.channels.map((c) => ({ ...c, groupId: null }))]);
+    }
+    setGroups((prev) => prev.filter((g) => g.id !== id));
+    await fetch("/api/channel-group", {
+      method: "DELETE",
+      body: JSON.stringify({ id }),
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const ungroupedItems = ungrouped.map((c) => chId(c.id));
+  const groupItems = groups.map((g) => grpId(g.id));
+  const activeChannel = activeId && isCh(activeId) ? getChannel(activeId) : null;
+  const activeGroup =
+    activeId && isGrp(activeId) ? groups.find((g) => grpId(g.id) === activeId) : null;
+  const isChannelActive = (id: number) => pathname === `/dashboard/${projectId}/channels/${id}`;
+
+  return (
+    <>
+      {/* Channels section header */}
+      <div className="flex w-full items-center justify-between mt-4 mb-1">
+        <h1 className="text-sm font-mono">Channels</h1>
+        {canEdit && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCreatingGroup(true)}
+              title="New group"
+              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FolderPlusIcon size={15} />
+            </button>
+            <a
+              href={`/dashboard/${projectId}/create-channel`}
+              onClick={() => onNavigate?.()}
+              title="New channel"
+              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <PlusIcon size={15} />
+            </a>
+          </div>
+        )}
+      </div>
+
+      <DndContext
+        id="side-panel-dnd"
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <SortableContext items={ungroupedItems} strategy={verticalListSortingStrategy}>
+          {ungrouped.map((ch) => (
+            <SortableChannel
+              key={ch.id}
+              channel={ch}
+              projectId={projectId}
+              isActive={isChannelActive(ch.id)}
+              onNavigate={onNavigate}
+              unreadCount={unreadCounts[ch.id] ?? 0}
+            />
+          ))}
+        </SortableContext>
+
+        <SortableContext items={groupItems} strategy={verticalListSortingStrategy}>
+          {groups.map((group) => {
+            if (renamingGroupId === group.id) {
+              return (
+                <div key={group.id} className="mt-2">
+                  <InlineNameInput
+                    defaultValue={group.name}
+                    placeholder="Group name…"
+                    onConfirm={(name) => handleRenameGroup(group.id, name)}
+                    onCancel={() => setRenamingGroupId(null)}
+                  />
+                </div>
+              );
+            }
+            return (
+              <SortableGroup
+                key={group.id}
+                group={group}
+                collapsed={isDraggingGroup || collapsed.has(group.id)}
+                onToggle={() =>
+                  setCollapsed((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(group.id)) next.delete(group.id);
+                    else next.add(group.id);
+                    return next;
+                  })
+                }
+                onRename={setRenamingGroupId}
+                onDelete={handleDeleteGroup}
+                onNewGroup={() => setCreatingGroup(true)}
+                projectId={projectId}
+                pathname={pathname}
+                onNavigate={onNavigate}
+                channelItems={group.channels.map((c) => chId(c.id))}
+                dimChannels={isDraggingGroup}
+                canEdit={canEdit}
+                unreadCounts={unreadCounts}
+              />
+            );
+          })}
+        </SortableContext>
+
+        {creatingGroup && (
+          <div className="mt-2">
+            <InlineNameInput
+              placeholder="New group name…"
+              onConfirm={handleCreateGroup}
+              onCancel={() => setCreatingGroup(false)}
+            />
+          </div>
+        )}
+
+        <DragOverlay>
+          {activeChannel && (
+            <div className="flex text-lg items-center px-3 py-2 rounded bg-gray-100 dark:bg-white/8 font-medium shadow-lg cursor-grabbing opacity-95">
+              # {activeChannel.name}
+            </div>
+          )}
+          {activeGroup && (
+            <div className="flex text-xs font-semibold capitalize items-center gap-1 px-2 py-1 rounded bg-background border border-border shadow-lg cursor-grabbing opacity-95">
+              <ChevronRightIcon size={12} />
+              {activeGroup.name}
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+    </>
+  );
+}

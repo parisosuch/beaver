@@ -1,0 +1,98 @@
+---
+import type { Channel } from "@/lib/beaver/channel";
+import type { ChannelGroupWithChannels } from "@/lib/beaver/channel-group";
+import type { Project } from "@/lib/beaver/project";
+import ChannelGroupsDnd from "./channel-groups-dnd";
+import MobileDrawer from "./mobile-drawer";
+import ProjectSwitcher from "./project-switcher";
+import SidePanelNav from "./side-panel-nav";
+import ThemeToggle from "./theme-toggle";
+import UnreadCountsPoller from "./unread-counts-poller";
+import UserMenu from "./user-menu";
+
+interface Props {
+  project: Project;
+  projects: Project[];
+  channels: Channel[];
+  groups: ChannelGroupWithChannels[];
+  userRole: "owner" | "maintainer" | "guest";
+  userName: string;
+  isAdmin: boolean;
+  canCreateProjects: boolean;
+  currentPath: string;
+}
+
+const {
+  project,
+  projects,
+  channels,
+  groups,
+  userRole,
+  userName,
+  isAdmin,
+  canCreateProjects,
+  currentPath,
+} = Astro.props;
+
+const canEdit = userRole === "owner" || userRole === "maintainer";
+const ungroupedChannels = channels.filter((c) => !c.groupId);
+---
+
+<!-- Invisible poller — persists for the lifetime of the layout -->
+<UnreadCountsPoller
+  client:load
+  projectId={project.id}
+  channels={channels}
+  transition:persist="unread-poller"
+/>
+
+<!-- Mobile drawer — persists to keep its open/close state -->
+<MobileDrawer
+  client:load
+  project={project}
+  projects={projects}
+  channels={channels}
+  groups={groups}
+  userRole={userRole}
+  userName={userName}
+  isAdmin={isAdmin}
+  canCreateProjects={canCreateProjects}
+  currentPath={currentPath}
+  transition:persist="mobile-drawer"
+/>
+
+<!-- Desktop sidebar — re-renders on each navigation for accurate active states -->
+<div class="hidden md:flex flex-col w-[350px] shrink-0 border-r h-screen sticky top-0 overflow-y-auto p-8">
+  <UserMenu
+    client:idle
+    userName={userName}
+    transition:persist="user-menu"
+  />
+  <ProjectSwitcher
+    client:idle
+    projects={projects}
+    currentProjectId={project.id}
+    canCreate={isAdmin || canCreateProjects}
+    transition:persist="project-switcher"
+  />
+  <!-- Nav links: SSR-only, re-rendered each navigation → active state always correct -->
+  <SidePanelNav
+    projectId={project.id}
+    pathname={currentPath}
+    userRole={userRole}
+    isAdmin={isAdmin}
+  />
+  <ChannelGroupsDnd
+    client:idle
+    initialUngrouped={ungroupedChannels}
+    initialGroups={groups}
+    projectId={project.id}
+    currentPath={currentPath}
+    canEdit={canEdit}
+    transition:persist="channel-groups-dnd"
+  />
+  <div class="mt-6 pt-4 border-t border-border flex items-center justify-between">
+    <h1 class="text-sm font-mono">Theme</h1>
+    <ThemeToggle client:idle transition:persist="theme-toggle" />
+  </div>
+</div>

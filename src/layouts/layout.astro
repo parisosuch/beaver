@@ -1,6 +1,6 @@
 ---
 import "@/styles/global.css";
-import SidePanel from "@/components/side-panel";
+import SidePanel from "@/components/side-panel.astro";
 import CommandPalette from "@/components/command-palette";
 import { getProject, getProjects } from "@/lib/beaver/project";
 import { getChannels } from "@/lib/beaver/channel";
@@ -66,14 +66,15 @@ const userRole = user.isAdmin
   <body>
     <div class="flex flex-col md:flex-row">
       <SidePanel
-        client:load
-        currentProject={project}
-        currentProjects={projects}
-        currentChannels={channels}
-        currentGroups={channelGroupsData}
+        project={project}
+        projects={projects}
+        channels={channels}
+        groups={channelGroupsData}
         currentPath={Astro.url.pathname}
         userRole={userRole ?? "guest"}
-        transition:persist
+        userName={user.userName}
+        isAdmin={user.isAdmin}
+        canCreateProjects={user.canCreateProjects}
       />
       <div class="flex-1 min-w-0">
         <slot />
