@@ -12,6 +12,7 @@ import NotificationSettings from "./notification-settings";
 import ProjectDangerZone from "./project-danger-zone";
 import ProjectMembers from "./project-members";
 import ProjectRename from "./project-rename";
+import RateLimitSettings from "./rate-limit-settings";
 
 interface Props {
   project: Project;
@@ -79,6 +80,10 @@ export default function SettingsTabs({
             <div className={row}>
               <h3 className={label}>API Key</h3>
               <APIKey project={project} />
+            </div>
+            <div className={row}>
+              <h3 className={label}>Ingestion Rate Limit</h3>
+              <RateLimitSettings project={project} />
             </div>
           </div>
         </TabsContent>
