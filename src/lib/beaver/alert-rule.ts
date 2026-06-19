@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { alertRules, channels, events } from "../db/schema";
-import { eq, and, gte, count } from "drizzle-orm";
+import { eq, and, gt, gte, count } from "drizzle-orm";
 import type { Channel } from "./channel";
 import type { Project } from "./project";
 import { getNotificationEmailsForChannel } from "./channel-notification";
@@ -101,7 +101,9 @@ export async function checkAlertRule(rule: AlertRule): Promise<number | null> {
     if (debounceUntil > new Date()) return null;
   }
 
-  const windowStart = new Date(Date.now() - rule.windowMinutes * 60_000);
+  // After a previous trigger, count only events strictly after lastTriggeredAt.
+  // Using gt (not gte) prevents the triggering events themselves from being
+  // recounted at debounce-expiry when their createdAt equals lastTriggeredAt.
   const [{ value }] = await db
     .select({ value: count() })
     .from(events)
@@ -110,7 +112,9 @@ export async function checkAlertRule(rule: AlertRule): Promise<number | null> {
         eq(events.channelId, rule.channelId),
         eq(events.eventObject, rule.eventObject),
         eq(events.eventAction, rule.eventAction),
-        gte(events.createdAt, windowStart),
+        rule.lastTriggeredAt
+          ? gt(events.createdAt, rule.lastTriggeredAt)
+          : gte(events.createdAt, new Date(Date.now() - rule.windowMinutes * 60_000)),
       ),
     );
 
