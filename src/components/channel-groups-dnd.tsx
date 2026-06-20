@@ -81,7 +81,7 @@ function SortableChannel({
         }`}
       >
         <span className="truncate"># {channel.name}</span>
-        {unreadCount > 0 && !isActive && (
+        {unreadCount > 0 && (
           <motion.span
             key={unreadCount}
             initial={{ scale: 0.4, opacity: 0 }}
