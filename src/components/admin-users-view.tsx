@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/beaver/user";
+import type { Role } from "@/lib/beaver/project-member";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { RoleSelectItem } from "./role-select-item";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -16,7 +19,11 @@ import {
   ShieldIcon,
   ShieldOffIcon,
   Trash2Icon,
+  XIcon,
 } from "lucide-react";
+
+type ProjectOption = { id: number; name: string };
+type Assignment = { projectId: string; role: Role };
 
 function TempPasswordCell({ tempPassword }: { tempPassword: string }) {
   const [copied, setCopied] = useState(false);
@@ -136,10 +143,12 @@ export default function AdminUsersView({
   initialUsers,
   currentUserId,
   backUrl,
+  allProjects,
 }: {
   initialUsers: User[];
   currentUserId: number;
   backUrl: string;
+  allProjects: ProjectOption[];
 }) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [resolvedBackUrl, setResolvedBackUrl] = useState(backUrl);
@@ -153,8 +162,31 @@ export default function AdminUsersView({
   const [createOpen, setCreateOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [newCanCreateProjects, setNewCanCreateProjects] = useState(false);
+  const [newAssignments, setNewAssignments] = useState<Assignment[]>([]);
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  const addAssignmentRow = () => {
+    const taken = new Set(newAssignments.map((a) => a.projectId));
+    const next = allProjects.find((p) => !taken.has(String(p.id)));
+    if (!next) return;
+    setNewAssignments((prev) => [...prev, { projectId: String(next.id), role: "guest" }]);
+  };
+
+  const updateAssignment = (index: number, patch: Partial<Assignment>) => {
+    setNewAssignments((prev) => prev.map((a, i) => (i === index ? { ...a, ...patch } : a)));
+  };
+
+  const removeAssignment = (index: number) => {
+    setNewAssignments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const projectOptionsFor = (index: number) => {
+    const takenByOthers = new Set(
+      newAssignments.filter((_, i) => i !== index).map((a) => a.projectId),
+    );
+    return allProjects.filter((p) => !takenByOthers.has(String(p.id)));
+  };
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -175,6 +207,10 @@ export default function AdminUsersView({
         body: JSON.stringify({
           userName: newUsername.trim(),
           canCreateProjects: newCanCreateProjects,
+          projectAssignments: newAssignments.map((a) => ({
+            projectId: parseInt(a.projectId),
+            role: a.role,
+          })),
         }),
       });
       const data = await res.json();
@@ -185,6 +221,7 @@ export default function AdminUsersView({
       setUsers((prev) => [...prev, data]);
       setNewUsername("");
       setNewCanCreateProjects(false);
+      setNewAssignments([]);
       setCreateOpen(false);
     } finally {
       setCreating(false);
@@ -311,6 +348,63 @@ export default function AdminUsersView({
                       />
                       <Label htmlFor="canCreateProjects">Can create projects</Label>
                     </div>
+                    {allProjects.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Project assignment</Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={addAssignmentRow}
+                            disabled={newAssignments.length >= allProjects.length}
+                          >
+                            <PlusIcon size={14} />
+                            Add project
+                          </Button>
+                        </div>
+                        {newAssignments.map((assignment, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <Select
+                              value={assignment.projectId}
+                              onValueChange={(val) => updateAssignment(i, { projectId: val })}
+                            >
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Select a project…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {projectOptionsFor(i).map((p) => (
+                                  <SelectItem key={p.id} value={String(p.id)}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select
+                              value={assignment.role}
+                              onValueChange={(val) => updateAssignment(i, { role: val as Role })}
+                            >
+                              <SelectTrigger className="w-36">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <RoleSelectItem role="owner" />
+                                <RoleSelectItem role="maintainer" />
+                                <RoleSelectItem role="guest" />
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeAssignment(i)}
+                            >
+                              <XIcon size={14} />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-sm text-muted-foreground">
                       A temporary password will be generated. Share it with the user — they'll be
                       prompted to set a new one on first login.

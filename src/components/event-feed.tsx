@@ -12,12 +12,13 @@ const fetchMaxEventId = async (): Promise<number> => {
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
-import { XIcon, ArrowUpDownIcon, DownloadIcon } from "lucide-react";
+import { XIcon, ArrowUpDownIcon, DownloadIcon, CheckCheckIcon, MailIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
 import EventFilterDialog from "./event-filter-dialog";
 import EventSearchBar from "./event-search-bar";
+import SavedViewsMenu from "./saved-views-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   DropdownMenu,
@@ -52,6 +53,7 @@ export default function EventFeed({
   type,
   projectID,
   channel,
+  userRole,
   title,
   object,
   action,
@@ -60,10 +62,12 @@ export default function EventFeed({
   tags,
   sortBy,
   sortOrder,
+  compact = false,
 }: {
   type: "channel" | "project";
   projectID?: number;
   channel?: Channel;
+  userRole?: string | null;
   title?: string | null;
   object?: string | null;
   action?: string | null;
@@ -72,12 +76,15 @@ export default function EventFeed({
   tags?: string | null;
   sortBy?: string | null;
   sortOrder?: string | null;
+  compact?: boolean;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [eventCount, setEventCount] = useState<number | null>(null);
   const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
   const newEventIdsRef = useRef<Set<number>>(new Set());
@@ -271,6 +278,9 @@ export default function EventFeed({
         if (unique.length > 0) {
           unique.forEach((e) => eventIdsRef.current.add(e.id));
           trickleQueueRef.current.push(...unique);
+          // The stream is already server-filtered to the current query, so every
+          // event received matches the pill's filter — keep the count live.
+          setEventCount((prev) => (prev === null ? prev : prev + unique.length));
           if (!trickleTimerRef.current) drainQueue();
         }
       });
@@ -300,6 +310,33 @@ export default function EventFeed({
     };
   }, [projectID, channel, title, object, action, startDate, endDate, tags, sortBy, sortOrder]);
 
+  const scrollKey = `feed:scroll:${typeof window !== "undefined" ? window.location.pathname + window.location.search : ""}`;
+
+  useEffect(() => {
+    const saveScroll = (e: Event) => {
+      const dest = (e as CustomEvent & { to: URL }).to;
+      if (dest?.pathname.match(/\/events\/\d+$/)) {
+        const top = scrollContainerRef.current?.scrollTop ?? 0;
+        if (top > 0) sessionStorage.setItem(scrollKey, String(top));
+      }
+    };
+    document.addEventListener("astro:before-preparation", saveScroll);
+    return () => document.removeEventListener("astro:before-preparation", saveScroll);
+  }, [scrollKey]);
+
+  useEffect(() => {
+    if (loading) return;
+    const saved = sessionStorage.getItem(scrollKey);
+    if (!saved) return;
+    sessionStorage.removeItem(scrollKey);
+    const top = parseInt(saved);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollContainerRef.current?.scrollTo({ top, behavior: "instant" });
+      });
+    });
+  }, [loading, scrollKey]);
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (title) params.set("title", title);
@@ -319,28 +356,46 @@ export default function EventFeed({
       .catch(() => {});
   }, [projectID, channel, title, object, action, startDate, endDate, tags]);
 
+  // Read the channel's last-read time so we can mark which events are new — but
+  // do NOT mark the channel read on view. Reads are now controlled by the user
+  // via the "Mark as read" action, so opening a channel (or an event) no longer
+  // wipes the unread state and the user keeps their place.
   useEffect(() => {
     if (type !== "channel" || !channel) return;
 
-    fetch("/api/unread", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channelName: channel.name,
-        projectId: channel.projectId,
-      }),
-    })
+    fetch(`/api/unread?channelId=${channel.id}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.lastReadAt) setLastReadDate(new Date(data.lastReadAt));
-        window.dispatchEvent(
-          new CustomEvent("channel:read", {
-            detail: { channelId: data.channelId, channelName: channel.name },
-          }),
-        );
+        setLastReadDate(data.lastReadAt ? new Date(data.lastReadAt) : null);
       })
       .catch(() => {});
   }, [channel?.id]);
+
+  const handleMarkAsRead = async () => {
+    if (!channel || markingRead) return;
+    setMarkingRead(true);
+    try {
+      const res = await fetch("/api/unread", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelName: channel.name, projectId: channel.projectId }),
+      });
+      const data = await res.json();
+      // Everything currently in the feed predates this moment, so treat now as
+      // the read boundary: the divider clears and unread filtering empties.
+      setLastReadDate(new Date());
+      setUnreadOnly(false);
+      window.dispatchEvent(
+        new CustomEvent("channel:read", {
+          detail: { channelId: data.channelId, channelName: channel.name },
+        }),
+      );
+    } catch {
+      // ignore — user can retry
+    } finally {
+      setMarkingRead(false);
+    }
+  };
 
   useEffect(() => {
     const handler = (e: CustomEvent<{ channelName: string }>) => {
@@ -352,18 +407,50 @@ export default function EventFeed({
     return () => window.removeEventListener("channel:read", handler as EventListener);
   }, []);
 
-  const hasActiveFilters = startDate || endDate || parsedTags.length > 0;
-  const hasNewEvents =
-    lastReadDate != null && events.some((e) => new Date(e.createdAt) > lastReadDate);
+  const hasActiveFilters = !!(
+    title ||
+    object ||
+    action ||
+    startDate ||
+    endDate ||
+    parsedTags.length > 0
+  );
+
+  const currentParams = (() => {
+    const p = new URLSearchParams();
+    if (title) p.set("title", title);
+    if (object) p.set("object", object);
+    if (action) p.set("action", action);
+    if (startDate) p.set("startDate", startDate);
+    if (endDate) p.set("endDate", endDate);
+    if (parsedTags.length > 0) p.set("tags", JSON.stringify(parsedTags));
+    if (sortBy) p.set("sortBy", sortBy);
+    if (sortOrder) p.set("sortOrder", sortOrder);
+    return p.toString();
+  })();
+  const isUnread = (e: EventWithChannelName) =>
+    lastReadDate == null || new Date(e.createdAt) > lastReadDate;
+
+  // Any unread events at all (enables "Mark as read", incl. a never-read channel).
+  const hasUnread = events.some(isUnread);
+  // Unread events that sit *after* a known read point — drives the "New" divider,
+  // which only makes sense once the channel has been read at least once.
+  const hasNewEvents = lastReadDate != null && hasUnread;
+
+  // In "unread only" mode, hide events the user has already read.
+  const displayedEvents = unreadOnly ? events.filter(isUnread) : events;
 
   const rows: Row[] = [];
   let dividerRowIndex = -1;
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
+  for (let i = 0; i < displayedEvents.length; i++) {
+    const event = displayedEvents[i];
+    // The "new" divider only makes sense in the full view; in unread-only mode
+    // every shown event is new, so it never triggers.
     const isFirstOld =
+      !unreadOnly &&
       hasNewEvents &&
       new Date(event.createdAt) <= lastReadDate! &&
-      (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
+      (i === 0 || new Date(displayedEvents[i - 1].createdAt) > lastReadDate!);
 
     if (isFirstOld) {
       dividerRowIndex = rows.length;
@@ -379,7 +466,7 @@ export default function EventFeed({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: (i) => (rows[i]?.kind === "divider" ? 32 : 112),
+    estimateSize: (i) => (rows[i]?.kind === "divider" ? 32 : compact ? 42 : 112),
     overscan: 5,
     getItemKey: (i) =>
       rows[i]?.kind === "divider" ? "divider" : rows[i]?.kind === "event" ? rows[i].event.id : i,
@@ -542,6 +629,39 @@ export default function EventFeed({
               <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {projectID && (
+            <SavedViewsMenu
+              projectId={projectID}
+              currentParams={currentParams}
+              basePath={getBasePath()}
+              hasActiveFilters={hasActiveFilters}
+              canManageViews={userRole !== "guest" && userRole != null}
+            />
+          )}
+          {type === "channel" && channel && (
+            <>
+              <Button
+                variant={unreadOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUnreadOnly((v) => !v)}
+                aria-pressed={unreadOnly}
+                title="Show only unread events"
+              >
+                <MailIcon className="size-4 mr-2" />
+                Unread
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMarkAsRead}
+                disabled={!hasUnread || markingRead}
+                title="Mark this channel as read"
+              >
+                <CheckCheckIcon className="size-4 mr-2" />
+                Mark as read
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -585,6 +705,11 @@ export default function EventFeed({
               Looks like this {type === "project" ? "project" : "channel"} has no events!
             </h2>
           </div>
+        ) : unreadOnly && displayedEvents.length === 0 ? (
+          <div className="w-full text-center pt-8">
+            <h2 className="text-2xl">You&rsquo;re all caught up 🎉</h2>
+            <p className="text-muted-foreground mt-2">No unread events in this channel.</p>
+          </div>
         ) : (
           <div className="px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto">
             <div
@@ -606,7 +731,7 @@ export default function EventFeed({
                       left: 0,
                       width: "100%",
                       transform: `translateY(${virtualRow.start}px)`,
-                      paddingBottom: "16px",
+                      paddingBottom: compact ? "8px" : "16px",
                     }}
                   >
                     {row.kind === "divider" ? (
@@ -619,11 +744,14 @@ export default function EventFeed({
                       <div
                         className={
                           row.isNew
-                            ? "animate-in fade-in slide-in-from-bottom-10 duration-300 ease-out"
+                            ? `animate-in fade-in duration-300 ease-out ${compact ? "slide-in-from-bottom-2" : "slide-in-from-bottom-10"}`
                             : undefined
                         }
+                        onAnimationEnd={
+                          row.isNew ? () => newEventIdsRef.current.delete(row.event.id) : undefined
+                        }
                       >
-                        <EventCard event={row.event} />
+                        <EventCard event={row.event} compact={compact} />
                       </div>
                     )}
                   </div>

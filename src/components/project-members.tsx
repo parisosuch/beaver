@@ -3,9 +3,9 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { RoleSelectItem } from "./role-select-item";
 import { UserMinusIcon, UserPlusIcon } from "lucide-react";
-
-type Role = "owner" | "maintainer" | "guest";
+import type { Role } from "@/lib/beaver/project-member";
 
 type Member = {
   id: number;
@@ -124,9 +124,9 @@ export default function ProjectMembers({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="maintainer">Maintainer</SelectItem>
-                  <SelectItem value="guest">Guest</SelectItem>
+                  <RoleSelectItem role="owner" />
+                  <RoleSelectItem role="maintainer" />
+                  <RoleSelectItem role="guest" />
                 </SelectContent>
               </Select>
               {member.userId !== currentUserId && (
@@ -190,9 +190,9 @@ export default function ProjectMembers({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="maintainer">Maintainer</SelectItem>
-                  <SelectItem value="guest">Guest</SelectItem>
+                  <RoleSelectItem role="owner" />
+                  <RoleSelectItem role="maintainer" />
+                  <RoleSelectItem role="guest" />
                 </SelectContent>
               </Select>
             </div>

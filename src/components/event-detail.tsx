@@ -1,10 +1,28 @@
-import type { EventWithChannelName } from "@/lib/beaver/event";
+import type { EventWithChannelName, ReactionSummary } from "@/lib/beaver/event";
+import EventComments from "./event-comments";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import { ArrowLeftIcon, BookmarkIcon, CheckIcon, LinkIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowLeftIcon,
+  BookmarkIcon,
+  CheckIcon,
+  LinkIcon,
+  SmilePlusIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { EmojiPicker, ReactionBar, postReaction, applyToggle } from "./event-reactions";
 
 function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | boolean }) {
   const displayValue = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
@@ -18,11 +36,29 @@ function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | 
   );
 }
 
-export default function EventDetail({ event }: { event: EventWithChannelName }) {
+export default function EventDetail({
+  event,
+  canDelete = false,
+  currentUserId,
+}: {
+  event: EventWithChannelName;
+  canDelete?: boolean;
+  currentUserId: number;
+}) {
   const tags = Object.entries(event.tags);
   const [bookmarked, setBookmarked] = useState(event.bookmarked);
   const [bookmarking, setBookmarking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [reactions, setReactions] = useState<ReactionSummary[]>(event.reactions);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleReact = async (emoji: string) => {
+    setPickerOpen(false);
+    const updated = await postReaction(event.id, emoji);
+    if (updated) setReactions((prev) => applyToggle(prev, updated));
+  };
 
   const handleBookmark = async () => {
     setBookmarking(true);
@@ -45,28 +81,18 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  useEffect(() => {
-    fetch("/api/unread", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channelName: event.channelName,
-        projectId: event.projectId,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        window.dispatchEvent(
-          new CustomEvent("channel:read", {
-            detail: {
-              channelId: data.channelId,
-              channelName: event.channelName,
-            },
-          }),
-        );
-      })
-      .catch(() => {});
-  }, [event.id]);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.href = `/dashboard/${event.projectId}/feed`;
+      }
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const handleBack = () => {
     if (sessionStorage.getItem("beaver:hasInAppNav") === "1") {
@@ -136,6 +162,23 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
                     <TooltipContent>{copied ? "Copied!" : "Copy link"}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                {canDelete && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setConfirmDelete(true)}
+                          className="shrink-0 hover:cursor-pointer text-destructive hover:text-destructive"
+                        >
+                          <Trash2Icon size={18} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete event</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -161,8 +204,54 @@ export default function EventDetail({ event }: { event: EventWithChannelName }) 
               </div>
             </CardContent>
           )}
+
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-2">
+              <ReactionBar reactions={reactions} onToggle={handleReact} />
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 px-2 rounded-full">
+                    <SmilePlusIcon size={14} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 [animation:none]!" align="start">
+                  <EmojiPicker onSelect={handleReact} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <EventComments
+              eventId={event.id}
+              projectId={event.projectId}
+              currentUserId={currentUserId}
+              canModerate={canDelete}
+            />
+          </CardContent>
         </Card>
       </div>
+
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete event?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete &ldquo;{event.title}&rdquo;. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

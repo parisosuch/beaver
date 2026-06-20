@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { channels, channelGroups, metrics } from "../db/schema";
+import { channels, channelGroups, metrics, events } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getUserProjectRole, type Role } from "./project-member";
 
@@ -36,6 +36,15 @@ export async function projectIdForChannelGroup(groupId: number): Promise<number 
     .select({ projectId: channelGroups.projectId })
     .from(channelGroups)
     .where(eq(channelGroups.id, groupId))
+    .limit(1);
+  return row?.projectId ?? null;
+}
+
+export async function projectIdForEvent(eventId: number): Promise<number | null> {
+  const [row] = await db
+    .select({ projectId: events.projectId })
+    .from(events)
+    .where(eq(events.id, eventId))
     .limit(1);
   return row?.projectId ?? null;
 }

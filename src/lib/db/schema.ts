@@ -7,6 +7,9 @@ export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").unique().notNull(),
   apiKey: text("api_key").unique().notNull(), // for external logging API
+  previousApiKey: text("previous_api_key"), // kept valid during grace period after rotation
+  previousApiKeyExpiresAt: integer("previous_api_key_expires_at", { mode: "timestamp_ms" }),
+  rateLimitPerMinute: integer("rate_limit_per_minute"), // null = unlimited
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
@@ -132,10 +135,13 @@ export const users = sqliteTable("users", {
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   canCreateProjects: integer("can_create_projects", { mode: "boolean" }).notNull().default(false),
   userName: text("username").notNull(),
+  fullName: text("full_name"),
   email: text("email"),
   password: text("password").notNull(),
   mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
   tempPassword: text("temp_password"),
+  compactMode: integer("compact_mode", { mode: "boolean" }).notNull().default(false),
+  themePalette: text("theme_palette").notNull().default("default"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
@@ -155,9 +161,6 @@ export const projectMembers = sqliteTable(
     role: text("role", { enum: ["owner", "maintainer", "guest"] })
       .notNull()
       .default("guest"),
-    notificationsEnabled: integer("notifications_enabled", { mode: "boolean" })
-      .notNull()
-      .default(false),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(unixepoch() * 1000)`)
       .notNull(),
@@ -168,6 +171,30 @@ export const projectMembers = sqliteTable(
       table.userId,
     ),
     userIdIdx: index("project_members_user_id_idx").on(table.userId),
+  }),
+);
+
+// --- CHANNEL NOTIFICATION SUBSCRIPTIONS ---
+export const channelNotificationSubscriptions = sqliteTable(
+  "channel_notification_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    userChannelIdx: uniqueIndex("channel_notification_subscriptions_user_channel_idx").on(
+      table.userId,
+      table.channelId,
+    ),
+    channelIdIdx: index("channel_notification_subscriptions_channel_id_idx").on(table.channelId),
   }),
 );
 
@@ -186,6 +213,32 @@ export const channelReads = sqliteTable(
   },
   (table) => ({
     userChannelIdx: uniqueIndex("channel_reads_user_channel_idx").on(table.userId, table.channelId),
+  }),
+);
+
+// --- EVENT REACTIONS ---
+export const eventReactions = sqliteTable(
+  "event_reactions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    eventUserEmojiIdx: uniqueIndex("event_reactions_event_user_emoji_idx").on(
+      table.eventId,
+      table.userId,
+      table.emoji,
+    ),
+    eventIdIdx: index("event_reactions_event_id_idx").on(table.eventId),
   }),
 );
 
@@ -255,6 +308,52 @@ export const metricValues = sqliteTable(
   }),
 );
 
+// --- EMAIL SETTINGS ---
+export const emailSettings = sqliteTable("email_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  provider: text("provider", { enum: ["resend", "smtp"] })
+    .notNull()
+    .default("resend"),
+  smtpHost: text("smtp_host"),
+  smtpPort: integer("smtp_port"),
+  smtpUsername: text("smtp_username"),
+  smtpPassword: text("smtp_password"),
+  smtpSecure: integer("smtp_secure", { mode: "boolean" }).notNull().default(true),
+  smtpFromEmail: text("smtp_from_email"),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
+// --- ALERT RULES ---
+export const alertRules = sqliteTable(
+  "alert_rules",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    eventObject: text("event_object").notNull(),
+    eventAction: text("event_action").notNull(),
+    threshold: integer("threshold").notNull(),
+    windowMinutes: integer("window_minutes").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    lastTriggeredAt: integer("last_triggered_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    channelIdx: index("alert_rules_channel_id_idx").on(table.channelId),
+    channelObjActIdx: index("alert_rules_channel_id_event_object_event_action_idx").on(
+      table.channelId,
+      table.eventObject,
+      table.eventAction,
+    ),
+  }),
+);
+
 // --- SESSIONS ----
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -263,6 +362,25 @@ export const sessions = sqliteTable("sessions", {
     .references(() => users.id, { onDelete: "cascade" }),
   token: text("token").unique().notNull(),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
+// ---- AUDIT LOG ----
+export const auditLog = sqliteTable("audit_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull(), // e.g. "api_key.rotated", "channel.created"
+  targetType: text("target_type"), // "channel" | "member" | null (project-level)
+  targetId: integer("target_id"),
+  targetName: text("target_name"), // snapshot so deletes don't lose context
+  metadata: text("metadata"), // JSON string for extra detail (old/new values, role, etc.)
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
@@ -293,6 +411,7 @@ export const channelRelations = relations(channels, ({ one, many }) => ({
     references: [channelGroups.id],
   }),
   events: many(events),
+  alertRules: many(alertRules),
 }));
 
 export const eventRelations = relations(events, ({ one }) => ({
@@ -345,6 +464,27 @@ export const channelReadRelations = relations(channelReads, ({ one }) => ({
   }),
 }));
 
+export const channelNotificationSubscriptionRelations = relations(
+  channelNotificationSubscriptions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [channelNotificationSubscriptions.userId],
+      references: [users.id],
+    }),
+    channel: one(channels, {
+      fields: [channelNotificationSubscriptions.channelId],
+      references: [channels.id],
+    }),
+  }),
+);
+
+export const alertRuleRelations = relations(alertRules, ({ one }) => ({
+  channel: one(channels, {
+    fields: [alertRules.channelId],
+    references: [channels.id],
+  }),
+}));
+
 export const metricRelations = relations(metrics, ({ one, many }) => ({
   project: one(projects, {
     fields: [metrics.projectId],
@@ -359,3 +499,51 @@ export const metricValueRelations = relations(metricValues, ({ one }) => ({
     references: [metrics.id],
   }),
 }));
+
+export const eventReactionRelations = relations(eventReactions, ({ one }) => ({
+  event: one(events, {
+    fields: [eventReactions.eventId],
+    references: [events.id],
+  }),
+  user: one(users, {
+    fields: [eventReactions.userId],
+    references: [users.id],
+  }),
+}));
+
+// ---- SAVED VIEWS ----
+// ---- EVENT COMMENTS ----
+export const eventComments = sqliteTable("event_comments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});
+
+export const eventCommentRelations = relations(eventComments, ({ one }) => ({
+  event: one(events, { fields: [eventComments.eventId], references: [events.id] }),
+  user: one(users, { fields: [eventComments.userId], references: [users.id] }),
+}));
+
+// ---- SAVED VIEWS ----
+export const savedViews = sqliteTable("saved_views", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  params: text("params").notNull(), // JSON-encoded URLSearchParams
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(sql`(unixepoch() * 1000)`)
+    .notNull(),
+});

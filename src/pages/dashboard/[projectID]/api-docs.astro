@@ -1,13 +1,768 @@
 ---
 import Layout from "@/layouts/layout.astro";
 import { getProject } from "@/lib/beaver/project";
-import ApiDocsView from "@/components/api-docs-view";
+import { getChannels } from "@/lib/beaver/channel";
+import CodeBlock from "@/components/code-block.astro";
+import ApiKeyReveal from "@/components/api-key-reveal";
+import ApiPlayground from "@/components/api-playground";
 
 const { projectID } = Astro.params;
-
 const project = await getProject(parseInt(projectID!));
+const channels = await getChannels(project.id);
+const baseUrl = Astro.url.origin;
+const apiKey = project.apiKey;
 ---
 
 <Layout projectID={projectID!}>
-  <ApiDocsView client:load apiKey={project.apiKey} />
+  <div class="w-full">
+    <!-- Header -->
+    <div class="p-4 md:p-8 border-b">
+      <h1 class="text-2xl font-semibold">API Documentation</h1>
+    </div>
+
+    <div class="w-full flex flex-col items-center mt-8 pb-16">
+      <div class="w-full px-4 md:w-3/4 md:px-0 space-y-12">
+
+        <!-- Table of Contents -->
+        <nav class="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6">
+          <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-4">
+            Table of Contents
+          </h2>
+          <ul class="space-y-2">
+            <li>
+              <a href="#overview" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Overview</a>
+            </li>
+            <li>
+              <a href="#authentication" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Authentication</a>
+            </li>
+            <li>
+              <a href="#create-event" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Create Event</a>
+              <ul class="ml-4 mt-2 space-y-1">
+                <li><a href="#request-headers" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Request Headers</a></li>
+                <li><a href="#request-body" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Request Body</a></li>
+                <li><a href="#example-request" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Single Event</a></li>
+                <li><a href="#batch-request" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Batch Events</a></li>
+                <li><a href="#success-response" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Response Format</a></li>
+                <li><a href="#error-responses" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Error Responses</a></li>
+              </ul>
+            </li>
+            <li><a href="#notifications" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Notifications</a></li>
+            <li>
+              <a href="#tags" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Tags</a>
+              <ul class="ml-4 mt-2 space-y-1">
+                <li><a href="#tag-type-inference" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Type Inference</a></li>
+                <li><a href="#tag-type-consistency" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Type Consistency</a></li>
+              </ul>
+            </li>
+            <li>
+              <a href="#metrics" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Metrics</a>
+              <ul class="ml-4 mt-2 space-y-1">
+                <li><a href="#metrics-gauge" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Gauge</a></li>
+                <li><a href="#metrics-counter" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Counter</a></li>
+                <li><a href="#metrics-timeseries" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Timeseries</a></li>
+              </ul>
+            </li>
+            <li>
+              <a href="#code-examples" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Code Examples</a>
+              <ul class="ml-4 mt-2 space-y-1">
+                <li><a href="#javascript" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">JavaScript / Node.js</a></li>
+                <li><a href="#python" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Python</a></li>
+                <li><a href="#go" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Go</a></li>
+              </ul>
+            </li>
+            <li><a href="#playground" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Playground</a></li>
+          </ul>
+        </nav>
+
+        <!-- Overview -->
+        <section id="overview">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Overview
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            The Beaver API allows you to send events from your applications to track important
+            activities. Events are organized by channels within your project.
+          </p>
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-blue-600 dark:text-blue-400 font-semibold">Base URL</span>
+            </div>
+            <code class="text-lg font-mono text-blue-900 dark:text-blue-300 bg-white/60 dark:bg-white/10 px-3 py-1.5 rounded-lg">
+              {baseUrl}/api
+            </code>
+          </div>
+        </section>
+
+        <!-- Authentication -->
+        <section id="authentication">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Authentication
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            All API requests require authentication via the
+            <code class="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">X-API-Key</code>
+            header. You can find your project's API key in the
+            <a href="settings" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline underline-offset-2">Settings</a>
+            page.
+          </p>
+          <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-6 mb-6">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-amber-700 dark:text-amber-400 font-semibold">Your API Key</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20">Keep this secret</span>
+            </div>
+            <ApiKeyReveal client:load apiKey={apiKey} />
+          </div>
+          <div class="flex items-center gap-3 p-4 bg-gray-900 rounded-xl">
+            <code class="text-gray-100 font-mono text-sm">X-API-Key: YOUR_API_KEY</code>
+          </div>
+        </section>
+
+        <!-- Create Event -->
+        <section id="create-event">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Create Event
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            Send one event or a batch of up to 100 events to channels in your project. The
+            endpoint accepts either a single event object or an array — the response is always an
+            array of per-event results.
+          </p>
+          <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-5 mb-6">
+            <p class="text-blue-800 dark:text-blue-300 font-semibold mb-2">Event naming convention</p>
+            <p class="text-blue-700 dark:text-blue-400 text-sm mb-2">
+              Every event has a machine identifier (<code class="bg-blue-100 dark:bg-white/10 px-1 rounded">name</code>) in
+              <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">object.action</code>
+              form and a human-readable <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">title</code>. Names must match
+              <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">/^[a-z][a-z_]*\.[a-z][a-z_]*$/</code>
+              — lowercase, letters and underscores, exactly two segments.
+            </p>
+            <p class="text-blue-700 dark:text-blue-400 text-sm">
+              Examples:
+              <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">user.signed_up</code>,
+              <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">payment.completed</code>,
+              <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">server.status_changed</code>.
+              The <code class="bg-blue-100 dark:bg-white/10 px-1 rounded">legacy</code> object is reserved for migrated events and cannot be sent.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-4 p-4 bg-gray-900 rounded-xl mb-8">
+            <span class="inline-flex items-center px-3 py-1 rounded-md text-sm font-bold text-white bg-emerald-500">POST</span>
+            <code class="text-gray-100 font-mono text-lg">/api/event</code>
+          </div>
+
+          <h3 id="request-headers" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Request Headers</h3>
+          <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-8">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Header</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Required</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">X-API-Key</code></td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Your project's API key for authentication</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">Content-Type</code></td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Must be <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">application/json</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 id="request-body" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Request Body</h3>
+          <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-8">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Field</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Required</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">name</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    Machine identifier in <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">object.action</code> form
+                    (e.g. <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">server.status_changed</code>).
+                    Must match <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">/^[a-z][a-z_]*\.[a-z][a-z_]*$/</code>.
+                    The <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">legacy</code> object is reserved.
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">title</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Human-readable description of this specific event instance</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">channel</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">The channel name to send the event to</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">description</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10">Optional</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Additional details about the event</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">icon</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10">Optional</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">An emoji or icon for the event</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">tags</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">object</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10">Optional</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    Key-value pairs for additional metadata. Types are inferred from the JSON value. See <a href="#tags" class="text-blue-600 dark:text-blue-400 hover:underline">Tags</a>.
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">notify</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">boolean</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10">Optional</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    If <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">true</code>, sends an email notification to project members who have opted in.
+                    Requires an email provider (Resend or SMTP) to be configured.
+                    See <a href="#notifications" class="text-blue-600 dark:text-blue-400 hover:underline">Notifications</a>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 id="example-request" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Single Event</h3>
+          <div class="mb-8">
+            <CodeBlock title="cURL — single event" lang="bash" code={`curl -X POST ${baseUrl}/api/event \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "name": "user.signed_up",
+    "title": "New user registered via Google",
+    "channel": "signups",
+    "description": "New user registration",
+    "icon": "🎉",
+    "tags": {
+      "plan": "premium",
+      "source": "landing-page"
+    }
+  }'`} />
+          </div>
+
+          <h3 id="batch-request" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Batch Events</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">
+            Pass an array of event objects to ingest them in a single request. The batch is atomic
+            — if any event fails validation or insertion, the entire batch is rejected and nothing is written.
+          </p>
+          <div class="mb-8">
+            <CodeBlock title="cURL — batch" lang="bash" code={`curl -X POST ${baseUrl}/api/event \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '[
+    {
+      "name": "user.signed_up",
+      "title": "Alice registered",
+      "channel": "signups"
+    },
+    {
+      "name": "payment.completed",
+      "title": "Alice paid $99.99",
+      "channel": "payments",
+      "tags": { "amount": 99.99 }
+    }
+  ]'`} />
+          </div>
+
+          <h3 id="success-response" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Response Format</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">
+            On success the response is always an array — one created event object per input.
+          </p>
+          <div class="space-y-4 mb-8">
+            <CodeBlock title="200 OK — all succeeded" lang="json" code={`[
+  {
+    "id": 123,
+    "eventObject": "user",
+    "eventAction": "signed_up",
+    "title": "Alice registered",
+    "description": null,
+    "icon": null,
+    "tags": {},
+    "projectId": 1,
+    "channelName": "signups",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+]`} />
+          </div>
+
+          <h3 id="error-responses" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Error Responses</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">
+            These top-level errors are returned when the request itself is invalid (missing auth,
+            oversized batch). Per-event errors are returned inline in the results array with
+            <code class="bg-gray-100 dark:bg-white/10 px-1 rounded">{"{ ok: false, error }"}</code>.
+          </p>
+          <div class="space-y-4">
+            <CodeBlock title="401 Unauthorized - Missing API key" lang="json" code={`{
+  "error": "X-API-Key header is required."
+}`} />
+          </div>
+        </section>
+
+        <!-- Notifications -->
+        <section id="notifications">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Notifications
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            Beaver can send email notifications when an event is posted with
+            <code class="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">"notify": true</code>.
+            Emails are sent only to project members who have opted in via their notification settings.
+          </p>
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6 mb-6">
+            <p class="text-blue-800 dark:text-blue-300 font-semibold mb-3">Setup</p>
+            <ol class="text-blue-700 dark:text-blue-400 text-sm space-y-2 list-decimal list-inside">
+              <li>Sign up at <span class="font-mono">resend.com</span> and create an API key</li>
+              <li>Set <code class="bg-white/60 dark:bg-white/10 px-1 rounded">RESEND_API_KEY</code> in your environment</li>
+              <li>
+                Optionally set <code class="bg-white/60 dark:bg-white/10 px-1 rounded">RESEND_FROM_EMAIL</code>
+                (defaults to <code class="bg-white/60 dark:bg-white/10 px-1 rounded">notifications@beaver.app</code>)
+              </li>
+              <li>
+                Project members add an email and enable notifications in
+                <a href="settings" class="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-200">Settings → Notifications</a>
+              </li>
+            </ol>
+            <p class="text-blue-700 dark:text-blue-400 text-sm mt-3">
+              Prefer your own mail server? An admin can switch the provider to SMTP under
+              <span class="font-mono">Admin → Email Settings</span>.
+            </p>
+          </div>
+          <CodeBlock title="Triggering a notification" lang="bash" code={`curl -X POST ${baseUrl}/api/event \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "name": "deploy.failed",
+    "title": "Production deploy failed on step 3",
+    "channel": "alerts",
+    "description": "Production deploy failed on step 3",
+    "icon": "🚨",
+    "notify": true
+  }'`} />
+        </section>
+
+        <!-- Tags -->
+        <section id="tags">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Tags
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            Tags are arbitrary key-value pairs that attach structured metadata to an event. They
+            power filtering in the dashboard — numeric comparisons, boolean toggles, and string
+            lookups all depend on the stored type.
+          </p>
+
+          <h3 id="tag-type-inference" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Type Inference</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">
+            The API infers each tag's type from the JSON value you send. No type annotation is required.
+          </p>
+          <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">JSON value</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Stored type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Filter UI</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">"premium"</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Dropdown (≤ 20 distinct values) or free-text input</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">99.99</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Numeric input with operator (=, &gt;, &lt;, between)</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">true</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">boolean</td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">true / false dropdown</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <CodeBlock lang="json" title="Example — mixed tag types" code={`{
+  "name": "Purchase",
+  "channel": "sales",
+  "tags": {
+    "plan":     "premium",
+    "amount":   99.99,
+    "verified": true
+  }
+}`} />
+
+          <h3 id="tag-type-consistency" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-8 mb-4">Type Consistency</h3>
+          <div class="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5 mb-4">
+            <p class="text-amber-800 dark:text-amber-300 font-semibold mb-1">Keep tag types consistent across events</p>
+            <p class="text-amber-700 dark:text-amber-400 text-sm">
+              A tag key's type should be the same on every event. If
+              <code class="bg-amber-100 dark:bg-white/10 px-1 rounded">amount</code> is a number on one event and a string on another,
+              the filter UI will use the type it sees first. Numeric filters use
+              <code class="bg-amber-100 dark:bg-white/10 px-1 rounded">CAST(value AS REAL)</code>
+              internally — rows with a non-numeric value for that key will silently not match rather than returning an error.
+            </p>
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            Type mismatches are treated as a caller error. Design your tag schema upfront and send values of the same JSON type for a given key on every event.
+          </p>
+        </section>
+
+        <!-- Metrics -->
+        <section id="metrics">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Metrics
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            Log numeric measurements to metrics you've defined in the dashboard. Three types are
+            supported: <strong>gauge</strong> (a single current value), <strong>counter</strong>
+            (an incrementing total), and <strong>timeseries</strong> (a time-stamped series of values).
+          </p>
+          <div class="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5 mb-8">
+            <p class="text-amber-800 dark:text-amber-300 font-semibold mb-1">Create metrics in the dashboard first</p>
+            <p class="text-amber-700 dark:text-amber-400 text-sm">
+              The API will return a <code class="bg-amber-100 dark:bg-white/10 px-1 rounded">404</code> if the metric name does not exist in the project.
+              Go to <a href="metrics" class="underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200">Metrics → Settings</a> to create a metric before logging to it.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-4 p-4 bg-gray-900 rounded-xl mb-8">
+            <span class="inline-flex items-center px-3 py-1 rounded-md text-sm font-bold text-white bg-emerald-500">POST</span>
+            <code class="text-gray-100 font-mono text-lg">/api/metric</code>
+          </div>
+
+          <h3 id="metrics-gauge" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Gauge</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">Sets the current value of a gauge metric. Each call overwrites the previous value.</p>
+          <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Field</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Required</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">metric</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">The name of the metric as defined in the dashboard</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">value</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">The current value to set</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="space-y-4 mb-10">
+            <CodeBlock title="cURL — set gauge" lang="bash" code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{ "metric": "disk_usage", "value": 42.3 }'`} />
+            <CodeBlock title="200 OK" lang="json" code={`{ "ok": true, "metric": "disk_usage", "value": 42.3 }`} />
+          </div>
+
+          <h3 id="metrics-counter" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Counter</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">
+            Adds an amount to a counter metric. Use a negative
+            <code class="bg-gray-100 dark:bg-white/10 px-1 rounded text-pink-600 dark:text-pink-400">increment</code>
+            to subtract. The response includes the new running total.
+          </p>
+          <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Field</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Required</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">metric</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">The name of the metric as defined in the dashboard</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">increment</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Amount to add (use a negative number to subtract)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="space-y-4 mb-10">
+            <CodeBlock title="cURL — increment counter" lang="bash" code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{ "metric": "signups", "increment": 1 }'`} />
+            <CodeBlock title="cURL — decrement counter" lang="bash" code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{ "metric": "signups", "increment": -1 }'`} />
+            <CodeBlock title="200 OK" lang="json" code={`{ "ok": true, "metric": "signups", "total": 42 }`} />
+          </div>
+
+          <h3 id="metrics-timeseries" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Timeseries</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">
+            Appends a data point to a timeseries metric. If
+            <code class="bg-gray-100 dark:bg-white/10 px-1 rounded text-pink-600 dark:text-pink-400">timestamp</code>
+            is omitted, the server records the current time.
+          </p>
+          <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Field</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Required</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">metric</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">The name of the metric as defined in the dashboard</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">value</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">number</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">Yes</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">The numeric measurement to record</td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3"><code class="text-sm bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-pink-600 dark:text-pink-400">timestamp</code></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">string</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10">Optional</span></td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">ISO 8601 timestamp for the data point. Defaults to now.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="space-y-4 mb-2">
+            <CodeBlock title="cURL — append data point" lang="bash" code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{ "metric": "response_time", "value": 123.4 }'`} />
+            <CodeBlock title="cURL — with explicit timestamp" lang="bash" code={`curl -X POST ${baseUrl}/api/metric \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "metric": "response_time",
+    "value": 98.7,
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }'`} />
+            <CodeBlock title="200 OK" lang="json" code={`{
+  "ok": true,
+  "metric": "response_time",
+  "value": 123.4,
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}`} />
+          </div>
+        </section>
+
+        <!-- Code Examples -->
+        <section id="code-examples">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            Code Examples
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
+            Copy and paste these examples into your project to get started quickly.
+          </p>
+
+          <div class="space-y-8">
+            <div id="javascript">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-yellow-400 flex items-center justify-center text-xs font-bold text-yellow-900">JS</span>
+                JavaScript / Node.js
+              </h3>
+              <CodeBlock title="sendEvent.js" lang="javascript" code={`const API_KEY = 'YOUR_API_KEY';
+
+// Send one event or an array of events — always returns an array of results.
+async function sendEvent(events) {
+  const response = await fetch('${baseUrl}/api/event', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': API_KEY,
+    },
+    body: JSON.stringify(events),
+  });
+
+  return response.json();
+}
+
+// Single event
+await sendEvent({
+  name: 'payment.completed',
+  title: 'Customer paid $99.99',
+  channel: 'payments',
+  icon: '💰',
+  tags: { amount: 99.99, currency: 'USD' }
+});
+
+// Batch
+await sendEvent([
+  { name: 'user.signed_up',      title: 'Alice registered',    channel: 'signups' },
+  { name: 'payment.completed',   title: 'Alice paid $99.99',   channel: 'payments' },
+]);`} />
+            </div>
+
+            <div id="python">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-blue-500 flex items-center justify-center text-xs font-bold text-white">PY</span>
+                Python
+              </h3>
+              <CodeBlock title="send_event.py" lang="python" code={`import requests
+
+API_KEY = 'YOUR_API_KEY'
+
+def send_event(name, title, channel, description=None, icon=None, tags=None):
+    response = requests.post(
+        '${baseUrl}/api/event',
+        headers={'X-API-Key': API_KEY},
+        json={
+            'name': name,
+            'title': title,
+            'channel': channel,
+            'description': description,
+            'icon': icon,
+            'tags': tags,
+        }
+    )
+    return response.json()
+
+# Usage
+send_event(
+    name='deploy.completed',
+    title='v2.1.0 deployed to production',
+    channel='deployments',
+    description='v2.1.0 deployed to production',
+    icon='🚀',
+    tags={'version': '2.1.0', 'environment': 'production'}
+)`} />
+            </div>
+
+            <div id="go">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-cyan-500 flex items-center justify-center text-xs font-bold text-white">GO</span>
+                Go
+              </h3>
+              <CodeBlock title="event.go" lang="go" code={`package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+)
+
+const apiKey = "YOUR_API_KEY"
+
+type Event struct {
+    Name        string            \`json:"name"\`
+    Title       string            \`json:"title"\`
+    Channel     string            \`json:"channel"\`
+    Description string            \`json:"description,omitempty"\`
+    Icon        string            \`json:"icon,omitempty"\`
+    Tags        map[string]string \`json:"tags,omitempty"\`
+}
+
+func sendEvent(event Event) error {
+    data, err := json.Marshal(event)
+    if err != nil {
+        return err
+    }
+
+    req, err := http.NewRequest("POST", "${baseUrl}/api/event", bytes.NewBuffer(data))
+    if err != nil {
+        return err
+    }
+
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("X-API-Key", apiKey)
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+
+    return nil
+}
+
+// Usage
+func main() {
+    sendEvent(Event{
+        Name:        "server.started",
+        Title:       "Application server initialized",
+        Channel:     "server-events",
+        Description: "Application server initialized",
+        Icon:        "✅",
+        Tags:        map[string]string{"port": "8080"},
+    })
+}`} />
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Playground -->
+      <div class="w-full px-4 md:w-3/4 md:px-0 pb-16 mt-4">
+        <section id="playground" class="scroll-mt-8">
+          <h2 class="text-xl font-semibold mb-1">Playground</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            Send a test event and inspect the response — no curl required.
+          </p>
+          <ApiPlayground
+            client:load
+            apiKey={apiKey}
+            baseUrl={baseUrl}
+            channels={channels.map((c) => ({ id: c.id, name: c.name }))}
+          />
+        </section>
+      </div>
+    </div>
+  </div>
 </Layout>

@@ -6,8 +6,10 @@ import {
   getProjects,
   renameProject,
   rotateApiKey,
+  setRateLimit,
 } from "@/lib/beaver/project";
 import { getUserProjectRole, getProjectsForUser } from "@/lib/beaver/project-member";
+import { logAuditEntry } from "@/lib/beaver/audit-log";
 
 export const GET: APIRoute = async (context: APIContext) => {
   if (!context.locals.user) {
@@ -90,10 +92,16 @@ export const PATCH: APIRoute = async (context: APIContext) => {
   }
 
   try {
-    const { projectID, name } = await context.request.json();
+    const { projectID, name, rateLimitPerMinute } = await context.request.json();
 
-    if (!projectID || !name?.trim()) {
-      return new Response(JSON.stringify({ error: "projectID and name are required." }), {
+    if (!projectID) {
+      return new Response(JSON.stringify({ error: "projectID is required." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (name === undefined && rateLimitPerMinute === undefined) {
+      return new Response(JSON.stringify({ error: "name or rateLimitPerMinute is required." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -109,13 +117,51 @@ export const PATCH: APIRoute = async (context: APIContext) => {
 
     const role = await getUserProjectRole(parseInt(projectID), context.locals.user.id);
     if (!context.locals.user.isAdmin && role !== "owner") {
-      return new Response(JSON.stringify({ error: "Only the project owner can rename it." }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
+      return new Response(
+        JSON.stringify({ error: "Only the project owner can update project settings." }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    let updated = project;
+
+    if (name !== undefined) {
+      if (!name?.trim()) {
+        return new Response(JSON.stringify({ error: "name cannot be empty." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      updated = await renameProject(parseInt(projectID), name.trim());
+      logAuditEntry({
+        projectId: parseInt(projectID),
+        userId: context.locals.user.id,
+        action: "project.renamed",
+        metadata: { from: project.name, to: name.trim() },
       });
     }
 
-    const updated = await renameProject(parseInt(projectID), name.trim());
+    if (rateLimitPerMinute !== undefined) {
+      const isValid =
+        rateLimitPerMinute === null ||
+        (typeof rateLimitPerMinute === "number" &&
+          Number.isInteger(rateLimitPerMinute) &&
+          rateLimitPerMinute > 0);
+      if (!isValid) {
+        return new Response(
+          JSON.stringify({ error: "rateLimitPerMinute must be a positive integer or null." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      updated = await setRateLimit(parseInt(projectID), rateLimitPerMinute);
+      logAuditEntry({
+        projectId: parseInt(projectID),
+        userId: context.locals.user.id,
+        action: "rate_limit.changed",
+        metadata: { from: project.rateLimitPerMinute, to: rateLimitPerMinute },
+      });
+    }
+
     return new Response(JSON.stringify(updated), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -234,11 +280,16 @@ export const PUT: APIRoute = async (context: APIContext) => {
       );
     }
 
-    const newKey = await rotateApiKey(parseInt(projectID));
-    return new Response(JSON.stringify({ apiKey: newKey }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+    const { newKey, previousKeyExpiresAt } = await rotateApiKey(parseInt(projectID));
+    logAuditEntry({
+      projectId: parseInt(projectID),
+      userId: context.locals.user.id,
+      action: "api_key.rotated",
     });
+    return new Response(
+      JSON.stringify({ apiKey: newKey, previousKeyExpiresAt: previousKeyExpiresAt.toISOString() }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
   } catch (err) {
     if (err instanceof Error) {
       return new Response(JSON.stringify({ error: err.message }), {

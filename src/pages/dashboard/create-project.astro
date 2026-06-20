@@ -1,14 +1,20 @@
 ---
 import "@/styles/global.css";
 import CreateProjectView from "@/components/create-project-view";
+import CommandPalette from "@/components/command-palette";
+import { getProjects } from "@/lib/beaver/project";
+import { getProjectsForUser } from "@/lib/beaver/project-member";
 
 const user = Astro.locals.user;
 if (!user?.isAdmin && !user?.canCreateProjects) {
-  const { getProjectsForUser } = await import("@/lib/beaver/project-member");
   const projects = await getProjectsForUser(user!.id);
   const fallback = projects.length > 0 ? `/dashboard/${projects[0].id}/feed` : "/";
   return Astro.redirect(fallback);
 }
+
+const projects = user!.isAdmin
+  ? await getProjects()
+  : await getProjectsForUser(user!.id);
 ---
 
 <html lang="en">
@@ -32,5 +38,12 @@ if (!user?.isAdmin && !user?.canCreateProjects) {
   </head>
   <body>
     <CreateProjectView client:only="react" />
+    <CommandPalette
+      client:load
+      currentProject={null}
+      currentProjects={projects}
+      currentChannels={[]}
+      userRole="owner"
+    />
   </body>
 </html>

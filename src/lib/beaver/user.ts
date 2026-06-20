@@ -1,38 +1,47 @@
 import { db } from "../db/db";
-import { users, sessions, projectMembers } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { users, sessions } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 export type DatabaseUser = {
   id: number;
   userName: string;
+  fullName: string | null;
   email: string | null;
   isAdmin: boolean;
   canCreateProjects: boolean;
   password: string;
   mustChangePassword: boolean;
   tempPassword: string | null;
+  compactMode: boolean;
+  themePalette: string;
   createdAt: Date | null;
 };
 
 export type User = {
   id: number;
   userName: string;
+  fullName: string | null;
   email: string | null;
   isAdmin: boolean;
   canCreateProjects: boolean;
   mustChangePassword: boolean;
   tempPassword: string | null;
+  compactMode: boolean;
+  themePalette: string;
   createdAt: Date | null;
 };
 
 const userSelect = {
   id: users.id,
   userName: users.userName,
+  fullName: users.fullName,
   email: users.email,
   isAdmin: users.isAdmin,
   canCreateProjects: users.canCreateProjects,
   mustChangePassword: users.mustChangePassword,
   tempPassword: users.tempPassword,
+  compactMode: users.compactMode,
+  themePalette: users.themePalette,
   createdAt: users.createdAt,
 };
 
@@ -172,25 +181,20 @@ export async function updateUserEmail(id: number, email: string | null): Promise
   await db.update(users).set({ email }).where(eq(users.id, id));
 }
 
-export async function setProjectNotifications(
-  userId: number,
-  projectId: number,
-  enabled: boolean,
-): Promise<void> {
-  await db
-    .update(projectMembers)
-    .set({ notificationsEnabled: enabled })
-    .where(and(eq(projectMembers.userId, userId), eq(projectMembers.projectId, projectId)));
+export async function updateUserFullName(id: number, fullName: string | null): Promise<void> {
+  await db.update(users).set({ fullName }).where(eq(users.id, id));
 }
 
-export async function getNotificationEmails(projectId: number): Promise<string[]> {
-  const rows = await db
-    .select({ email: users.email })
-    .from(projectMembers)
-    .innerJoin(users, eq(projectMembers.userId, users.id))
-    .where(
-      and(eq(projectMembers.projectId, projectId), eq(projectMembers.notificationsEnabled, true)),
-    );
+export async function updateUserCompactMode(id: number, compactMode: boolean): Promise<void> {
+  await db.update(users).set({ compactMode }).where(eq(users.id, id));
+}
 
-  return rows.flatMap((r) => (r.email ? [r.email] : []));
+export const THEME_PALETTES = ["default", "blue", "violet", "green", "rose"] as const;
+export type ThemePalette = (typeof THEME_PALETTES)[number];
+
+export async function updateUserThemePalette(id: number, themePalette: string): Promise<void> {
+  const palette = (THEME_PALETTES as readonly string[]).includes(themePalette)
+    ? themePalette
+    : "default";
+  await db.update(users).set({ themePalette: palette }).where(eq(users.id, id));
 }

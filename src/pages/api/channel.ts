@@ -1,10 +1,12 @@
 import {
   createChannel,
   deleteChannel,
+  getChannel,
   getChannels,
   reorderChannels,
   updateChannel,
 } from "@/lib/beaver/channel";
+import { logAuditEntry } from "@/lib/beaver/audit-log";
 import {
   canAccessProject,
   canManageProject,
@@ -68,6 +70,15 @@ export const POST: APIRoute = async ({ request, locals }: APIContext) => {
     const splitName = name.replace(" ", "-");
 
     const channel = await createChannel(splitName, project_id, description);
+
+    logAuditEntry({
+      projectId: project_id,
+      userId: locals.user.id,
+      action: "channel.created",
+      targetType: "channel",
+      targetId: channel.id,
+      targetName: channel.name,
+    });
 
     return new Response(JSON.stringify(channel), {
       status: 200,
@@ -146,11 +157,23 @@ export const PUT: APIRoute = async ({ request, locals }: APIContext) => {
       });
     }
 
-    const projectId = await projectIdForChannel(parseInt(channelId));
-    if (projectId === null) return forbidden();
-    if (!(await canManageProject(locals.user, projectId))) return forbidden();
+    const existing = await getChannel(parseInt(channelId));
+    if (!existing) return forbidden();
+    if (!(await canManageProject(locals.user, existing.projectId))) return forbidden();
 
     const channel = await updateChannel(parseInt(channelId), { name, description });
+
+    if (name && name !== existing.name) {
+      logAuditEntry({
+        projectId: existing.projectId,
+        userId: locals.user.id,
+        action: "channel.renamed",
+        targetType: "channel",
+        targetId: existing.id,
+        targetName: name,
+        metadata: { from: existing.name, to: name },
+      });
+    }
 
     return new Response(JSON.stringify(channel), {
       status: 200,
@@ -183,11 +206,20 @@ export const DELETE: APIRoute = async ({ request, locals }: APIContext) => {
       });
     }
 
-    const projectId = await projectIdForChannel(parseInt(channelID));
-    if (projectId === null) return forbidden();
-    if (!(await canManageProject(locals.user, projectId))) return forbidden();
+    const existing = await getChannel(parseInt(channelID));
+    if (!existing) return forbidden();
+    if (!(await canManageProject(locals.user, existing.projectId))) return forbidden();
 
     const channel = await deleteChannel(parseInt(channelID));
+
+    logAuditEntry({
+      projectId: existing.projectId,
+      userId: locals.user.id,
+      action: "channel.deleted",
+      targetType: "channel",
+      targetId: existing.id,
+      targetName: existing.name,
+    });
 
     return new Response(JSON.stringify({ channel }), {
       status: 200,

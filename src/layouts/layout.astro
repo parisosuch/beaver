@@ -1,6 +1,7 @@
 ---
 import "@/styles/global.css";
-import SidePanel from "@/components/side-panel";
+import SidePanel from "@/components/side-panel.astro";
+import CommandPalette from "@/components/command-palette";
 import { getProject, getProjects } from "@/lib/beaver/project";
 import { getChannels } from "@/lib/beaver/channel";
 import { getChannelGroups } from "@/lib/beaver/channel-group";
@@ -8,7 +9,8 @@ import {
   getProjectsForUser,
   getUserProjectRole,
 } from "@/lib/beaver/project-member";
-import { ClientRouter } from "astro:transitions";
+import { getUserByUsername } from "@/lib/beaver/user";
+import { ClientRouter, fade } from "astro:transitions";
 
 interface Props {
   projectID: string;
@@ -29,9 +31,12 @@ const channelGroupsData = await getChannelGroups(project.id);
 const userRole = user.isAdmin
   ? "owner"
   : await getUserProjectRole(project.id, user.id);
+
+const dbUser = await getUserByUsername(user.userName);
+const themePalette = dbUser?.themePalette ?? "default";
 ---
 
-<html lang="en">
+<html lang="en" data-theme={themePalette}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -65,18 +70,27 @@ const userRole = user.isAdmin
   <body>
     <div class="flex flex-col md:flex-row">
       <SidePanel
-        client:load
-        currentProject={project}
-        currentProjects={projects}
-        currentChannels={channels}
-        currentGroups={channelGroupsData}
+        project={project}
+        projects={projects}
+        channels={channels}
+        groups={channelGroupsData}
         currentPath={Astro.url.pathname}
         userRole={userRole ?? "guest"}
-        transition:persist
+        userName={user.userName}
+        isAdmin={user.isAdmin}
+        canCreateProjects={user.canCreateProjects}
       />
-      <div class="flex-1 min-w-0">
+      <div class="flex-1 min-w-0" transition:animate={fade({ duration: "0.18s" })}>
         <slot />
       </div>
     </div>
+    <CommandPalette
+      client:load
+      currentProject={project}
+      currentProjects={projects}
+      currentChannels={channels}
+      userRole={userRole ?? "guest"}
+      transition:persist
+    />
   </body>
 </html>

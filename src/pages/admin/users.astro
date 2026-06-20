@@ -3,6 +3,7 @@ import "../../styles/global.css";
 import { getAllUsers } from "@/lib/beaver/user";
 import { getProjects } from "@/lib/beaver/project";
 import AdminUsersView from "@/components/admin-users-view";
+import CommandPalette from "@/components/command-palette";
 
 const user = Astro.locals.user;
 if (!user?.isAdmin) {
@@ -34,6 +35,19 @@ const backUrl = projects.length > 0 ? `/dashboard/${projects[0].id}/feed` : "/";
     </script>
   </head>
   <body>
-    <AdminUsersView client:load initialUsers={allUsers} currentUserId={user.id} backUrl={backUrl} />
+    <AdminUsersView
+      client:visible
+      initialUsers={allUsers}
+      currentUserId={user.id}
+      backUrl={backUrl}
+      allProjects={projects.map((p) => ({ id: p.id, name: p.name }))}
+    />
+    <CommandPalette
+      client:load
+      currentProject={null}
+      currentProjects={projects}
+      currentChannels={[]}
+      userRole="owner"
+    />
   </body>
 </html>

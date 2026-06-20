@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { useState } from "react";
+import { navigate } from "astro:transitions/client";
 
 interface CreateChannelViewProps {
   projectId: number;
@@ -39,7 +40,8 @@ function CreateChannelView({ projectId }: CreateChannelViewProps) {
         return;
       }
 
-      window.location.href = `/dashboard/${projectId}/channels/${data.id}`;
+      window.dispatchEvent(new CustomEvent("channel:created", { detail: { channel: data } }));
+      navigate(`/dashboard/${projectId}/channels/${data.id}`);
     } catch {
       setError("An error occurred. Please try again.");
     } finally {

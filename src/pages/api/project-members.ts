@@ -7,7 +7,8 @@ import {
   getUserProjectRole,
   type Role,
 } from "@/lib/beaver/project-member";
-import { getAllUsers } from "@/lib/beaver/user";
+import { getAllUsers, getUserById } from "@/lib/beaver/user";
+import { logAuditEntry } from "@/lib/beaver/audit-log";
 
 function canManage(userRole: Role | null, isAdmin: boolean): boolean {
   return isAdmin || userRole === "owner";
@@ -85,6 +86,16 @@ export const POST: APIRoute = async (context: APIContext) => {
     }
 
     const member = await addProjectMember(projectId, userId, role as Role);
+    const targetUser = await getUserById(userId);
+    logAuditEntry({
+      projectId,
+      userId: context.locals.user.id,
+      action: "member.added",
+      targetType: "member",
+      targetId: userId,
+      targetName: targetUser?.userName ?? String(userId),
+      metadata: { role },
+    });
     return new Response(JSON.stringify(member), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -124,7 +135,18 @@ export const PATCH: APIRoute = async (context: APIContext) => {
       });
     }
 
+    const previousRole = await getUserProjectRole(projectId, userId);
     await updateMemberRole(projectId, userId, role as Role);
+    const targetUser = await getUserById(userId);
+    logAuditEntry({
+      projectId,
+      userId: context.locals.user.id,
+      action: "member.role_changed",
+      targetType: "member",
+      targetId: userId,
+      targetName: targetUser?.userName ?? String(userId),
+      metadata: { from: previousRole, to: role },
+    });
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -164,7 +186,16 @@ export const DELETE: APIRoute = async (context: APIContext) => {
       });
     }
 
+    const targetUser = await getUserById(userId);
     await removeProjectMember(projectId, userId);
+    logAuditEntry({
+      projectId,
+      userId: context.locals.user.id,
+      action: "member.removed",
+      targetType: "member",
+      targetId: userId,
+      targetName: targetUser?.userName ?? String(userId),
+    });
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

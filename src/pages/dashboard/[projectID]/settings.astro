@@ -1,18 +1,14 @@
 ---
-import APIKey from "@/components/api-key";
-import ChangePasswordForm from "@/components/change-password-form";
-import ChannelSettings from "@/components/channel-settings";
-import MetricSettings from "@/components/metric-settings";
-import ProjectDangerZone from "@/components/project-danger-zone";
-import ProjectRename from "@/components/project-rename";
-import ProjectMembers from "@/components/project-members";
-import NotificationSettings from "@/components/notification-settings";
+import SettingsTabs from "@/components/settings-tabs";
 import Layout from "@/layouts/layout.astro";
-import { getChannels } from "@/lib/beaver/channel";
 import { getMetrics } from "@/lib/beaver/metric";
+import { getChannels } from "@/lib/beaver/channel";
 import { getProject } from "@/lib/beaver/project";
-import { getUserProjectRole, getProjectMembership } from "@/lib/beaver/project-member";
+import { getUserProjectRole } from "@/lib/beaver/project-member";
 import { getUserByUsername } from "@/lib/beaver/user";
+import { getChannelSubscriptions } from "@/lib/beaver/channel-notification";
+import { getAlertRulesForProject } from "@/lib/beaver/alert-rule";
+import { getAuditLog } from "@/lib/beaver/audit-log";
 
 const { projectID } = Astro.params;
 const user = Astro.locals.user!;
@@ -23,7 +19,6 @@ const userRole = user.isAdmin
   ? "owner"
   : await getUserProjectRole(project.id, user.id);
 
-// Guests cannot access settings
 if (userRole === "guest" || userRole === null) {
   return Astro.redirect(`/dashboard/${projectID}/feed`);
 }
@@ -31,12 +26,11 @@ if (userRole === "guest" || userRole === null) {
 const channels = await getChannels(parseInt(projectID!));
 const metrics = await getMetrics(parseInt(projectID!));
 const dbUser = await getUserByUsername(user.userName);
-const membership = await getProjectMembership(project.id, user.id);
+const subscribedChannelIds = await getChannelSubscriptions(user.id, project.id);
+const alertRules = await getAlertRulesForProject(project.id);
 
 const isOwner = userRole === "owner";
-
-const metaCss = "flex flex-col sm:flex-row sm:items-center w-full sm:justify-between gap-2";
-const metaH3Css = "font-medium shrink-0";
+const auditLog = isOwner ? await getAuditLog(project.id) : [];
 ---
 
 <Layout projectID={projectID!}>
@@ -44,63 +38,21 @@ const metaH3Css = "font-medium shrink-0";
     <div class="p-4 md:p-8 border-b text-2xl font-semibold">
       <h1>Project Settings</h1>
     </div>
-    <div class="w-full flex flex-col items-center mt-8">
-      {isOwner && (
-        <div class="w-full px-4 md:w-3/4 md:px-0 flex flex-col space-y-4">
-          <h2 class="font-mono mb-2">Meta</h2>
-          <div class={metaCss}>
-            <h3 class={metaH3Css}>Project Name</h3>
-            <ProjectRename client:load project={project} />
-          </div>
-          <div class={metaCss}>
-            <h3 class={metaH3Css}>Created</h3>
-            <p>{project.createdAt?.toLocaleDateString()}</p>
-          </div>
-          <div class={metaCss}>
-            <h3 class={metaH3Css}>API Key</h3>
-            <APIKey client:load project={project} />
-          </div>
-        </div>
-      )}
-      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
-        <h2 class="font-mono">Channels</h2>
-        <div class="flex flex-col">
-          <ChannelSettings client:load channels={channels} project={project} />
-        </div>
-      </div>
-      {isOwner && (
-        <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
-          <h2 class="font-mono mb-4">Members</h2>
-          <ProjectMembers
-            client:load
-            projectId={project.id}
-            currentUserId={user.id}
-          />
-        </div>
-      )}
-      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
-        <MetricSettings client:load metrics={metrics} projectId={project.id} />
-      </div>
-      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
-        <h2 class="font-mono mb-4">Account</h2>
-        <h3 class="font-medium mb-3">Change Password</h3>
-        <ChangePasswordForm client:load />
-      </div>
-      <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
-        <h2 class="font-mono mb-4">Notifications</h2>
-        <NotificationSettings
-          client:load
-          projectId={project.id}
+    <div class="w-full flex flex-col items-center mt-8 pb-16">
+      <div class="w-full px-4 md:w-3/4 md:px-0">
+        <SettingsTabs
+          client:visible
+          project={project}
+          channels={channels}
+          metrics={metrics}
+          alertRules={alertRules}
+          auditLog={auditLog}
+          isOwner={isOwner}
+          currentUserId={user.id}
           initialEmail={dbUser?.email ?? null}
-          initialEnabled={membership?.notificationsEnabled ?? false}
+          subscribedChannelIds={subscribedChannelIds}
         />
       </div>
-      {isOwner && (
-        <div class="w-full px-4 md:w-3/4 md:px-0 mt-8">
-          <h2 class="font-mono">Danger Zone</h2>
-          <ProjectDangerZone client:load project={project} />
-        </div>
-      )}
     </div>
   </div>
 </Layout>

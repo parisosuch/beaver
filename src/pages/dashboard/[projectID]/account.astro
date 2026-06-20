@@ -1,0 +1,41 @@
+---
+import AccountSettings from "@/components/account-settings";
+import Layout from "@/layouts/layout.astro";
+import { getUserByUsername } from "@/lib/beaver/user";
+import { getProject } from "@/lib/beaver/project";
+import { getUserProjectRole } from "@/lib/beaver/project-member";
+
+const { projectID } = Astro.params;
+const user = Astro.locals.user!;
+
+const project = await getProject(parseInt(projectID!));
+
+const userRole = user.isAdmin
+  ? "owner"
+  : await getUserProjectRole(project.id, user.id);
+
+if (userRole === null) {
+  return Astro.redirect(`/dashboard/${projectID}/feed`);
+}
+
+const dbUser = await getUserByUsername(user.userName);
+---
+
+<Layout projectID={projectID!}>
+  <div class="w-full">
+    <div class="p-4 md:p-8 border-b text-2xl font-semibold">
+      <h1>Account Settings</h1>
+    </div>
+    <div class="w-full flex flex-col items-center mt-8 pb-16">
+      <div class="w-full px-4 md:w-3/4 md:px-0">
+        <AccountSettings
+          client:load
+          initialFullName={dbUser?.fullName ?? null}
+          initialCompactMode={dbUser?.compactMode ?? false}
+          initialThemePalette={dbUser?.themePalette ?? "default"}
+          username={user.userName}
+        />
+      </div>
+    </div>
+  </div>
+</Layout>
