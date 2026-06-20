@@ -12,7 +12,7 @@ const fetchMaxEventId = async (): Promise<number> => {
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
-import { XIcon, ArrowUpDownIcon, DownloadIcon } from "lucide-react";
+import { XIcon, ArrowUpDownIcon, DownloadIcon, CheckCheckIcon, MailIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
@@ -83,6 +83,8 @@ export default function EventFeed({
   const [loadingMore, setLoadingMore] = useState(false);
   const [eventCount, setEventCount] = useState<number | null>(null);
   const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
   const newEventIdsRef = useRef<Set<number>>(new Set());
@@ -354,28 +356,46 @@ export default function EventFeed({
       .catch(() => {});
   }, [projectID, channel, title, object, action, startDate, endDate, tags]);
 
+  // Read the channel's last-read time so we can mark which events are new — but
+  // do NOT mark the channel read on view. Reads are now controlled by the user
+  // via the "Mark as read" action, so opening a channel (or an event) no longer
+  // wipes the unread state and the user keeps their place.
   useEffect(() => {
     if (type !== "channel" || !channel) return;
 
-    fetch("/api/unread", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channelName: channel.name,
-        projectId: channel.projectId,
-      }),
-    })
+    fetch(`/api/unread?channelId=${channel.id}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.lastReadAt) setLastReadDate(new Date(data.lastReadAt));
-        window.dispatchEvent(
-          new CustomEvent("channel:read", {
-            detail: { channelId: data.channelId, channelName: channel.name },
-          }),
-        );
+        setLastReadDate(data.lastReadAt ? new Date(data.lastReadAt) : null);
       })
       .catch(() => {});
   }, [channel?.id]);
+
+  const handleMarkAsRead = async () => {
+    if (!channel || markingRead) return;
+    setMarkingRead(true);
+    try {
+      const res = await fetch("/api/unread", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelName: channel.name, projectId: channel.projectId }),
+      });
+      const data = await res.json();
+      // Everything currently in the feed predates this moment, so treat now as
+      // the read boundary: the divider clears and unread filtering empties.
+      setLastReadDate(new Date());
+      setUnreadOnly(false);
+      window.dispatchEvent(
+        new CustomEvent("channel:read", {
+          detail: { channelId: data.channelId, channelName: channel.name },
+        }),
+      );
+    } catch {
+      // ignore — user can retry
+    } finally {
+      setMarkingRead(false);
+    }
+  };
 
   useEffect(() => {
     const handler = (e: CustomEvent<{ channelName: string }>) => {
@@ -408,17 +428,29 @@ export default function EventFeed({
     if (sortOrder) p.set("sortOrder", sortOrder);
     return p.toString();
   })();
-  const hasNewEvents =
-    lastReadDate != null && events.some((e) => new Date(e.createdAt) > lastReadDate);
+  const isUnread = (e: EventWithChannelName) =>
+    lastReadDate == null || new Date(e.createdAt) > lastReadDate;
+
+  // Any unread events at all (enables "Mark as read", incl. a never-read channel).
+  const hasUnread = events.some(isUnread);
+  // Unread events that sit *after* a known read point — drives the "New" divider,
+  // which only makes sense once the channel has been read at least once.
+  const hasNewEvents = lastReadDate != null && hasUnread;
+
+  // In "unread only" mode, hide events the user has already read.
+  const displayedEvents = unreadOnly ? events.filter(isUnread) : events;
 
   const rows: Row[] = [];
   let dividerRowIndex = -1;
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
+  for (let i = 0; i < displayedEvents.length; i++) {
+    const event = displayedEvents[i];
+    // The "new" divider only makes sense in the full view; in unread-only mode
+    // every shown event is new, so it never triggers.
     const isFirstOld =
+      !unreadOnly &&
       hasNewEvents &&
       new Date(event.createdAt) <= lastReadDate! &&
-      (i === 0 || new Date(events[i - 1].createdAt) > lastReadDate!);
+      (i === 0 || new Date(displayedEvents[i - 1].createdAt) > lastReadDate!);
 
     if (isFirstOld) {
       dividerRowIndex = rows.length;
@@ -606,6 +638,30 @@ export default function EventFeed({
               canManageViews={userRole !== "guest" && userRole != null}
             />
           )}
+          {type === "channel" && channel && (
+            <>
+              <Button
+                variant={unreadOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUnreadOnly((v) => !v)}
+                aria-pressed={unreadOnly}
+                title="Show only unread events"
+              >
+                <MailIcon className="size-4 mr-2" />
+                Unread
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMarkAsRead}
+                disabled={!hasUnread || markingRead}
+                title="Mark this channel as read"
+              >
+                <CheckCheckIcon className="size-4 mr-2" />
+                Mark as read
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -648,6 +704,11 @@ export default function EventFeed({
             <h2 className="text-2xl">
               Looks like this {type === "project" ? "project" : "channel"} has no events!
             </h2>
+          </div>
+        ) : unreadOnly && displayedEvents.length === 0 ? (
+          <div className="w-full text-center pt-8">
+            <h2 className="text-2xl">You&rsquo;re all caught up 🎉</h2>
+            <p className="text-muted-foreground mt-2">No unread events in this channel.</p>
           </div>
         ) : (
           <div className="px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto">

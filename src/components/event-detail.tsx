@@ -11,7 +11,7 @@ import {
   SmilePlusIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import {
   Dialog,
@@ -93,29 +93,6 @@ export default function EventDetail({
       setConfirmDelete(false);
     }
   };
-
-  useEffect(() => {
-    fetch("/api/unread", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channelName: event.channelName,
-        projectId: event.projectId,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        window.dispatchEvent(
-          new CustomEvent("channel:read", {
-            detail: {
-              channelId: data.channelId,
-              channelName: event.channelName,
-            },
-          }),
-        );
-      })
-      .catch(() => {});
-  }, [event.id]);
 
   const handleBack = () => {
     if (sessionStorage.getItem("beaver:hasInAppNav") === "1") {
