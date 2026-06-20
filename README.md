@@ -156,7 +156,7 @@ X-API-Key: your-project-api-key
 
 ### Create Event
 
-Send a `POST` request to `/api/event` to log events from your application.
+Send a `POST` request to `/api/event` to log events. The endpoint accepts a single event object or an array of up to 100 events — the response is always an array of results.
 
 **Endpoint:** `POST /api/event`
 
@@ -169,24 +169,26 @@ Send a `POST` request to `/api/event` to log events from your application.
 
 **Request Body:**
 
-| Field         | Type   | Required | Description                                                      |
-| :------------ | :----- | :------- | :--------------------------------------------------------------- |
-| `name`        | string | Yes      | Event name (e.g., "User Signup")                                 |
-| `channel`     | string | Yes      | Channel name to post to                                          |
-| `description` | string | No       | Additional details about the event (searchable in the dashboard) |
-| `icon`        | string | No       | Emoji icon for the event                                         |
-| `tags`        | object | No       | Key-value metadata (string, number, or boolean values)           |
+| Field         | Type    | Required | Description                                                                                                               |
+| :------------ | :------ | :------- | :------------------------------------------------------------------------------------------------------------------------ |
+| `name`        | string  | Yes      | Machine identifier in `object.action` form (e.g. `user.signed_up`). Must match `/^[a-z][a-z_]*\.[a-z][a-z_]*$/`.          |
+| `title`       | string  | Yes      | Human-readable description of this specific event instance                                                                |
+| `channel`     | string  | Yes      | Channel name to post to                                                                                                   |
+| `description` | string  | No       | Additional details about the event                                                                                        |
+| `icon`        | string  | No       | Emoji icon for the event                                                                                                  |
+| `tags`        | object  | No       | Key-value metadata. Types are inferred from the JSON value (string, number, or boolean). See [Tags](#tags) section below. |
+| `notify`      | boolean | No       | If `true`, sends an email notification to opted-in project members. Requires an email provider (Resend or SMTP).          |
 
-**Example with curl:**
+**Single event example:**
 
 ```sh
 curl -X POST http://localhost:4321/api/event \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-project-api-key" \
   -d '{
-    "name": "New Sale",
-    "channel": "sales",
-    "description": "Customer completed a purchase",
+    "name": "payment.completed",
+    "title": "Customer paid $99.99",
+    "channel": "payments",
     "icon": "💰",
     "tags": {
       "amount": 99.99,
@@ -194,6 +196,20 @@ curl -X POST http://localhost:4321/api/event \
       "customer_id": "cust_123"
     }
   }'
+```
+
+**Batch example:**
+
+Batches are atomic — if any event fails validation, the entire batch is rejected.
+
+```sh
+curl -X POST http://localhost:4321/api/event \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-project-api-key" \
+  -d '[
+    { "name": "user.signed_up",    "title": "Alice registered",  "channel": "signups"  },
+    { "name": "payment.completed", "title": "Alice paid $99.99", "channel": "payments" }
+  ]'
 ```
 
 **Example with JavaScript:**
@@ -206,9 +222,9 @@ await fetch("http://localhost:4321/api/event", {
     "X-API-Key": "your-project-api-key",
   },
   body: JSON.stringify({
-    name: "User Signup",
+    name: "user.signed_up",
+    title: "New user registered via Google",
     channel: "signups",
-    description: "New user registered",
     icon: "👤",
     tags: {
       method: "google",
@@ -220,31 +236,107 @@ await fetch("http://localhost:4321/api/event", {
 
 **Success Response (200):**
 
+The response is always an array — one object per input event.
+
 ```json
-{
-  "id": 1,
-  "name": "New Sale",
-  "description": "Customer completed a purchase",
-  "icon": "💰",
-  "projectId": 1,
-  "channelName": "sales",
-  "createdAt": "2024-01-15T10:30:00.000Z",
-  "tags": {
-    "amount": 99.99,
-    "currency": "USD",
-    "customer_id": "cust_123"
+[
+  {
+    "id": 123,
+    "eventObject": "payment",
+    "eventAction": "completed",
+    "title": "Customer paid $99.99",
+    "description": null,
+    "icon": "💰",
+    "tags": { "amount": 99.99, "currency": "USD" },
+    "projectId": 1,
+    "channelName": "payments",
+    "createdAt": "2024-01-15T10:30:00.000Z"
   }
-}
+]
 ```
 
 **Error Responses:**
 
-| Status | Description                                  |
-| :----- | :------------------------------------------- |
-| `401`  | Missing `X-API-Key` header                   |
-| `400`  | Missing required field (`name` or `channel`) |
-| `400`  | Invalid `tags` format (not valid JSON)       |
-| `500`  | Invalid API key or channel not found         |
+| Status | Description                            |
+| :----- | :------------------------------------- |
+| `401`  | Missing `X-API-Key` header             |
+| `400`  | Batch exceeds 100 events               |
+| `400`  | Validation failure (per-event, inline) |
+
+### Tags
+
+Tags are key-value pairs for structured metadata. The API infers each tag's type from the JSON value — no type annotation needed.
+
+| JSON value  | Stored type | Dashboard filter                               |
+| :---------- | :---------- | :--------------------------------------------- |
+| `"premium"` | string      | Dropdown (≤ 20 distinct values) or free-text   |
+| `99.99`     | number      | Numeric input with operator (=, >, <, between) |
+| `true`      | boolean     | true / false dropdown                          |
+
+Keep tag types consistent across events — the filter UI uses the type it sees first.
+
+### Notifications
+
+Set `"notify": true` on an event to send an email to opted-in project members. Requires configuring an email provider:
+
+1. Sign up at [resend.com](https://resend.com) and create an API key
+2. Set `RESEND_API_KEY` in your environment
+3. Optionally set `RESEND_FROM_EMAIL` (defaults to `notifications@beaver.app`)
+
+Or configure an SMTP provider under Admin → Email Settings.
+
+### Metrics
+
+Log numeric measurements to metrics you've defined in the dashboard.
+
+**Endpoint:** `POST /api/metric`
+
+Three types are supported:
+
+**Gauge** — sets the current value (overwrites previous):
+
+```sh
+curl -X POST http://localhost:4321/api/metric \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-project-api-key" \
+  -d '{ "metric": "disk_usage", "value": 42.3 }'
+```
+
+| Field    | Type   | Required | Description                             |
+| :------- | :----- | :------- | :-------------------------------------- |
+| `metric` | string | Yes      | Metric name as defined in the dashboard |
+| `value`  | number | Yes      | The current value to set                |
+
+**Counter** — increments a running total (use a negative number to subtract):
+
+```sh
+curl -X POST http://localhost:4321/api/metric \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-project-api-key" \
+  -d '{ "metric": "signups", "increment": 1 }'
+```
+
+| Field       | Type   | Required | Description                             |
+| :---------- | :----- | :------- | :-------------------------------------- |
+| `metric`    | string | Yes      | Metric name as defined in the dashboard |
+| `increment` | number | Yes      | Amount to add (negative to subtract)    |
+
+**Timeseries** — appends a data point:
+
+```sh
+curl -X POST http://localhost:4321/api/metric \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-project-api-key" \
+  -d '{ "metric": "response_time", "value": 123.4 }'
+```
+
+| Field       | Type   | Required | Description                                              |
+| :---------- | :----- | :------- | :------------------------------------------------------- |
+| `metric`    | string | Yes      | Metric name as defined in the dashboard                  |
+| `value`     | number | Yes      | The numeric measurement to record                        |
+| `timestamp` | string | No       | ISO 8601 timestamp. Defaults to the current server time. |
+
+> **Note:** Metrics must be created in the dashboard before they can be ingested via the API.
 
 ## Commands
 
