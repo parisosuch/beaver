@@ -1,11 +1,12 @@
 import type { EventWithChannelName } from "../beaver/event";
 import { getEmailSettings } from "../beaver/email-settings";
-import type { AlertEmailParams } from "./template";
+import type { AlertEmailParams, CommentEmailParams } from "./template";
 import {
   sendEventNotification as sendViaResend,
   sendAlertEmail as sendAlertEmailViaResend,
+  sendCommentNotification as sendCommentViaResend,
 } from "./resend";
-import { sendEventNotificationSmtp, sendAlertEmailSmtp } from "./smtp";
+import { sendEventNotificationSmtp, sendAlertEmailSmtp, sendCommentNotificationSmtp } from "./smtp";
 
 export async function sendEventNotification(
   event: EventWithChannelName,
@@ -34,4 +35,18 @@ export async function sendAlertEmail(
   }
 
   await sendAlertEmailViaResend(params, recipientEmails);
+}
+
+export async function sendCommentNotification(
+  params: CommentEmailParams,
+  recipientEmails: string[],
+): Promise<void> {
+  const settings = await getEmailSettings();
+
+  if (settings?.provider === "smtp") {
+    await sendCommentNotificationSmtp(settings, params, recipientEmails);
+    return;
+  }
+
+  await sendCommentViaResend(params, recipientEmails);
 }

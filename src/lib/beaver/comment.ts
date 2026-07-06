@@ -2,6 +2,7 @@ import { db } from "../db/db";
 import { eventComments, users } from "../db/schema";
 import { eq, asc } from "drizzle-orm";
 import { publishComment, type Comment } from "./comment-bus";
+import { notifyCommentByEmail } from "./comment-email";
 
 export type { Comment };
 
@@ -45,6 +46,15 @@ export async function createComment(
 
   const comment = withUser as Comment;
   publishComment({ eventId, comment });
+
+  // Best-effort: email @mentioned members and prior thread participants. Never
+  // let an email failure break commenting.
+  try {
+    await notifyCommentByEmail({ eventId, actorId: userId, actorName: comment.userName, body });
+  } catch (err) {
+    console.error("Failed to send comment notification emails:", err);
+  }
+
   return comment;
 }
 
