@@ -62,7 +62,7 @@ const ungroupedChannels = channels.filter((c) => !c.groupId);
 />
 
 <!-- Desktop sidebar — re-renders on each navigation for accurate active states -->
-<div class="hidden md:flex flex-col w-[350px] shrink-0 border-r h-screen sticky top-0 overflow-y-auto p-8">
+<div id="sidebar-scroll" class="hidden md:flex flex-col w-[350px] shrink-0 border-r h-screen sticky top-0 overflow-y-auto p-8">
   <UserMenu
     client:idle
     userName={userName}

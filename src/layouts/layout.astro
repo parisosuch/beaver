@@ -63,6 +63,19 @@ const themePalette = dbUser?.themePalette ?? "default";
         sessionStorage.setItem("beaver:hasInAppNav", "1");
       });
 
+      // The desktop sidebar re-renders (for active states) on each View Transition,
+      // so its scroll container is recreated and scrollTop resets to 0. Carry the
+      // position across the swap so clicking a channel doesn't jump the sidebar.
+      document.addEventListener("astro:before-preparation", () => {
+        const el = document.getElementById("sidebar-scroll");
+        if (el) sessionStorage.setItem("beaver:sidebarScroll", String(el.scrollTop));
+      });
+      document.addEventListener("astro:after-swap", () => {
+        const el = document.getElementById("sidebar-scroll");
+        const top = sessionStorage.getItem("beaver:sidebarScroll");
+        if (el && top) el.scrollTop = parseInt(top);
+      });
+
       // Radix overlays (Select, Dialog, Popover, dropdown/context menus) set
       // `body { pointer-events: none }` while open and occasionally fail to
       // restore it on close. When that leaks, the whole page — nav included —
