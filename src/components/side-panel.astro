@@ -63,17 +63,16 @@ const ungroupedChannels = channels.filter((c) => !c.groupId);
 
 <!-- Desktop sidebar — re-renders on each navigation for accurate active states -->
 <div id="sidebar-scroll" class="hidden md:flex flex-col w-[350px] shrink-0 border-r h-screen sticky top-0 overflow-y-auto p-8">
-  <UserMenu
-    client:idle
-    userName={userName}
-    transition:persist="user-menu"
-  />
+  <!-- No transition:persist on these two: they wrap Radix overlays (Popover,
+       Select) whose state desyncs across a View Transition body swap, leaving
+       the trigger unclickable until a hard reload. The sidebar re-renders each
+       nav anyway, so re-hydrating them fresh costs nothing and keeps them working. -->
+  <UserMenu client:idle userName={userName} />
   <ProjectSwitcher
     client:idle
     projects={projects}
     currentProjectId={project.id}
     canCreate={isAdmin || canCreateProjects}
-    transition:persist="project-switcher"
   />
   <!-- Nav links: SSR-only, re-rendered each navigation → active state always correct -->
   <SidePanelNav

@@ -75,25 +75,6 @@ const themePalette = dbUser?.themePalette ?? "default";
         const top = sessionStorage.getItem("beaver:sidebarScroll");
         if (el && top) el.scrollTop = parseInt(top);
       });
-
-      // Radix overlays (Select, Dialog, Popover, dropdown/context menus) set
-      // `body { pointer-events: none }` while open and occasionally fail to
-      // restore it on close. When that leaks, the whole page — nav included —
-      // is unclickable, so the user can't navigate to recover and is stuck
-      // until a full reload. If nothing is actually open, unstick the body.
-      // ponytail: recovery, not prevention; drop it if Radix ever fixes the leak upstream.
-      document.addEventListener(
-        "pointerdown",
-        () => {
-          if (
-            document.body.style.pointerEvents === "none" &&
-            !document.querySelector('[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"]')
-          ) {
-            document.body.style.pointerEvents = "";
-          }
-        },
-        true,
-      );
     </script>
     <script is:inline define:vars={{ projectID }}>
       localStorage.setItem("lastProjectId", projectID);
