@@ -3,6 +3,7 @@ import { eventComments, users } from "../db/schema";
 import { eq, asc } from "drizzle-orm";
 import { publishComment, type Comment } from "./comment-bus";
 import { createNotificationsForComment } from "./notification";
+import { notifyCommentByEmail } from "./comment-email";
 
 export type { Comment };
 
@@ -47,8 +48,8 @@ export async function createComment(
   const comment = withUser as Comment;
   publishComment({ eventId, comment });
 
-  // Best-effort: notify mentioned members and prior thread participants. Never
-  // let a notification failure break commenting.
+  // Best-effort: create in-app notifications and email mentioned members and
+  // prior thread participants. Never let a notification failure break commenting.
   try {
     await createNotificationsForComment({
       eventId,
@@ -58,6 +59,12 @@ export async function createComment(
     });
   } catch (err) {
     console.error("Failed to create comment notifications:", err);
+  }
+
+  try {
+    await notifyCommentByEmail({ eventId, actorId: userId, actorName: comment.userName, body });
+  } catch (err) {
+    console.error("Failed to send comment notification emails:", err);
   }
 
   return comment;

@@ -2,6 +2,7 @@ import { db } from "../db/db";
 import { eventReactions, users } from "../db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import type { ReactionSummary } from "./event";
+import { publishReaction } from "./reaction-bus";
 
 export async function toggleReaction(
   userId: number,
@@ -31,6 +32,15 @@ export async function toggleReaction(
     .from(eventReactions)
     .innerJoin(users, eq(eventReactions.userId, users.id))
     .where(and(eq(eventReactions.eventId, eventId), eq(eventReactions.emoji, emoji)));
+
+  // Broadcast the full reactor set; each SSE connection personalizes userReacted.
+  publishReaction({
+    eventId,
+    emoji,
+    count: reactors.length,
+    users: reactors.map((r) => r.userName),
+    reactorIds: reactors.map((r) => r.userId),
+  });
 
   return {
     emoji,

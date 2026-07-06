@@ -1,6 +1,6 @@
 import type { ReactionSummary } from "@/lib/beaver/event";
 import type { EmojiMartData } from "@emoji-mart/data";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import emojiData from "@emoji-mart/data";
 import { Input } from "./ui/input";
@@ -51,6 +51,24 @@ export function applyToggle(prev: ReactionSummary[], updated: ReactionSummary): 
   const filtered = prev.filter((r) => r.emoji !== updated.emoji);
   if (updated.count === 0) return filtered;
   return [...filtered, updated];
+}
+
+// Subscribe to live reaction updates for an event. The server personalizes
+// `userReacted` per viewer, so merging each frame with applyToggle is enough.
+export function useReactionStream(eventId: number, onUpdate: (r: ReactionSummary) => void) {
+  const cbRef = useRef(onUpdate);
+  cbRef.current = onUpdate;
+  useEffect(() => {
+    const es = new EventSource(`/api/events/${eventId}/reactions/stream`);
+    es.onmessage = (e) => {
+      try {
+        cbRef.current(JSON.parse(e.data) as ReactionSummary);
+      } catch {
+        // ignore malformed frames
+      }
+    };
+    return () => es.close();
+  }, [eventId]);
 }
 
 export function EmojiPicker({ onSelect }: { onSelect: (emoji: string) => void }) {

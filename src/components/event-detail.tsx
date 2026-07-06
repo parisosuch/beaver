@@ -22,7 +22,13 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { EmojiPicker, ReactionBar, postReaction, applyToggle } from "./event-reactions";
+import {
+  EmojiPicker,
+  ReactionBar,
+  postReaction,
+  applyToggle,
+  useReactionStream,
+} from "./event-reactions";
 
 // Only http(s) so a tag value like `javascript:…` can never become a clickable link.
 function httpUrl(value: string | number | boolean): string | null {
@@ -83,6 +89,10 @@ export default function EventDetail({
     const updated = await postReaction(event.id, emoji);
     if (updated) setReactions((prev) => applyToggle(prev, updated));
   };
+
+  // Live-update reactions as other users react. Merges are idempotent, so this
+  // also reconciles the actor's own optimistic update above.
+  useReactionStream(event.id, (updated) => setReactions((prev) => applyToggle(prev, updated)));
 
   const handleBookmark = async () => {
     setBookmarking(true);
