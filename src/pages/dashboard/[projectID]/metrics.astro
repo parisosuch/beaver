@@ -25,22 +25,6 @@ const TYPE_LABELS: Record<string, string> = {
   timeseries: "Timeseries",
 };
 
-function bucketSparkline(
-  data: { value: number; timestamp: Date }[],
-  chartType: string,
-): { value: number }[] {
-  if (chartType !== "bar") return data.map((d) => ({ value: d.value }));
-  const sums = new Map<string, number>();
-  const counts = new Map<string, number>();
-  for (const d of data) {
-    const key = new Date(d.timestamp).toISOString().slice(0, 10);
-    sums.set(key, (sums.get(key) ?? 0) + d.value);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return Array.from(sums.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, sum]) => ({ value: Math.round((sum / (counts.get(key) ?? 1)) * 10) / 10 }));
-}
 ---
 
 <Layout projectID={projectID!}>
@@ -70,10 +54,8 @@ function bucketSparkline(
         {metrics.map((metric) => {
           const isClickable = metric.type === "timeseries";
           const isTweenable = metric.type === "gauge" || metric.type === "counter";
-          const sparklineData = bucketSparkline(
-            sparklines[metric.id] ?? [],
-            metric.chartType ?? "line",
-          );
+          // One point per posted value (#248) — no day-bucketing.
+          const sparklineData = (sparklines[metric.id] ?? []).map((d) => ({ value: d.value }));
           const Wrapper = isClickable ? "a" : "div";
           return (
             <Wrapper

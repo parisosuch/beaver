@@ -7,16 +7,7 @@ import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { DatePicker } from "./ui/date-picker";
 import { ArrowLeftIcon, PencilIcon, Trash2Icon } from "lucide-react";
-import {
-  formatDistanceToNow,
-  format,
-  subDays,
-  startOfDay,
-  startOfHour,
-  startOfWeek,
-  differenceInHours,
-  differenceInDays,
-} from "date-fns";
+import { formatDistanceToNow, format, subDays, startOfDay, differenceInHours } from "date-fns";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -31,7 +22,6 @@ type SerializedValue = Omit<MetricValue, "timestamp" | "createdAt"> & {
 };
 
 type Range = "today" | "7d" | "30d" | "custom";
-type BucketGranularity = "hour" | "day" | "week";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -45,39 +35,6 @@ function getRangeDates(range: Range, customFrom?: Date, customTo?: Date): { from
   if (range === "7d") return { from: subDays(now, 7), to: now };
   if (range === "30d") return { from: subDays(now, 30), to: now };
   return { from: customFrom ?? subDays(now, 30), to: customTo ?? now };
-}
-
-function getBucketGranularity(from: Date, to: Date): BucketGranularity {
-  const days = differenceInDays(to, from);
-  if (days <= 2) return "hour";
-  if (days <= 60) return "day";
-  return "week";
-}
-
-function bucketLabel(d: Date, granularity: BucketGranularity): string {
-  if (granularity === "hour") return format(startOfHour(d), "MM/dd HH:mm");
-  if (granularity === "day") return format(d, "MM/dd");
-  return format(startOfWeek(d), "MM/dd");
-}
-
-function bucketValues(
-  values: { value: number; timestamp: Date }[],
-  granularity: BucketGranularity,
-  mode: "sum" | "avg" = "sum",
-): { label: string; value: number }[] {
-  const sums = new Map<string, number>();
-  const counts = new Map<string, number>();
-  for (const v of values) {
-    const key = bucketLabel(v.timestamp, granularity);
-    sums.set(key, (sums.get(key) ?? 0) + v.value);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return Array.from(sums.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([label, sum]) => ({
-      label,
-      value: mode === "avg" ? Math.round((sum / (counts.get(label) ?? 1)) * 10) / 10 : sum,
-    }));
 }
 
 function formatValue(value: number | null, unit?: string | null): string {
@@ -535,13 +492,13 @@ export default function MetricDetail({
 
   // ── Derived chart data ────────────────────────────────────────────────────────
 
-  const { from: rangeFrom, to: rangeTo } = getRangeDates(range, customFrom, customTo);
-  const granularity = getBucketGranularity(rangeFrom, rangeTo);
-
   const isBarChart = metric.chartType === "bar";
-  const timeseriesData = isBarChart
-    ? bucketValues(values, granularity, "avg")
-    : values.map((v) => ({ label: format(v.timestamp, "MM/dd HH:mm"), value: v.value }));
+  // Every posted value is its own point/bar (#248): no day-bucketing, so dozens
+  // of same-day instances stay visible instead of collapsing into one.
+  const timeseriesData = values.map((v) => ({
+    label: format(v.timestamp, "MM/dd HH:mm"),
+    value: v.value,
+  }));
 
   const stats =
     values.length > 0
