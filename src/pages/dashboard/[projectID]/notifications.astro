@@ -1,0 +1,24 @@
+---
+import Layout from "@/layouts/layout.astro";
+import NotificationsView from "@/components/notifications-view";
+import { getNotifications } from "@/lib/beaver/notification";
+
+const { projectID } = Astro.params;
+const user = Astro.locals.user!;
+const projectId = parseInt(projectID!);
+
+const initial = await getNotifications(user.id, projectId);
+const initialNotifications = initial.map((n) => ({
+  ...n,
+  readAt: n.readAt ? n.readAt.toISOString() : null,
+  createdAt: n.createdAt.toISOString(),
+}));
+---
+
+<Layout projectID={projectID!}>
+  <NotificationsView
+    client:load
+    projectId={projectId}
+    initialNotifications={initialNotifications}
+  />
+</Layout>

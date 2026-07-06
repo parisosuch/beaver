@@ -5,6 +5,7 @@ import type { Project } from "@/lib/beaver/project";
 import ChannelGroupsDnd from "./channel-groups-dnd";
 import MobileDrawer from "./mobile-drawer";
 import ProjectSwitcher from "./project-switcher";
+import NotificationsNavLink from "./notifications-nav-link";
 import SidePanelNav from "./side-panel-nav";
 import ThemeToggle from "./theme-toggle";
 import UnreadCountsPoller from "./unread-counts-poller";
@@ -81,6 +82,7 @@ const ungroupedChannels = channels.filter((c) => !c.groupId);
     userRole={userRole}
     isAdmin={isAdmin}
   />
+  <NotificationsNavLink client:idle projectId={project.id} pathname={currentPath} />
   <ChannelGroupsDnd
     client:idle
     initialUngrouped={ungroupedChannels}

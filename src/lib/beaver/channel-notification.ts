@@ -72,3 +72,12 @@ export async function getNotificationEmailsForChannel(channelId: number): Promis
 
   return rows.flatMap((r) => (r.email ? [r.email] : []));
 }
+
+export async function getNotificationSubscriberIdsForChannel(channelId: number): Promise<number[]> {
+  const rows = await db
+    .select({ userId: channelNotificationSubscriptions.userId })
+    .from(channelNotificationSubscriptions)
+    .where(eq(channelNotificationSubscriptions.channelId, channelId));
+
+  return rows.map((r) => r.userId);
+}
