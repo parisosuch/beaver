@@ -91,7 +91,7 @@ export default function ApiPlayground({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Form */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="pg-name">
               Name <span className="text-destructive">*</span>
@@ -145,7 +145,7 @@ export default function ApiPlayground({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="pg-icon">Icon</Label>
             <Input
