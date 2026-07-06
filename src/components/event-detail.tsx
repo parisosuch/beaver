@@ -48,8 +48,9 @@ function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | 
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 hover:opacity-80 break-all"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-2 hover:opacity-80 break-all"
         >
+          <LinkIcon size={12} className="shrink-0" />
           {displayValue}
         </a>
       ) : (
