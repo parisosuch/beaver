@@ -122,8 +122,8 @@ export default function AdminEmailSettingsView({
 
           {provider === "smtp" && (
             <div className="space-y-4 border rounded-md p-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2 space-y-2">
                   <Label htmlFor="smtp-host">Host</Label>
                   <Input
                     id="smtp-host"
