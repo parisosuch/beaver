@@ -3,7 +3,11 @@ import { alertRules, channels, events } from "../db/schema";
 import { eq, and, gt, gte, count } from "drizzle-orm";
 import type { Channel } from "./channel";
 import type { Project } from "./project";
-import { getNotificationEmailsForChannel } from "./channel-notification";
+import {
+  getNotificationEmailsForChannel,
+  getNotificationSubscriberIdsForChannel,
+} from "./channel-notification";
+import { createAlertNotifications } from "./notification";
 import { sendAlertEmail } from "../email/send";
 
 export type AlertRule = {
@@ -142,6 +146,18 @@ export async function checkAndDispatchAlerts(
   for (const rule of rules) {
     const matchedCount = await checkAlertRule(rule);
     if (matchedCount === null) continue;
+
+    // In-app notifications for every channel subscriber (independent of whether
+    // they have an email set).
+    await createAlertNotifications({
+      projectId: project.id,
+      channelId: channel.id,
+      channelName: channel.name,
+      ruleName: rule.name,
+      count: matchedCount,
+      windowMinutes: rule.windowMinutes,
+      recipientIds: await getNotificationSubscriberIdsForChannel(channel.id),
+    });
 
     const emails = await getNotificationEmailsForChannel(channel.id);
     if (emails.length === 0) continue;

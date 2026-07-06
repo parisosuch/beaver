@@ -547,3 +547,38 @@ export const savedViews = sqliteTable("saved_views", {
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),
 });
+
+// ---- NOTIFICATIONS ----
+// One row per recipient per event. Heterogeneous types share one shape:
+// message/linkPath are denormalized at creation so the list renders join-free.
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["comment_reply", "mention", "alert"] }).notNull(),
+    message: text("message").notNull(),
+    linkPath: text("link_path").notNull(),
+    readAt: integer("read_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(unixepoch() * 1000)`)
+      .notNull(),
+  },
+  (table) => ({
+    userProjectCreatedIdx: index("notifications_user_project_created_idx").on(
+      table.userId,
+      table.projectId,
+      table.createdAt,
+    ),
+    userProjectReadIdx: index("notifications_user_project_read_idx").on(
+      table.userId,
+      table.projectId,
+      table.readAt,
+    ),
+  }),
+);

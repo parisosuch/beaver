@@ -4,6 +4,7 @@ import type { Project } from "@/lib/beaver/project";
 import { MenuIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import ChannelGroupsDnd from "./channel-groups-dnd";
+import NotificationsNavLink from "./notifications-nav-link";
 import ProjectSwitcher from "./project-switcher";
 import SidePanelNav from "./side-panel-nav";
 import ThemeToggle from "./theme-toggle";
@@ -113,6 +114,7 @@ export default function MobileDrawer({
           isAdmin={isAdmin}
           onNavigate={close}
         />
+        <NotificationsNavLink projectId={project.id} pathname={pathname} onNavigate={close} />
         <ChannelGroupsDnd
           initialUngrouped={ungroupedChannels}
           initialGroups={groups}
