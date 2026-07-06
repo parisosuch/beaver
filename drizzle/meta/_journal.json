@@ -169,6 +169,13 @@
       "when": 1782100000000,
       "tag": "0023_theme_palette",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1783369363306,
+      "tag": "0024_nifty_centennial",
+      "breakpoints": true
     }
   ]
 }

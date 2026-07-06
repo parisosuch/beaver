@@ -17,6 +17,11 @@ export default function UnreadCountsPoller({
   const isLeader = useTabLeader(`unread:${projectId}`);
   const channelsRef = useRef(initialChannels);
   const countsRef = useRef<Record<number, number>>({});
+  // Tracks which project we've already done the initial /api/unread fetch for.
+  // The main effect re-runs when isLeader flips false→true on mount, which would
+  // otherwise fire the initial fetch twice (once per branch); this keys it to
+  // projectId so it happens once per project but still refetches on navigation.
+  const initialFetchedFor = useRef<number | null>(null);
 
   // Sync channels list as channels are added/removed
   useEffect(() => {
@@ -80,7 +85,10 @@ export default function UnreadCountsPoller({
       };
 
       const start = async () => {
-        await fetchUnread();
+        if (initialFetchedFor.current !== projectId) {
+          initialFetchedFor.current = projectId;
+          await fetchUnread();
+        }
         resync = setInterval(fetchUnread, 60_000);
 
         let maxId = 0;
@@ -108,15 +116,18 @@ export default function UnreadCountsPoller({
 
       start();
     } else {
-      fetch(`/api/unread?projectId=${projectId}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (data) {
-            countsRef.current = data.counts;
-            dispatch(data.counts);
-          }
-        })
-        .catch(() => {});
+      if (initialFetchedFor.current !== projectId) {
+        initialFetchedFor.current = projectId;
+        fetch(`/api/unread?projectId=${projectId}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data) {
+              countsRef.current = data.counts;
+              dispatch(data.counts);
+            }
+          })
+          .catch(() => {});
+      }
 
       bc.onmessage = (e: MessageEvent) => {
         if (e.data.type === "unread-snapshot") {

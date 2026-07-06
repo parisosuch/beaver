@@ -22,16 +22,46 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { EmojiPicker, ReactionBar, postReaction, applyToggle } from "./event-reactions";
+import {
+  EmojiPicker,
+  ReactionBar,
+  postReaction,
+  applyToggle,
+  useReactionStream,
+} from "./event-reactions";
+
+// Only http(s) so a tag value like `javascript:…` can never become a clickable link.
+function httpUrl(value: string | number | boolean): string | null {
+  if (typeof value !== "string") return null;
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 
 function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | boolean }) {
   const displayValue = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
+  const url = httpUrl(value);
 
   return (
     <div className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 dark:bg-white/10 px-2.5 py-1 text-sm">
       <span className="font-medium text-foreground/75">{tagKey}</span>
       <span className="text-muted-foreground">=</span>
-      <span className="text-foreground">{displayValue}</span>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-2 hover:opacity-80 break-all"
+        >
+          <LinkIcon size={12} className="shrink-0" />
+          {displayValue}
+        </a>
+      ) : (
+        <span className="text-foreground">{displayValue}</span>
+      )}
     </div>
   );
 }
@@ -59,6 +89,10 @@ export default function EventDetail({
     const updated = await postReaction(event.id, emoji);
     if (updated) setReactions((prev) => applyToggle(prev, updated));
   };
+
+  // Live-update reactions as other users react. Merges are idempotent, so this
+  // also reconciles the actor's own optimistic update above.
+  useReactionStream(event.id, (updated) => setReactions((prev) => applyToggle(prev, updated)));
 
   const handleBookmark = async () => {
     setBookmarking(true);
