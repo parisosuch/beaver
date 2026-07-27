@@ -4,6 +4,7 @@ import {
   updateEmailSettings,
   type EmailProvider,
 } from "@/lib/beaver/email-settings";
+import { usesResendEnvFallback } from "@/lib/email/resend";
 
 const VALID_PROVIDERS: EmailProvider[] = ["resend", "smtp"];
 
@@ -32,6 +33,9 @@ export const GET: APIRoute = async (context) => {
       smtpPasswordSet: !!settings?.smtpPassword,
       smtpSecure: settings?.smtpSecure ?? true,
       smtpFromEmail: settings?.smtpFromEmail ?? null,
+      resendApiKeySet: !!settings?.resendApiKey,
+      resendFromEmail: settings?.resendFromEmail ?? null,
+      resendEnvFallback: usesResendEnvFallback(settings),
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
@@ -43,8 +47,17 @@ export const PATCH: APIRoute = async (context) => {
 
   try {
     const body = await context.request.json();
-    const { provider, smtpHost, smtpPort, smtpUsername, smtpPassword, smtpSecure, smtpFromEmail } =
-      body;
+    const {
+      provider,
+      smtpHost,
+      smtpPort,
+      smtpUsername,
+      smtpPassword,
+      smtpSecure,
+      smtpFromEmail,
+      resendApiKey,
+      resendFromEmail,
+    } = body;
 
     if (!VALID_PROVIDERS.includes(provider)) {
       return new Response(JSON.stringify({ error: "Invalid provider." }), {
@@ -68,6 +81,18 @@ export const PATCH: APIRoute = async (context) => {
       }
     }
 
+    if (provider === "resend") {
+      const existing = await getEmailSettings();
+      const keyAfterSave =
+        (typeof resendApiKey === "string" && resendApiKey.trim()) || existing?.resendApiKey;
+      if (!keyAfterSave && !usesResendEnvFallback(existing)) {
+        return new Response(JSON.stringify({ error: "Resend API key is required." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const updated = await updateEmailSettings({
       provider,
       smtpHost: provider === "smtp" ? smtpHost.trim() : null,
@@ -76,6 +101,10 @@ export const PATCH: APIRoute = async (context) => {
       ...(typeof smtpPassword === "string" && smtpPassword.length > 0 ? { smtpPassword } : {}),
       smtpSecure: !!smtpSecure,
       smtpFromEmail: typeof smtpFromEmail === "string" ? smtpFromEmail.trim() || null : null,
+      ...(typeof resendApiKey === "string" && resendApiKey.trim().length > 0
+        ? { resendApiKey: resendApiKey.trim() }
+        : {}),
+      resendFromEmail: typeof resendFromEmail === "string" ? resendFromEmail.trim() || null : null,
     });
 
     return new Response(
@@ -87,6 +116,9 @@ export const PATCH: APIRoute = async (context) => {
         smtpPasswordSet: !!updated.smtpPassword,
         smtpSecure: updated.smtpSecure,
         smtpFromEmail: updated.smtpFromEmail,
+        resendApiKeySet: !!updated.resendApiKey,
+        resendFromEmail: updated.resendFromEmail,
+        resendEnvFallback: usesResendEnvFallback(updated),
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );

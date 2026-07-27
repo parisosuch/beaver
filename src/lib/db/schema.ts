@@ -320,6 +320,8 @@ export const emailSettings = sqliteTable("email_settings", {
   smtpPassword: text("smtp_password"),
   smtpSecure: integer("smtp_secure", { mode: "boolean" }).notNull().default(true),
   smtpFromEmail: text("smtp_from_email"),
+  resendApiKey: text("resend_api_key"),
+  resendFromEmail: text("resend_from_email"),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .default(sql`(unixepoch() * 1000)`)
     .notNull(),

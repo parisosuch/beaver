@@ -2,7 +2,7 @@
 import "../../styles/global.css";
 import { getProjects } from "@/lib/beaver/project";
 import { getEmailSettings } from "@/lib/beaver/email-settings";
-import { isResendConfigured } from "@/lib/email/resend";
+import { usesResendEnvFallback } from "@/lib/email/resend";
 import AdminEmailSettingsView from "@/components/admin-email-settings-view";
 
 const user = Astro.locals.user;
@@ -22,6 +22,9 @@ const initialSettings = {
   smtpPasswordSet: !!settings?.smtpPassword,
   smtpSecure: settings?.smtpSecure ?? true,
   smtpFromEmail: settings?.smtpFromEmail ?? null,
+  resendApiKeySet: !!settings?.resendApiKey,
+  resendFromEmail: settings?.resendFromEmail ?? null,
+  resendEnvFallback: usesResendEnvFallback(settings),
 };
 ---
 
@@ -49,7 +52,6 @@ const initialSettings = {
       client:visible
       backUrl={backUrl}
       initialSettings={initialSettings}
-      resendConfigured={isResendConfigured()}
     />
   </body>
 </html>

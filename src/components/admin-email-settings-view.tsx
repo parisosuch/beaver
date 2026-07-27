@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { ArrowLeftIcon, CheckCircle2Icon, XCircleIcon } from "lucide-react";
+import { ArrowLeftIcon, InfoIcon } from "lucide-react";
 
 type EmailSettingsData = {
   provider: "resend" | "smtp";
@@ -13,16 +13,17 @@ type EmailSettingsData = {
   smtpPasswordSet: boolean;
   smtpSecure: boolean;
   smtpFromEmail: string | null;
+  resendApiKeySet: boolean;
+  resendFromEmail: string | null;
+  resendEnvFallback: boolean;
 };
 
 export default function AdminEmailSettingsView({
   backUrl,
   initialSettings,
-  resendConfigured,
 }: {
   backUrl: string;
   initialSettings: EmailSettingsData;
-  resendConfigured: boolean;
 }) {
   const [provider, setProvider] = useState(initialSettings.provider);
   const [smtpHost, setSmtpHost] = useState(initialSettings.smtpHost ?? "");
@@ -34,6 +35,10 @@ export default function AdminEmailSettingsView({
   const [smtpPasswordSet, setSmtpPasswordSet] = useState(initialSettings.smtpPasswordSet);
   const [smtpSecure, setSmtpSecure] = useState(initialSettings.smtpSecure);
   const [smtpFromEmail, setSmtpFromEmail] = useState(initialSettings.smtpFromEmail ?? "");
+  const [resendApiKey, setResendApiKey] = useState("");
+  const [resendApiKeySet, setResendApiKeySet] = useState(initialSettings.resendApiKeySet);
+  const [resendFromEmail, setResendFromEmail] = useState(initialSettings.resendFromEmail ?? "");
+  const [resendEnvFallback, setResendEnvFallback] = useState(initialSettings.resendEnvFallback);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +60,8 @@ export default function AdminEmailSettingsView({
           ...(smtpPassword ? { smtpPassword } : {}),
           smtpSecure,
           smtpFromEmail,
+          ...(resendApiKey ? { resendApiKey } : {}),
+          resendFromEmail,
         }),
       });
       const data = await res.json();
@@ -65,6 +72,9 @@ export default function AdminEmailSettingsView({
       }
       setSmtpPasswordSet(data.smtpPasswordSet);
       setSmtpPassword("");
+      setResendApiKeySet(data.resendApiKeySet);
+      setResendApiKey("");
+      setResendEnvFallback(data.resendEnvFallback);
       setStatus("saved");
       setTimeout(() => setStatus("idle"), 2000);
     } catch {
@@ -106,17 +116,38 @@ export default function AdminEmailSettingsView({
           </div>
 
           {provider === "resend" && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground border rounded-md p-3">
-              {resendConfigured ? (
-                <CheckCircle2Icon size={16} className="text-green-600 shrink-0" />
-              ) : (
-                <XCircleIcon size={16} className="text-destructive shrink-0" />
+            <div className="space-y-4 border rounded-md p-4">
+              <div className="space-y-2">
+                <Label htmlFor="resend-api-key">API Key</Label>
+                <Input
+                  id="resend-api-key"
+                  type="password"
+                  value={resendApiKey}
+                  onChange={(e) => setResendApiKey(e.target.value)}
+                  placeholder={
+                    resendApiKeySet ? "Leave blank to keep current key" : "re_your_api_key_here"
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="resend-from">From Email</Label>
+                <Input
+                  id="resend-from"
+                  type="email"
+                  value={resendFromEmail}
+                  onChange={(e) => setResendFromEmail(e.target.value)}
+                  placeholder="notifications@beaver.app"
+                />
+              </div>
+              {resendEnvFallback && (
+                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <InfoIcon size={16} className="shrink-0 mt-0.5" />
+                  <span>
+                    Currently using the <code>RESEND_API_KEY</code> environment variable. It is
+                    deprecated — set an API key here and it will take precedence.
+                  </span>
+                </div>
               )}
-              <span>
-                {resendConfigured
-                  ? "Resend is configured via the RESEND_API_KEY environment variable."
-                  : "RESEND_API_KEY is not set in the environment."}
-              </span>
             </div>
           )}
 
