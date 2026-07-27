@@ -280,10 +280,11 @@ Keep tag types consistent across events — the filter UI uses the type it sees 
 Set `"notify": true` on an event to send an email to opted-in project members. Requires configuring an email provider:
 
 1. Sign up at [resend.com](https://resend.com) and create an API key
-2. Set `RESEND_API_KEY` in your environment
-3. Optionally set `RESEND_FROM_EMAIL` (defaults to `notifications@beaver.app`)
+2. Paste it under Admin → Email Settings, along with an optional from address (defaults to `notifications@beaver.app`)
 
-Or configure an SMTP provider under Admin → Email Settings.
+Or pick SMTP on the same page and fill in your server details.
+
+> The `RESEND_API_KEY` and `RESEND_FROM_EMAIL` environment variables still work as a fallback when no API key is saved, but they are deprecated — prefer configuring Resend in the app.
 
 ### Metrics
 

@@ -20,7 +20,7 @@ export async function sendEventNotification(
     return;
   }
 
-  await sendViaResend(event, projectName, recipientEmails);
+  await sendViaResend(settings, event, projectName, recipientEmails);
 }
 
 export async function sendAlertEmail(
@@ -34,7 +34,7 @@ export async function sendAlertEmail(
     return;
   }
 
-  await sendAlertEmailViaResend(params, recipientEmails);
+  await sendAlertEmailViaResend(settings, params, recipientEmails);
 }
 
 export async function sendCommentNotification(
@@ -48,5 +48,5 @@ export async function sendCommentNotification(
     return;
   }
 
-  await sendCommentViaResend(params, recipientEmails);
+  await sendCommentViaResend(settings, params, recipientEmails);
 }

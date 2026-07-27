@@ -13,6 +13,8 @@ export type EmailSettings = {
   smtpPassword: string | null;
   smtpSecure: boolean;
   smtpFromEmail: string | null;
+  resendApiKey: string | null;
+  resendFromEmail: string | null;
 };
 
 export type EmailSettingsUpdate = {
@@ -23,6 +25,8 @@ export type EmailSettingsUpdate = {
   smtpPassword?: string | null;
   smtpSecure: boolean;
   smtpFromEmail: string | null;
+  resendApiKey?: string | null;
+  resendFromEmail: string | null;
 };
 
 export async function getEmailSettings(): Promise<EmailSettings | null> {
@@ -40,14 +44,20 @@ export async function updateEmailSettings(update: EmailSettingsUpdate): Promise<
     smtpUsername: update.smtpUsername,
     smtpSecure: update.smtpSecure,
     smtpFromEmail: update.smtpFromEmail,
+    resendFromEmail: update.resendFromEmail,
     updatedAt: new Date(),
     ...(update.smtpPassword !== undefined ? { smtpPassword: update.smtpPassword } : {}),
+    ...(update.resendApiKey !== undefined ? { resendApiKey: update.resendApiKey } : {}),
   };
 
   if (!existing) {
     const [row] = await db
       .insert(emailSettings)
-      .values({ ...values, smtpPassword: update.smtpPassword ?? null })
+      .values({
+        ...values,
+        smtpPassword: update.smtpPassword ?? null,
+        resendApiKey: update.resendApiKey ?? null,
+      })
       .returning();
     return row as EmailSettings;
   }
