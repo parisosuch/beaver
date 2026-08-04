@@ -176,6 +176,13 @@
       "when": 1783369363306,
       "tag": "0024_nifty_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1785194471196,
+      "tag": "0025_resend_settings",
+      "breakpoints": true
     }
   ]
 }

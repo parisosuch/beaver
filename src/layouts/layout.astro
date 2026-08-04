@@ -41,6 +41,8 @@ const themePalette = dbUser?.themePalette ?? "default";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/png" href="/beaver.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#171717" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -78,6 +80,16 @@ const themePalette = dbUser?.themePalette ?? "default";
     </script>
     <script is:inline define:vars={{ projectID }}>
       localStorage.setItem("lastProjectId", projectID);
+    </script>
+    <script is:inline>
+      // Service worker registration. @vite-pwa/astro used to inject this; it
+      // does not support Astro 6+, so vite-plugin-pwa generates /sw.js and we
+      // register it by hand. The worker self-updates (skipWaiting/clientsClaim).
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        });
+      }
     </script>
   </head>
   <body>

@@ -44,7 +44,9 @@ Always use `bun`/`bunx` — never `npm`/`npx`.
 
 **Commits.** Conventional commit format (`feat:`, `fix:`, `refactor:`, etc.). No issue references in commit messages — this is a squash-merge project, so issue refs go in the PR body only. Do not add co-author or attribution trailers (`Co-Authored-By`, `Generated with …`, session links) to commits or PR bodies.
 
-**Releases.** Each release has a branch named `v<version>` (e.g. `v2.2.0`) cut from `main`; feature work for that release branches off it and PRs back into it. Shipping a release: bump `package.json` (only at release time, not in feature PRs), merge to `main`, then tag `v<version>` and publish a GitHub release with "## What's Changed" notes.
+**Branches.** Two long-lived branches: `next` is the integration branch for unreleased work, `main` tracks the latest release. Feature work branches off `next` and PRs back into `next` — never branch off `main`.
+
+**Releases.** Shipping a release: merge `next` into `main`, bump `package.json` on `main` (only at release time, not in feature PRs), then tag `v<version>` and publish a GitHub release with "## What's Changed" notes.
 
 **shadcn/ui.** Components are in `src/components/ui/`. Add new ones with `bunx shadcn@latest add <component>`.
 
