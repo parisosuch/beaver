@@ -63,6 +63,13 @@ const apiKey = project.apiKey;
               </ul>
             </li>
             <li>
+              <a href="#mcp" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">MCP Server</a>
+              <ul class="ml-4 mt-2 space-y-1">
+                <li><a href="#mcp-connect" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Connecting</a></li>
+                <li><a href="#mcp-tools" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">Tools</a></li>
+              </ul>
+            </li>
+            <li>
               <a href="#code-examples" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline transition-colors">Code Examples</a>
               <ul class="ml-4 mt-2 space-y-1">
                 <li><a href="#javascript" class="text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:underline transition-colors text-sm">JavaScript / Node.js</a></li>
@@ -597,6 +604,92 @@ const apiKey = project.apiKey;
   "value": 123.4,
   "timestamp": "2024-01-15T10:30:00.000Z"
 }`} />
+          </div>
+        </section>
+
+        <!-- MCP Server -->
+        <section id="mcp">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <span class="text-gray-400">#</span>
+            MCP Server
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
+            Beaver speaks the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">Model Context Protocol</a> over
+            HTTP, so an AI assistant can read this project's channels, events, and metrics — and log
+            new events — without you writing any glue code.
+          </p>
+
+          <div class="flex items-center gap-4 p-4 bg-gray-900 rounded-xl mb-8">
+            <span class="inline-flex items-center px-3 py-1 rounded-md text-sm font-bold text-white bg-emerald-500">POST</span>
+            <code class="text-gray-100 font-mono text-lg">/api/mcp</code>
+          </div>
+
+          <div id="mcp-connect" class="mb-8">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Connecting</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+              The endpoint uses stateless Streamable HTTP and authenticates with this project's API key,
+              sent as a bearer token. Every tool is scoped to the project that key belongs to.
+            </p>
+            <CodeBlock title="Claude Code" lang="bash" code={`claude mcp add --transport http beaver ${baseUrl}/api/mcp \\
+  --header "Authorization: Bearer ${apiKey}"`} />
+            <CodeBlock title="mcp.json" lang="json" code={`{
+  "mcpServers": {
+    "beaver": {
+      "type": "http",
+      "url": "${baseUrl}/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${apiKey}"
+      }
+    }
+  }
+}`} />
+          </div>
+
+          <div id="mcp-tools">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Tools</h3>
+            <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10 mb-6">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-white/5">
+                  <tr>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">Tool</th>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">What it does</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                  <tr>
+                    <td class="px-4 py-3 font-mono text-xs whitespace-nowrap">list_channels</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">Channels in the project, with ids and descriptions.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-mono text-xs whitespace-nowrap">list_events</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">Events newest first, filtered by channel, title, object, or action.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-mono text-xs whitespace-nowrap">get_event</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">A single event by id, including its tags.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-mono text-xs whitespace-nowrap">create_event</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">Log a new event to an existing channel.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-mono text-xs whitespace-nowrap">list_metrics</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">Metrics with their current values.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-mono text-xs whitespace-nowrap">get_metric_values</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">Recorded values for one metric, newest first.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+              To check the connection by hand, list the tools directly:
+            </p>
+            <CodeBlock title="cURL — tools/list" lang="bash" code={`curl -X POST ${baseUrl}/api/mcp \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`} />
           </div>
         </section>
 
