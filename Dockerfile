@@ -25,4 +25,4 @@ ENV PORT=4321
 
 EXPOSE 4321
 
-CMD ["sh", "-c", "bun src/lib/db/migrate.ts && bun ./dist/server/entry.mjs"]
+CMD ["sh", "-c", "bun src/lib/db/migrate.ts && bun ./dist/server/index.mjs"]
