@@ -300,16 +300,21 @@ export async function getMetricSparklines(
   return result;
 }
 
+// Defaults to oldest-first, which is the order charts plot. Pass order "desc" to
+// take the most recent values instead — with a limit, ascending order hands back
+// the oldest N, which is the wrong end of the series for reading a trend.
 export async function getMetricValues(
   metricId: number,
   {
     from,
     to,
     limit,
+    order = "asc",
   }: {
     from?: Date;
     to?: Date;
     limit?: number;
+    order?: "asc" | "desc";
   } = {},
 ): Promise<MetricValue[]> {
   const conditions = [eq(metricValues.metricId, metricId)];
@@ -320,7 +325,7 @@ export async function getMetricValues(
     .select()
     .from(metricValues)
     .where(and(...conditions))
-    .orderBy(metricValues.timestamp)
+    .orderBy(order === "desc" ? desc(metricValues.timestamp) : metricValues.timestamp)
     .$dynamic();
 
   if (limit) query = query.limit(limit);

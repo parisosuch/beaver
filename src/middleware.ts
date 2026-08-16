@@ -6,8 +6,9 @@ import { getProjectsForUser, getUserProjectRole } from "./lib/beaver/project-mem
 import { projectIdForChannel, projectIdForMetric } from "./lib/beaver/authz";
 import { logRequest, logError } from "./lib/logger";
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = ["/login", "/onboarding", "/api/event", "/api/metric"];
+// Routes that don't require authentication. The API routes here authenticate
+// themselves with a project API key instead of a session.
+const PUBLIC_ROUTES = ["/login", "/onboarding", "/api/event", "/api/metric", "/api/mcp"];
 
 // API routes that don't require authentication (prefix-matched)
 const PUBLIC_API_ROUTES = ["/api/auth/", "/api/admin"];
