@@ -39,6 +39,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Motion. Built-in CSS easings are too weak for deliberate UI motion, so these
+     are the curves to reach for: ease-out for anything entering or leaving,
+     ease-in-out for something moving across the screen, and the drawer curve for
+     panels that slide in from an edge. UI motion stays under 300ms. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root {
@@ -194,6 +202,33 @@
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Reduced motion means fewer and gentler animations, not none — fades and colour
+   changes still explain what happened, so only movement is dropped. Neither
+   Tailwind nor tw-animate-css gates any of its keyframes, so this covers the
+   slide-ins, zooms, and the sidebar badge spring alike. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 150ms !important;
+    transition-duration: 150ms !important;
+  }
+
+  /* Strip translation and scaling from tw-animate-css enter/exit keyframes,
+     leaving their opacity change intact. */
+  [class*="animate-in"],
+  [class*="animate-out"] {
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-enter-scale: 1 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-exit-rotate: 0 !important;
   }
 }
 

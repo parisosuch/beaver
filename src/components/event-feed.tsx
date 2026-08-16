@@ -743,8 +743,11 @@ export default function EventFeed({
                     ) : (
                       <div
                         className={
+                          // Fires once per streamed event on the app's busiest
+                          // surface, so the travel stays short — 40px of slide
+                          // several times a minute reads as the feed lurching.
                           row.isNew
-                            ? `animate-in fade-in duration-300 ease-out ${compact ? "slide-in-from-bottom-2" : "slide-in-from-bottom-10"}`
+                            ? "animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
                             : undefined
                         }
                         onAnimationEnd={
