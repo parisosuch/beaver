@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+import { readUnreadCounts } from "@/lib/unread-store";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDownIcon, ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
 import { motion } from "framer-motion";
@@ -301,8 +302,10 @@ export default function ChannelGroupsDnd({
     };
   }, []);
 
-  // Sync unread counts from the poller
+  // Sync unread counts from the poller. It hydrates before this island does, so
+  // seed from the store to pick up any dispatch that landed before we subscribed.
   useEffect(() => {
+    setUnreadCounts(readUnreadCounts());
     const handle = (e: CustomEvent<{ counts: Record<number, number> }>) => {
       setUnreadCounts(e.detail.counts);
     };

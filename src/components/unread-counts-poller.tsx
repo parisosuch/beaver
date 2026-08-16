@@ -1,9 +1,11 @@
 import type { Channel } from "@/lib/beaver/channel";
 import type { EventWithChannelName } from "@/lib/beaver/event";
 import { useTabLeader } from "@/lib/tab-leader";
+import { recordUnreadCounts } from "@/lib/unread-store";
 import { useEffect, useRef } from "react";
 
 function dispatch(counts: Record<number, number>) {
+  recordUnreadCounts(counts);
   window.dispatchEvent(new CustomEvent("unread:updated", { detail: { counts } }));
 }
 
