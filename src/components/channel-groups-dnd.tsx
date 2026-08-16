@@ -21,7 +21,7 @@ import {
 import { readUnreadCounts } from "@/lib/unread-store";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDownIcon, ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import {
@@ -59,6 +59,7 @@ function SortableChannel({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: chId(channel.id),
   });
+  const reduceMotion = useReducedMotion();
 
   return (
     <div
@@ -82,17 +83,25 @@ function SortableChannel({
         }`}
       >
         <span className="truncate"># {channel.name}</span>
-        {unreadCount > 0 && (
-          <motion.span
-            key={unreadCount}
-            initial={{ scale: 0.4, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 600, damping: 22 }}
-            className="ml-2 shrink-0 text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-tight"
-          >
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </motion.span>
-        )}
+        {/* No key on the count: the badge animates when it appears and when it
+            goes away, not on every increment. Events stream in continuously, and
+            re-running the entrance each time left the sidebar twitching in the
+            corner of the eye. */}
+        <AnimatePresence initial={false}>
+          {unreadCount > 0 && (
+            <motion.span
+              initial={{ transform: "scale(0.95)", opacity: 0 }}
+              animate={{ transform: "scale(1)", opacity: 1 }}
+              exit={{ transform: "scale(0.95)", opacity: 0 }}
+              transition={
+                reduceMotion ? { duration: 0.15 } : { type: "spring", duration: 0.35, bounce: 0.2 }
+              }
+              className="ml-2 shrink-0 text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-tight"
+            >
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </a>
     </div>
   );

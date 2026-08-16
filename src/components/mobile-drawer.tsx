@@ -81,12 +81,20 @@ export default function MobileDrawer({
         </button>
       </div>
 
-      {/* Overlay */}
-      {drawerOpen && <div className="fixed inset-0 z-40 bg-black/50" onClick={close} />}
+      {/* Overlay. Kept mounted so it fades with the panel — mounting it on open
+          made it snap in ahead of the drawer, and on close it vanished while the
+          panel was still sliding over nothing. */}
+      <div
+        onClick={close}
+        aria-hidden={!drawerOpen}
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-200 ease-out ${
+          drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 left-0 z-50 h-screen w-full bg-background overflow-y-auto p-6 transition-transform duration-200 ${
+        className={`fixed top-0 left-0 z-50 h-screen w-full bg-background overflow-y-auto p-6 transition-transform duration-200 ease-drawer ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
