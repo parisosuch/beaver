@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { SendIcon, Trash2Icon } from "lucide-react";
@@ -14,6 +14,19 @@ type Comment = {
 };
 
 type Member = { userId: number; userName: string };
+type ChannelRef = { id: number; name: string };
+
+// What counts as a token for each trigger, anchored at the cursor. Usernames stay
+// on \w to match the server-side mention parser in lib/beaver/notification.ts;
+// channel names also allow "-" because sanitizeName turns spaces into hyphens.
+const TRIGGERS = {
+  "@": /@(\w*)$/,
+  "#": /#([\w-]*)$/,
+} as const;
+
+type Trigger = keyof typeof TRIGGERS;
+
+const MAX_SUGGESTIONS = 6;
 
 function initials(name: string) {
   return name
@@ -23,17 +36,33 @@ function initials(name: string) {
     .join("");
 }
 
-function renderBody(body: string) {
-  const parts = body.split(/(@\w+)/g);
-  return parts.map((part, i) =>
-    part.startsWith("@") ? (
-      <span key={i} className="text-primary font-medium">
-        {part}
-      </span>
-    ) : (
-      part
-    ),
-  );
+function renderBody(body: string, projectId: number, channelIds: Map<string, number>) {
+  const parts = body.split(/(@\w+|#[\w-]+)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("@")) {
+      return (
+        <span key={i} className="text-primary font-medium">
+          {part}
+        </span>
+      );
+    }
+    if (part.startsWith("#")) {
+      // Only link tokens that name a real channel, so prose like "issue #42"
+      // stays prose.
+      const id = channelIds.get(part.slice(1).toLowerCase());
+      if (id === undefined) return part;
+      return (
+        <a
+          key={i}
+          href={`/dashboard/${projectId}/channels/${id}`}
+          className="text-primary font-medium hover:underline"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 }
 
 function Avatar({ name }: { name: string }) {
@@ -57,10 +86,16 @@ export default function EventComments({
 }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [channels, setChannels] = useState<ChannelRef[]>([]);
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionAnchor, setMentionAnchor] = useState<{ start: number; end: number } | null>(null);
+  const [autocomplete, setAutocomplete] = useState<{
+    trigger: Trigger;
+    query: string;
+    start: number;
+    end: number;
+  } | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -91,6 +126,18 @@ export default function EventComments({
       .catch(() => {});
   }, [projectId]);
 
+  // Load project channels for #channel autocomplete and link rendering
+  useEffect(() => {
+    fetch(`/api/channel?project_id=${projectId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setChannels(data.map((c: ChannelRef) => ({ id: c.id, name: c.name })));
+        }
+      })
+      .catch(() => {});
+  }, [projectId]);
+
   // SSE for real-time comments
   useEffect(() => {
     const es = new EventSource(`/api/events/${eventId}/comments/stream`);
@@ -115,39 +162,57 @@ export default function EventComments({
     const val = e.target.value;
     setBody(val);
 
-    // Detect @mention at cursor
+    // Detect an @ or # token at the cursor. Only one can match — they anchor at
+    // the same spot and start with different characters.
     const cursor = e.target.selectionStart ?? val.length;
     const before = val.slice(0, cursor);
-    const match = before.match(/@(\w*)$/);
-    if (match) {
-      const start = cursor - match[0].length;
-      setMentionQuery(match[1]);
-      setMentionAnchor({ start, end: cursor });
-    } else {
-      setMentionQuery(null);
-      setMentionAnchor(null);
+    for (const [trigger, pattern] of Object.entries(TRIGGERS)) {
+      const match = before.match(pattern);
+      if (match) {
+        setAutocomplete({
+          trigger: trigger as Trigger,
+          query: match[1],
+          start: cursor - match[0].length,
+          end: cursor,
+        });
+        return;
+      }
     }
+    setAutocomplete(null);
   };
 
-  const insertMention = (userName: string) => {
-    if (!mentionAnchor) return;
-    const before = body.slice(0, mentionAnchor.start);
-    const after = body.slice(mentionAnchor.end);
-    const next = `${before}@${userName} ${after}`;
-    setBody(next);
-    setMentionQuery(null);
-    setMentionAnchor(null);
+  const insertSuggestion = (name: string) => {
+    if (!autocomplete) return;
+    const { trigger, start, end } = autocomplete;
+    const token = `${trigger}${name} `;
+    setBody(`${body.slice(0, start)}${token}${body.slice(end)}`);
+    setAutocomplete(null);
     setTimeout(() => {
-      const pos = mentionAnchor.start + userName.length + 2;
+      const pos = start + token.length;
       textareaRef.current?.focus();
       textareaRef.current?.setSelectionRange(pos, pos);
     }, 0);
   };
 
-  const filteredMembers =
-    mentionQuery !== null
-      ? members.filter((m) => m.userName.toLowerCase().startsWith(mentionQuery.toLowerCase()))
-      : [];
+  const suggestions = useMemo(() => {
+    if (!autocomplete) return [];
+    const query = autocomplete.query.toLowerCase();
+    const source =
+      autocomplete.trigger === "@"
+        ? members.map((m) => ({ key: `user-${m.userId}`, name: m.userName }))
+        : channels.map((c) => ({ key: `channel-${c.id}`, name: c.name }));
+    return source.filter((s) => s.name.toLowerCase().startsWith(query)).slice(0, MAX_SUGGESTIONS);
+  }, [autocomplete, members, channels]);
+
+  // Keep the highlight on the first match as the query narrows
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [autocomplete?.trigger, autocomplete?.query]);
+
+  const channelIds = useMemo(
+    () => new Map(channels.map((c) => [c.name.toLowerCase(), c.id])),
+    [channels],
+  );
 
   const handleSubmit = async () => {
     if (!body.trim() || submitting) return;
@@ -160,7 +225,7 @@ export default function EventComments({
       });
       if (res.ok) {
         setBody("");
-        setMentionQuery(null);
+        setAutocomplete(null);
       }
     } finally {
       setSubmitting(false);
@@ -173,10 +238,19 @@ export default function EventComments({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (mentionQuery !== null && filteredMembers.length > 0) {
+    if (autocomplete && suggestions.length > 0) {
       if (e.key === "Escape") {
         e.preventDefault();
-        setMentionQuery(null);
+        setAutocomplete(null);
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        insertSuggestion(suggestions[activeIndex].name);
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((i) => (i + 1) % suggestions.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
       }
       return;
     }
@@ -208,7 +282,7 @@ export default function EventComments({
                 </span>
               </div>
               <p className="text-sm text-foreground/90 mt-0.5 whitespace-pre-wrap break-words">
-                {renderBody(c.body)}
+                {renderBody(c.body, projectId, channelIds)}
               </p>
             </div>
             {(c.userId === currentUserId || canModerate) && (
@@ -232,7 +306,7 @@ export default function EventComments({
           value={body}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Leave a comment… (⌘↵ to send, @ to mention)"
+          placeholder="Leave a comment… (⌘↵ to send, @ to mention, # for a channel)"
           rows={3}
           className="resize-none pr-12"
         />
@@ -246,20 +320,29 @@ export default function EventComments({
           <SendIcon className="size-3.5" />
         </Button>
 
-        {/* @mention dropdown */}
-        {mentionQuery !== null && filteredMembers.length > 0 && (
+        {/* @mention / #channel dropdown — ↹ completes the highlighted row */}
+        {autocomplete && suggestions.length > 0 && (
           <div className="absolute bottom-full mb-1 left-0 w-56 rounded-md border bg-popover shadow-md z-50 overflow-hidden">
-            {filteredMembers.slice(0, 6).map((m) => (
+            {suggestions.map((s, i) => (
               <button
-                key={m.userId}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2"
+                key={s.key}
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 ${
+                  i === activeIndex ? "bg-accent" : "hover:bg-accent"
+                }`}
+                onMouseEnter={() => setActiveIndex(i)}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  insertMention(m.userName);
+                  insertSuggestion(s.name);
                 }}
               >
-                <Avatar name={m.userName} />
-                {m.userName}
+                {autocomplete.trigger === "@" ? (
+                  <>
+                    <Avatar name={s.name} />
+                    {s.name}
+                  </>
+                ) : (
+                  <span className="truncate"># {s.name}</span>
+                )}
               </button>
             ))}
           </div>
