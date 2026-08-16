@@ -113,6 +113,31 @@ External API calls (e.g., creating events) use the `X-API-Key` header with the p
 - **API routes:** Astro API routes in `src/pages/api/`. Use `APIRoute` type exports (`GET`, `POST`, etc.).
 - **SSR hydration:** Any value that reads from `localStorage` or the DOM must be set inside `useEffect`, not computed during render.
 
+## Design Skills
+
+The repo ships [Emil Kowalski's design skills](https://github.com/emilkowalski/skills) (MIT) in
+`.agents/skills/`, symlinked into `.claude/skills/` so Claude Code picks them up. They cover
+animation and interface work — easing and duration choices, what is worth animating, Apple's
+motion principles, and which UI library to reach for.
+
+They load on demand, so nothing changes until you're doing UI work. Reach for them directly when
+you want a specific pass:
+
+| Skill                          | Use it for                                              |
+| :----------------------------- | :------------------------------------------------------ |
+| `emil-design-eng`              | General animation and design guidance                   |
+| `animate`                      | Building an animation from scratch                      |
+| `review-animations`            | Reviewing animations you've written                     |
+| `improve-animations`           | Auditing existing motion and getting prioritized plans  |
+| `find-animation-opportunities` | Finding where motion would help, and where it would not |
+| `animation-vocabulary`         | Describing the motion you want precisely                |
+| `apple-design`                 | Apple's interface and motion principles                 |
+| `pick-ui-library`              | Choosing a library instead of hand-rolling a component  |
+| `prototype`                    | Building several variants of a UI piece to compare      |
+| `ask-sonner`                   | Working with Sonner toasts                              |
+
+Update them with `bunx skills@latest update`, which rewrites `skills-lock.json`.
+
 ## Building for Production
 
 ```sh

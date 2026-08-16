@@ -50,6 +50,8 @@ Always use `bun`/`bunx` — never `npm`/`npx`.
 
 **shadcn/ui.** Components are in `src/components/ui/`. Add new ones with `bunx shadcn@latest add <component>`.
 
+**Design skills.** Emil Kowalski's design skills are installed in `.agents/skills/` and symlinked into `.claude/skills/`. Use them for interface and animation work rather than guessing at easings and durations — `animate` when building motion, `review-animations` after writing it, `pick-ui-library` before hand-rolling a component. CONTRIBUTING.md lists the full set.
+
 **SSR hydration.** Any value that reads from `localStorage` or the DOM must be set inside `useEffect`, not computed during render — the server has no access to browser APIs.
 
 **Channel/username sanitization.** Channel names and usernames are sanitized at both the UI layer (live input) and the lib layer (before DB write). Pattern: replace invalid chars with `-`, collapse consecutive `-`.
