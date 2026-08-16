@@ -46,8 +46,8 @@ function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | 
   const url = httpUrl(value);
 
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 dark:bg-white/10 px-2.5 py-1 text-sm">
-      <span className="font-medium text-foreground/75">{tagKey}</span>
+    <div className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-gray-100 dark:bg-white/10 px-2.5 py-1 text-sm">
+      <span className="font-medium text-foreground/75 shrink-0">{tagKey}</span>
       <span className="text-muted-foreground">=</span>
       {url ? (
         <a
@@ -60,7 +60,7 @@ function TagBadge({ tagKey, value }: { tagKey: string; value: string | number | 
           {displayValue}
         </a>
       ) : (
-        <span className="text-foreground">{displayValue}</span>
+        <span className="text-foreground break-all">{displayValue}</span>
       )}
     </div>
   );
@@ -145,26 +145,33 @@ export default function EventDetail({
         </Button>
         <Card>
           <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center space-x-4 min-w-0">
-                <div className="bg-gray-100 dark:bg-white/10 p-3 rounded-md">
-                  <p className="text-2xl">{event.icon ? event.icon : "🪵"}</p>
+            {/* Below sm the actions drop to their own row — sharing one row with
+                the title left it about 130px to work with, which broke the
+                channel name and timestamp across several lines. */}
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="bg-gray-100 dark:bg-white/10 p-2.5 sm:p-3 rounded-md shrink-0">
+                  <p className="text-xl sm:text-2xl leading-none">
+                    {event.icon ? event.icon : "🪵"}
+                  </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-1">
-                    <span>{event.eventObject}</span>
+                    <span className="truncate">{event.eventObject}</span>
                     <span>·</span>
-                    <span>{event.eventAction}</span>
+                    <span className="truncate">{event.eventAction}</span>
                   </div>
-                  <CardTitle className="text-2xl">{event.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-2 mt-1">
-                    <span># {event.channelName}</span>
+                  <CardTitle className="text-xl sm:text-2xl break-words">{event.title}</CardTitle>
+                  <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                    <span className="whitespace-nowrap"># {event.channelName}</span>
                     <span className="text-muted-foreground">·</span>
-                    <span>{getEventTime(new Date(event.createdAt))}</span>
+                    <span className="whitespace-nowrap">
+                      {getEventTime(new Date(event.createdAt))}
+                    </span>
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center shrink-0">
+              <div className="flex items-center shrink-0 -ml-2 sm:ml-0">
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
