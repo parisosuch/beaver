@@ -262,12 +262,12 @@ export default function EventComments({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-muted-foreground">
+      <h3 className="px-3 text-sm font-medium text-muted-foreground">
         Comments {comments.length > 0 && `(${comments.length})`}
       </h3>
 
       {comments.length === 0 && (
-        <p className="text-sm text-muted-foreground">No comments yet. Be the first.</p>
+        <p className="px-3 text-sm text-muted-foreground">No comments yet. Be the first.</p>
       )}
 
       <div className="space-y-4">
@@ -308,13 +308,13 @@ export default function EventComments({
           onKeyDown={handleKeyDown}
           placeholder="Leave a comment… (⌘↵ to send, @ to mention, # for a channel)"
           rows={3}
-          className="resize-none pr-12"
+          className="block resize-none pr-12"
         />
         <Button
           size="icon"
           // Disabled defaults to the primary fill at 50% opacity, which reads as
           // a dark smudge over the input rather than an inert control.
-          className="absolute bottom-2 right-2 size-7 disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground"
+          className="absolute bottom-3 right-3 size-7 disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground"
           onClick={handleSubmit}
           disabled={!body.trim() || submitting}
           aria-label="Send comment"
