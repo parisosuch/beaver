@@ -772,6 +772,7 @@ export default function EventFeed({
                             event={row.event}
                             compact={compact}
                             selected={row.event.id === selectedEventId}
+                            isFirst={virtualRow.index === 0}
                             onSelect={setSelectedEventId}
                           />
                         </div>

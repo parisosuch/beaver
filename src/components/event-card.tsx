@@ -9,11 +9,14 @@ const EventCard = memo(function EventCard({
   event,
   compact = false,
   selected = false,
+  isFirst = false,
   onSelect,
 }: {
   event: EventWithChannelName;
   compact?: boolean;
   selected?: boolean;
+  // The rule starts at the first node rather than running off the top of the list.
+  isFirst?: boolean;
   // When provided, a plain left click selects the event in the side-by-side
   // detail panel instead of navigating. The anchor is still a real link, so
   // middle-click, cmd-click and keyboard Enter keep working.
@@ -95,7 +98,11 @@ const EventCard = memo(function EventCard({
           </time>
 
           <div aria-hidden="true" className="relative w-3 shrink-0">
-            <span className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-border" />
+            <span
+              className={`absolute left-1/2 bottom-0 w-px -translate-x-1/2 bg-border ${
+                isFirst ? (compact ? "top-[16px]" : "top-[18px]") : "top-0"
+              }`}
+            />
             {/* Filled node = unread, hollow = read. */}
             <span
               className={`absolute left-1/2 size-2.5 -translate-x-1/2 rounded-full ring-[1.5px] transition-shadow ${

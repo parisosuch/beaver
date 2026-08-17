@@ -312,7 +312,9 @@ export default function EventComments({
         />
         <Button
           size="icon"
-          className="absolute bottom-2 right-2 size-7"
+          // Disabled defaults to the primary fill at 50% opacity, which reads as
+          // a dark smudge over the input rather than an inert control.
+          className="absolute bottom-2 right-2 size-7 disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground"
           onClick={handleSubmit}
           disabled={!body.trim() || submitting}
           aria-label="Send comment"
