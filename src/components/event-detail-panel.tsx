@@ -99,7 +99,7 @@ export default function EventDetailPanel({
         </div>
       ) : (
         <>
-          <div className="flex justify-end p-2 border-b sticky top-0 bg-background z-10">
+          <div className="flex justify-end p-2 sticky top-0 bg-background z-10">
             <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close event details">
               <XIcon className="size-4" />
             </Button>

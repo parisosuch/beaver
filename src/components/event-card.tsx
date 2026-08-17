@@ -96,13 +96,14 @@ const EventCard = memo(function EventCard({
 
           <div aria-hidden="true" className="relative w-3 shrink-0">
             <span className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-border" />
-            {/* The node marks position on the rule, not state. Most events in a
-                busy project are unread, so filling it per unread row turns the
-                gutter into a column of blobs; unread is carried by title weight
-                and the labelled marker in the meta row instead. */}
+            {/* Filled node = unread, hollow = read. */}
             <span
-              className={`absolute left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-background ring-[1.5px] ring-border transition-shadow group-hover:ring-muted-foreground ${
+              className={`absolute left-1/2 size-2.5 -translate-x-1/2 rounded-full ring-[1.5px] transition-shadow ${
                 compact ? "top-[11px]" : "top-[13px]"
+              } ${
+                event.read
+                  ? "bg-background ring-border group-hover:ring-muted-foreground"
+                  : "bg-primary ring-primary"
               }`}
             />
           </div>
@@ -136,12 +137,7 @@ const EventCard = memo(function EventCard({
               {event.bookmarked && (
                 <BookmarkIcon size={12} className="shrink-0 fill-current" aria-label="Bookmarked" />
               )}
-              {!event.read && (
-                <span className="shrink-0 flex items-center gap-1 text-primary">
-                  <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-                  <span className="sr-only">Unread</span>
-                </span>
-              )}
+              {!event.read && <span className="sr-only">Unread</span>}
             </div>
           </div>
         </div>
