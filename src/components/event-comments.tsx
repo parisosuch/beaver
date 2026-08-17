@@ -262,12 +262,12 @@ export default function EventComments({
 
   return (
     <div className="space-y-4">
-      <h3 className="px-3 text-sm font-medium text-muted-foreground">
+      <h3 className="text-sm font-medium text-muted-foreground">
         Comments {comments.length > 0 && `(${comments.length})`}
       </h3>
 
       {comments.length === 0 && (
-        <p className="px-3 text-sm text-muted-foreground">No comments yet. Be the first.</p>
+        <p className="text-sm text-muted-foreground">No comments yet. Be the first.</p>
       )}
 
       <div className="space-y-4">
