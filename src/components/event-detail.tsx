@@ -1,16 +1,8 @@
 import type { EventWithChannelName, ReactionSummary } from "@/lib/beaver/event";
 import EventComments from "./event-comments";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { getEventTime } from "@/lib/utils";
-import {
-  ArrowLeftIcon,
-  BookmarkIcon,
-  CheckIcon,
-  LinkIcon,
-  SmilePlusIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { BookmarkIcon, CheckIcon, LinkIcon, SmilePlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import {
@@ -128,23 +120,11 @@ export default function EventDetail({
     }
   };
 
-  const handleBack = () => {
-    if (sessionStorage.getItem("beaver:hasInAppNav") === "1") {
-      window.history.back();
-    } else {
-      window.location.href = `/dashboard/${event.projectId}/feed`;
-    }
-  };
-
   return (
     <div className="flex-1 p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
-        <Button variant="ghost" size="sm" onClick={handleBack}>
-          <ArrowLeftIcon className="w-4 h-4 mr-2" />
-          Back to feed
-        </Button>
-        <Card>
-          <CardHeader>
+        <div>
+          <div>
             {/* Below sm the actions drop to their own row — sharing one row with
                 the title left it about 130px to work with, which broke the
                 channel name and timestamp across several lines. */}
@@ -161,14 +141,14 @@ export default function EventDetail({
                     <span>·</span>
                     <span className="truncate">{event.eventAction}</span>
                   </div>
-                  <CardTitle className="text-xl sm:text-2xl break-words">{event.title}</CardTitle>
-                  <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                  <h1 className="text-xl sm:text-2xl font-semibold break-words">{event.title}</h1>
+                  <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                     <span className="whitespace-nowrap"># {event.channelName}</span>
                     <span className="text-muted-foreground">·</span>
                     <span className="whitespace-nowrap">
                       {getEventTime(new Date(event.createdAt))}
                     </span>
-                  </CardDescription>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center shrink-0 -ml-2 sm:ml-0">
@@ -222,19 +202,19 @@ export default function EventDetail({
                 )}
               </div>
             </div>
-          </CardHeader>
+          </div>
 
           {event.description && (
-            <CardContent>
+            <div className="mt-6">
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
                 <p className="text-foreground/80">{event.description}</p>
               </div>
-            </CardContent>
+            </div>
           )}
 
           {tags.length > 0 && (
-            <CardContent>
+            <div className="mt-6">
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground">Tags</h3>
                 <div className="flex flex-wrap gap-2">
@@ -243,10 +223,10 @@ export default function EventDetail({
                   ))}
                 </div>
               </div>
-            </CardContent>
+            </div>
           )}
 
-          <CardContent>
+          <div className="mt-6">
             <div className="flex flex-wrap items-center gap-2">
               <ReactionBar reactions={reactions} onToggle={handleReact} />
               <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
@@ -260,19 +240,17 @@ export default function EventDetail({
                 </PopoverContent>
               </Popover>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <EventComments
-              eventId={event.id}
-              projectId={event.projectId}
-              currentUserId={currentUserId}
-              canModerate={canDelete}
-            />
-          </CardContent>
-        </Card>
+        <div className="mt-8 pt-6 border-t">
+          <EventComments
+            eventId={event.id}
+            projectId={event.projectId}
+            currentUserId={currentUserId}
+            canModerate={canDelete}
+          />
+        </div>
       </div>
 
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
