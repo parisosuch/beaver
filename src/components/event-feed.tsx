@@ -12,6 +12,7 @@ const fetchMaxEventId = async (): Promise<number> => {
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
+import EventDetailPanel from "./event-detail-panel";
 import { XIcon, ArrowUpDownIcon, DownloadIcon, CheckCheckIcon, MailIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
@@ -63,9 +64,11 @@ export default function EventFeed({
   sortBy,
   sortOrder,
   compact = false,
+  currentUserId,
 }: {
   type: "channel" | "project";
   projectID?: number;
+  currentUserId: number;
   channel?: Channel;
   userRole?: string | null;
   title?: string | null;
@@ -79,6 +82,7 @@ export default function EventFeed({
   compact?: boolean;
 }) {
   const [events, setEvents] = useState<EventWithChannelName[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [eventCount, setEventCount] = useState<number | null>(null);
@@ -697,75 +701,98 @@ export default function EventFeed({
         </div>
       )}
 
-      {/* Scrollable events */}
-      <div ref={scrollContainerRef} className="w-full flex-1 overflow-y-auto scroll-smooth">
-        {events.length === 0 ? (
-          <div className="w-full text-center pt-8">
-            <h2 className="text-2xl">
-              Looks like this {type === "project" ? "project" : "channel"} has no events!
-            </h2>
-          </div>
-        ) : unreadOnly && displayedEvents.length === 0 ? (
-          <div className="w-full text-center pt-8">
-            <h2 className="text-2xl">You&rsquo;re all caught up 🎉</h2>
-            <p className="text-muted-foreground mt-2">No unread events in this channel.</p>
-          </div>
-        ) : (
-          <div className="px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto">
-            <div
-              style={{
-                height: virtualizer.getTotalSize(),
-                position: "relative",
-              }}
-            >
-              {virtualItems.map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                return (
-                  <div
-                    key={virtualRow.key}
-                    data-index={virtualRow.index}
-                    ref={virtualizer.measureElement}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                      paddingBottom: compact ? "8px" : "16px",
-                    }}
-                  >
-                    {row.kind === "divider" ? (
-                      <div className="flex items-center gap-3 py-1">
-                        <div className="flex-1 border-t border-primary/40" />
-                        <span className="text-xs font-medium text-primary/70 shrink-0">New</span>
-                        <div className="flex-1 border-t border-primary/40" />
-                      </div>
-                    ) : (
-                      <div
-                        className={
-                          // Fires once per streamed event on the app's busiest
-                          // surface, so the travel stays short — 40px of slide
-                          // several times a minute reads as the feed lurching.
-                          row.isNew
-                            ? "animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
-                            : undefined
-                        }
-                        onAnimationEnd={
-                          row.isNew ? () => newEventIdsRef.current.delete(row.event.id) : undefined
-                        }
-                      >
-                        <EventCard event={row.event} compact={compact} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+      {/* Master-detail: the feed keeps its own scroll, the panel scrolls
+          independently, and below lg the panel is hidden so a row click falls
+          back to navigating to the standalone event page. */}
+      <div className="flex flex-1 min-h-0">
+        <div ref={scrollContainerRef} className="flex-1 min-w-0 overflow-y-auto scroll-smooth">
+          {events.length === 0 ? (
+            <div className="w-full text-center pt-8">
+              <h2 className="text-2xl">
+                Looks like this {type === "project" ? "project" : "channel"} has no events!
+              </h2>
             </div>
-            {loadingMore && (
-              <p className="text-center text-sm text-muted-foreground py-4">Loading...</p>
-            )}
-          </div>
-        )}
+          ) : unreadOnly && displayedEvents.length === 0 ? (
+            <div className="w-full text-center pt-8">
+              <h2 className="text-2xl">You&rsquo;re all caught up 🎉</h2>
+              <p className="text-muted-foreground mt-2">No unread events in this channel.</p>
+            </div>
+          ) : (
+            // max-w keeps the rows a readable column instead of stranding a thin
+            // strip of text in a very wide viewport.
+            <div className="px-4 md:px-6 py-4 w-full max-w-5xl">
+              <div
+                style={{
+                  height: virtualizer.getTotalSize(),
+                  position: "relative",
+                }}
+              >
+                {virtualItems.map((virtualRow) => {
+                  const row = rows[virtualRow.index];
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={virtualizer.measureElement}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        transform: `translateY(${virtualRow.start}px)`,
+                        // Rows are contiguous so the timestamp rule reads as
+                        // one continuous line; the row's own padding carries
+                        // the rhythm instead of a gap between rows.
+                        paddingBottom: 0,
+                      }}
+                    >
+                      {row.kind === "divider" ? (
+                        <div className="flex items-center gap-3 py-1">
+                          <div className="flex-1 border-t border-primary/40" />
+                          <span className="text-xs font-medium text-primary/70 shrink-0">New</span>
+                          <div className="flex-1 border-t border-primary/40" />
+                        </div>
+                      ) : (
+                        <div
+                          className={
+                            // Fires once per streamed event on the app's busiest
+                            // surface, so the travel stays short — 40px of slide
+                            // several times a minute reads as the feed lurching.
+                            row.isNew
+                              ? "animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
+                              : undefined
+                          }
+                          onAnimationEnd={
+                            row.isNew
+                              ? () => newEventIdsRef.current.delete(row.event.id)
+                              : undefined
+                          }
+                        >
+                          <EventCard
+                            event={row.event}
+                            compact={compact}
+                            selected={row.event.id === selectedEventId}
+                            onSelect={setSelectedEventId}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {loadingMore && (
+                <p className="text-center text-sm text-muted-foreground py-4">Loading...</p>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Hidden below lg, where a row click falls back to navigating to the
+            standalone event page instead of opening the panel. */}
+        <EventDetailPanel
+          eventId={selectedEventId}
+          currentUserId={currentUserId}
+          onClose={() => setSelectedEventId(null)}
+        />
       </div>
     </div>
   );
