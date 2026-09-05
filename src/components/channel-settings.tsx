@@ -181,7 +181,7 @@ export default function ChannelSettings({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
               <a
                 href={`/dashboard/${project.id}/channels/${channel.id}`}
-                className="hover:text-black/50 truncate"
+                className="hover:text-muted-foreground transition-colors truncate"
               >
                 <h3 className="font-medium text-lg"># {channel.name}</h3>
               </a>

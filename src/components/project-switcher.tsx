@@ -22,7 +22,10 @@ export default function ProjectSwitcher({
         <h1 className="text-sm font-mono">Project</h1>
         {canCreate && (
           <a href="/dashboard/create-project">
-            <PlusIcon size={20} className="hover:cursor-pointer hover:text-black/50" />
+            <PlusIcon
+              size={20}
+              className="hover:cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+            />
           </a>
         )}
       </div>
