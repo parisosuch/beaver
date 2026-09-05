@@ -22,6 +22,7 @@ import { readUnreadCounts } from "@/lib/unread-store";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import {
@@ -31,6 +32,10 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "./ui/context-menu";
+
+// The list state as it stood before an optimistic edit, kept so a rejected
+// write can be undone.
+type Snapshot = { ungrouped: Channel[]; groups: ChannelGroupWithChannels[] };
 
 // ─── ID helpers ───────────────────────────────────────────────────────────────
 const grpId = (id: number) => `grp-${id}` as UniqueIdentifier;
@@ -319,9 +324,33 @@ export default function ChannelGroupsDnd({
     groupsRef.current = groups;
   }, [groups]);
 
-  const snapshotRef = useRef<{ ungrouped: Channel[]; groups: ChannelGroupWithChannels[] } | null>(
-    null,
-  );
+  const snapshotRef = useRef<Snapshot | null>(null);
+
+  // Every write below is applied to local state first, so a rejected request has
+  // to put the list back. Restoring the pre-drag snapshot is what the cancel case
+  // already does; the failure case is the same undo with something said about it.
+  const restoreSnapshot = (snapshot: Snapshot | null) => {
+    if (!snapshot) return;
+    setUngrouped(snapshot.ungrouped);
+    setGroups(snapshot.groups);
+  };
+
+  const persistOrRollback = async (
+    send: () => Promise<Response>,
+    snapshot: Snapshot | null,
+    message: string,
+  ) => {
+    let ok = false;
+    try {
+      ok = (await send()).ok;
+    } catch {
+      ok = false;
+    }
+    if (ok) return;
+    restoreSnapshot(snapshot);
+    toast.error(message);
+  };
+
   const collapsedSnapshotRef = useRef<Set<number>>(new Set());
 
   // Sync pathname on navigation
@@ -475,38 +504,46 @@ export default function ChannelGroupsDnd({
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveId(null);
 
+    // Hold the pre-drag state for the length of the request. The ref is cleared
+    // here so the next drag starts clean either way.
+    const snapshot = snapshotRef.current;
+    snapshotRef.current = null;
+
     if (!over) {
-      if (snapshotRef.current) {
-        setUngrouped(snapshotRef.current.ungrouped);
-        setGroups(snapshotRef.current.groups);
-      }
+      restoreSnapshot(snapshot);
       setIsDraggingGroup(false);
-      snapshotRef.current = null;
       return;
     }
 
     if (isGrp(active.id)) {
       setIsDraggingGroup(false);
       setCollapsed(collapsedSnapshotRef.current);
-      if (!isGrp(over.id)) {
-        snapshotRef.current = null;
-        return;
-      }
+      if (!isGrp(over.id)) return;
       const cur = groupsRef.current;
       const oldIdx = cur.findIndex((g) => grpId(g.id) === active.id);
       const newIdx = cur.findIndex((g) => grpId(g.id) === over.id);
-      if (oldIdx !== newIdx) {
-        const reordered = arrayMove(cur, oldIdx, newIdx);
-        setGroups(reordered);
-        fetch("/api/channel-group", {
-          method: "PATCH",
-          body: JSON.stringify({ groups: reordered.map((g, i) => ({ id: g.id, order: i })) }),
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      snapshotRef.current = null;
+      if (oldIdx === newIdx) return;
+      const reordered = arrayMove(cur, oldIdx, newIdx);
+      setGroups(reordered);
+      void persistOrRollback(
+        () =>
+          fetch("/api/channel-group", {
+            method: "PATCH",
+            body: JSON.stringify({ groups: reordered.map((g, i) => ({ id: g.id, order: i })) }),
+            headers: { "Content-Type": "application/json" },
+          }),
+        snapshot,
+        "Could not save the new group order. The groups are back where they were.",
+      );
       return;
     }
+
+    // The channel write used to run from a setTimeout(0) reading the refs, because
+    // the reorder below landed through setState and the refs only catch up after
+    // the next render. Building the next lists here instead means the request has
+    // both of them in hand and a failure has somewhere to be reported.
+    let nextUngrouped = ungroupedRef.current;
+    let nextGroups = groupsRef.current;
 
     if (isCh(active.id) && isCh(over.id) && active.id !== over.id) {
       const chNum = parseChId(active.id);
@@ -516,48 +553,42 @@ export default function ChannelGroupsDnd({
 
       if (srcContainer === dstContainer) {
         if (srcContainer === "ungrouped") {
-          setUngrouped((prev) => {
-            const oldIdx = prev.findIndex((c) => c.id === chNum);
-            const newIdx = prev.findIndex((c) => c.id === overNum);
-            return arrayMove(prev, oldIdx, newIdx);
-          });
+          const oldIdx = nextUngrouped.findIndex((c) => c.id === chNum);
+          const newIdx = nextUngrouped.findIndex((c) => c.id === overNum);
+          nextUngrouped = arrayMove(nextUngrouped, oldIdx, newIdx);
+          setUngrouped(nextUngrouped);
         } else if (typeof srcContainer === "number") {
-          setGroups((prev) =>
-            prev.map((g) => {
-              if (g.id !== srcContainer) return g;
-              const oldIdx = g.channels.findIndex((c) => c.id === chNum);
-              const newIdx = g.channels.findIndex((c) => c.id === overNum);
-              return { ...g, channels: arrayMove(g.channels, oldIdx, newIdx) };
-            }),
-          );
+          nextGroups = nextGroups.map((g) => {
+            if (g.id !== srcContainer) return g;
+            const oldIdx = g.channels.findIndex((c) => c.id === chNum);
+            const newIdx = g.channels.findIndex((c) => c.id === overNum);
+            return { ...g, channels: arrayMove(g.channels, oldIdx, newIdx) };
+          });
+          setGroups(nextGroups);
         }
       }
     }
 
-    setTimeout(() => {
-      const u = ungroupedRef.current;
-      const g = groupsRef.current;
-      const allItems = [
-        ...u.map((c, i) => ({ id: c.id, order: i, groupId: null as null })),
-        ...g.flatMap((grp) =>
-          grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id })),
-        ),
-      ];
-      fetch("/api/channel", {
-        method: "PATCH",
-        body: JSON.stringify({ channels: allItems }),
-        headers: { "Content-Type": "application/json" },
-      });
-    }, 0);
-
-    snapshotRef.current = null;
+    const allItems = [
+      ...nextUngrouped.map((c, i) => ({ id: c.id, order: i, groupId: null as null })),
+      ...nextGroups.flatMap((grp) =>
+        grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id })),
+      ),
+    ];
+    void persistOrRollback(
+      () =>
+        fetch("/api/channel", {
+          method: "PATCH",
+          body: JSON.stringify({ channels: allItems }),
+          headers: { "Content-Type": "application/json" },
+        }),
+      snapshot,
+      "Could not save the new channel order. The channels are back where they were.",
+    );
   };
 
   const handleDragCancel = () => {
-    if (snapshotRef.current) {
-      setUngrouped(snapshotRef.current.ungrouped);
-      setGroups(snapshotRef.current.groups);
-    }
+    restoreSnapshot(snapshotRef.current);
     setCollapsed(collapsedSnapshotRef.current);
     setActiveId(null);
     setIsDraggingGroup(false);
@@ -579,25 +610,50 @@ export default function ChannelGroupsDnd({
 
   const handleRenameGroup = async (id: number, name: string) => {
     setRenamingGroupId(null);
+    const previousName = groupsRef.current.find((g) => g.id === id)?.name;
     setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, name } : g)));
-    await fetch("/api/channel-group", {
-      method: "PUT",
-      body: JSON.stringify({ id, name }),
-      headers: { "Content-Type": "application/json" },
-    });
+
+    let ok = false;
+    try {
+      ok = (
+        await fetch("/api/channel-group", {
+          method: "PUT",
+          body: JSON.stringify({ id, name }),
+          headers: { "Content-Type": "application/json" },
+        })
+      ).ok;
+    } catch {
+      ok = false;
+    }
+    if (ok) return;
+
+    // Only the one name moved, so put that back rather than a whole snapshot —
+    // a channel event landing mid-request should survive the undo.
+    if (previousName !== undefined) {
+      setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, name: previousName } : g)));
+    }
+    toast.error("Could not rename the group. The old name is back.");
   };
 
   const handleDeleteGroup = async (id: number) => {
     const group = groupsRef.current.find((g) => g.id === id);
+    // The delete moves channels as well as groups, so both lists go into the
+    // snapshot that a failure restores.
+    const snapshot: Snapshot = { ungrouped: ungroupedRef.current, groups: groupsRef.current };
     if (group) {
       setUngrouped((prev) => [...prev, ...group.channels.map((c) => ({ ...c, groupId: null }))]);
     }
     setGroups((prev) => prev.filter((g) => g.id !== id));
-    await fetch("/api/channel-group", {
-      method: "DELETE",
-      body: JSON.stringify({ id }),
-      headers: { "Content-Type": "application/json" },
-    });
+    await persistOrRollback(
+      () =>
+        fetch("/api/channel-group", {
+          method: "DELETE",
+          body: JSON.stringify({ id }),
+          headers: { "Content-Type": "application/json" },
+        }),
+      snapshot,
+      "Could not delete the group. It is back in the sidebar.",
+    );
   };
 
   const ungroupedItems = ungrouped.map((c) => chId(c.id));
