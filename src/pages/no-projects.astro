@@ -1,16 +1,29 @@
 ---
 import "../styles/global.css";
+import NoProjectsActions from "@/components/no-projects-actions";
+import { getUserByUsername } from "@/lib/beaver/user";
+import { ClientRouter } from "astro:transitions";
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect("/login");
+
+const dbUser = await getUserByUsername(user.userName);
+const themePalette = dbUser?.themePalette ?? "default";
 ---
 
-<html lang="en">
+<html lang="en" data-theme={themePalette}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/png" href="/beaver.png" />
-    <title>Beaver</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#171717" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Beaver" />
+    <title>No projects — Beaver</title>
+    <ClientRouter />
     <script is:inline>
       function applyStoredTheme() {
         const stored = localStorage.getItem("theme") || "system";
@@ -22,6 +35,7 @@ if (!user) return Astro.redirect("/login");
         }
       }
       applyStoredTheme();
+      document.addEventListener("astro:after-swap", applyStoredTheme);
     </script>
   </head>
   <body>
@@ -30,6 +44,10 @@ if (!user) return Astro.redirect("/login");
       <p class="text-muted-foreground mt-2 text-sm">
         You haven't been added to any projects. Ask a project owner or admin to invite you.
       </p>
+      <p class="text-muted-foreground mt-1 text-sm">
+        Signed in as <span class="text-foreground font-medium">@{user.userName}</span>.
+      </p>
+      <NoProjectsActions client:load />
     </div>
   </body>
 </html>
