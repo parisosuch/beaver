@@ -27,7 +27,7 @@ export default function ThemeToggle() {
   };
 
   const btnClass = (t: Theme) =>
-    `p-1.5 rounded hover:cursor-pointer transition-colors ${
+    `p-1.5 rounded hover:cursor-pointer transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] ${
       theme === t
         ? "bg-gray-200 dark:bg-white/15 text-foreground"
         : "text-muted-foreground hover:bg-gray-100 dark:hover:bg-white/10"

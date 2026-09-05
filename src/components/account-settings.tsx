@@ -154,7 +154,7 @@ export default function AccountSettings({
                   type="button"
                   onClick={() => handlePaletteChange(p.id)}
                   aria-pressed={selected}
-                  className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                  className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] ${
                     selected ? "border-foreground" : "border-border hover:bg-accent"
                   }`}
                 >
