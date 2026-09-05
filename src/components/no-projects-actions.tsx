@@ -19,10 +19,12 @@ export default function NoProjectsActions() {
 
     try {
       const res = await fetch("/api/auth/signout", { method: "POST" });
-      if (!res.ok) {
-        // The session cookie is still live, so redirecting to /login would just
-        // bounce back here via the middleware with nothing said. Stay put and
-        // let the user retry.
+      // A 401 means the refresh token was already invalid, and the route clears
+      // the cookie on that path too, so the session is gone either way. Any
+      // other failure leaves the cookie live: redirecting to /login would just
+      // bounce back here via the middleware with nothing said, so stay put and
+      // let the user retry.
+      if (!res.ok && res.status !== 401) {
         setError("Could not sign out. Please try again.");
         setSigningOut(false);
         return;
