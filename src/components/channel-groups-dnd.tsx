@@ -24,6 +24,7 @@ import { ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
   ContextMenu,
@@ -162,7 +163,7 @@ function SortableGroup({
     <button
       {...(canEdit ? { ...attributes, ...listeners } : {})}
       onClick={onToggle}
-      className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-colors select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
+      className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
     >
       <ChevronRightIcon
         size={12}
@@ -670,21 +671,31 @@ export default function ChannelGroupsDnd({
         <h1 className="text-sm font-mono">Channels</h1>
         {canEdit && (
           <div className="flex items-center gap-1.5">
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setCreatingGroup(true)}
               title="New group"
-              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="New group"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <FolderPlusIcon size={15} />
-            </button>
-            <a
-              href={`/dashboard/${projectId}/create-channel`}
-              onClick={() => onNavigate?.()}
-              title="New channel"
-              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+              <FolderPlusIcon className="size-4" />
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <PlusIcon size={15} />
-            </a>
+              <a
+                href={`/dashboard/${projectId}/create-channel`}
+                onClick={() => onNavigate?.()}
+                title="New channel"
+                aria-label="New channel"
+              >
+                <PlusIcon className="size-4" />
+              </a>
+            </Button>
           </div>
         )}
       </div>

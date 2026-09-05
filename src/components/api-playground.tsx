@@ -203,12 +203,16 @@ export default function ApiPlayground({
                 placeholder="value"
                 className="font-mono text-sm"
               />
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => removeTag(i)}
-                className="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive"
+                aria-label="Remove tag"
+                className="shrink-0 text-muted-foreground hover:text-destructive"
               >
                 <Trash2Icon className="size-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>

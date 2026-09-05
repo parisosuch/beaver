@@ -1,6 +1,7 @@
 import type { Project } from "@/lib/beaver/project";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 export default function ProjectSwitcher({
@@ -21,12 +22,16 @@ export default function ProjectSwitcher({
       <div className="flex space-x-2 w-full items-center justify-between mt-4">
         <h1 className="text-sm font-mono">Project</h1>
         {canCreate && (
-          <a href="/dashboard/create-project">
-            <PlusIcon
-              size={20}
-              className="hover:cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-            />
-          </a>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <a href="/dashboard/create-project" title="New project" aria-label="New project">
+              <PlusIcon className="size-5" />
+            </a>
+          </Button>
         )}
       </div>
       <Select

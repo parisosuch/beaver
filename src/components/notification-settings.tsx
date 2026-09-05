@@ -115,22 +115,24 @@ export default function NotificationSettings({
             </p>
           </div>
           <div className="flex gap-3 shrink-0">
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => setAll(true)}
               disabled={!savedEmail}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:no-underline"
+              className="h-auto p-0 text-sm font-normal text-blue-600 dark:text-blue-400"
             >
               Select all
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="link"
               onClick={() => setAll(false)}
               disabled={!savedEmail}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:no-underline"
+              className="h-auto p-0 text-sm font-normal text-blue-600 dark:text-blue-400"
             >
               Clear all
-            </button>
+            </Button>
           </div>
         </div>
         {!savedEmail && (

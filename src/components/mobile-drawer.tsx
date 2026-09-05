@@ -8,6 +8,7 @@ import NotificationsNavLink from "./notifications-nav-link";
 import ProjectSwitcher from "./project-switcher";
 import SidePanelNav from "./side-panel-nav";
 import ThemeToggle from "./theme-toggle";
+import { Button } from "./ui/button";
 import UserMenu from "./user-menu";
 
 export default function MobileDrawer({
@@ -72,13 +73,15 @@ export default function MobileDrawer({
     <div className="md:hidden">
       {/* Mobile top bar */}
       <div className="w-full border-b px-4 py-3 flex items-center">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
-          className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-white/8 rounded-md"
+          className="-ml-2"
         >
-          <MenuIcon size={20} />
-        </button>
+          <MenuIcon className="size-5" />
+        </Button>
       </div>
 
       {/* Overlay. Kept mounted so it fades with the panel — mounting it on open
@@ -99,13 +102,9 @@ export default function MobileDrawer({
         }`}
       >
         <div className="flex justify-end">
-          <button
-            onClick={close}
-            aria-label="Close menu"
-            className="p-2 hover:bg-gray-100 dark:hover:bg-white/8 rounded"
-          >
-            <XIcon size={20} />
-          </button>
+          <Button variant="ghost" size="icon" onClick={close} aria-label="Close menu">
+            <XIcon className="size-5" />
+          </Button>
         </div>
 
         <UserMenu userName={userName} />

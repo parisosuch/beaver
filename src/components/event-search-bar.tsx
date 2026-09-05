@@ -209,14 +209,16 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <div className="flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs">
       <span className="font-mono">{label}</span>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon-sm"
         onClick={onRemove}
-        className="rounded hover:bg-secondary-foreground/10"
+        className="size-6 hover:bg-secondary-foreground/10"
         aria-label={`Remove ${label}`}
       >
         <XIcon className="size-3" />
-      </button>
+      </Button>
     </div>
   );
 }
