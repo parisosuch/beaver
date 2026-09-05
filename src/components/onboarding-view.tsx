@@ -17,6 +17,24 @@ function storeTokens(data: AuthResponse): void {
   localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({ user: data.user }));
 }
 
+const TOTAL_STEPS = 2;
+
+const StepIndicator = ({ step }: { step: number }) => (
+  <div className="flex items-center gap-2">
+    <p className="text-sm font-mono text-muted-foreground">
+      Step {step} of {TOTAL_STEPS}
+    </p>
+    <div className="flex gap-1" aria-hidden="true">
+      {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+        <span
+          key={i}
+          className={`size-1.5 rounded-full ${i < step ? "bg-foreground" : "bg-muted-foreground/30"}`}
+        />
+      ))}
+    </div>
+  </div>
+);
+
 interface AdminAccountProps {
   username: string;
   setUsername: (value: string) => void;
@@ -40,7 +58,8 @@ const CreateAdminAccount = ({
 }: AdminAccountProps) => (
   <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div className="flex flex-1 flex-col h-full justify-center">
-      <CardTitle className="text-2xl md:text-3xl">Create admin account</CardTitle>
+      <StepIndicator step={1} />
+      <CardTitle className="mt-2 text-2xl md:text-3xl">Create admin account</CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="admin-username">Username</Label>
         <Input
@@ -105,7 +124,8 @@ interface ProjectProps {
 const CreateProject = ({ projectName, setProjectName, onBack, onCreate }: ProjectProps) => (
   <Card className="w-full md:w-3/4 lg:w-1/2 h-auto md:h-[400px] flex flex-col justify-between p-4">
     <div>
-      <CardTitle className="text-2xl md:text-3xl">Create your first project</CardTitle>
+      <StepIndicator step={2} />
+      <CardTitle className="mt-2 text-2xl md:text-3xl">Create your first project</CardTitle>
       <div className="mt-4 space-y-2">
         <Label htmlFor="project-name">Project name</Label>
         <Input
