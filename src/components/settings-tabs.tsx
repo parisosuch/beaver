@@ -63,6 +63,9 @@ export default function SettingsTabs({
         <TabsTrigger value="metrics">Metrics</TabsTrigger>
         <TabsTrigger value="alerts">Alerts</TabsTrigger>
         <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        {/* Audit Log is consulted rarely and Danger Zone is destructive, so both
+            sit past a rule rather than extending the row of day-to-day tabs. */}
+        {isOwner && <div aria-hidden="true" className="mx-2 h-5 w-px self-center bg-border" />}
         {isOwner && <TabsTrigger value="audit">Audit Log</TabsTrigger>}
         {isOwner && (
           <TabsTrigger value="danger" className="text-destructive">
