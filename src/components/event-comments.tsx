@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { SendIcon, Trash2Icon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -287,7 +288,18 @@ export default function EventComments({
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/events/${eventId}/comments/${id}`, { method: "DELETE" });
+    let ok = false;
+    try {
+      ok = (await fetch(`/api/events/${eventId}/comments/${id}`, { method: "DELETE" })).ok;
+    } catch {
+      ok = false;
+    }
+    // Drop it from the thread only once the server has. A rejected delete used
+    // to take the comment out of the list anyway, and it reappeared on reload.
+    if (!ok) {
+      toast.error("Could not delete the comment. It is still in the thread.");
+      return;
+    }
     setComments((prev) => prev.filter((c) => c.id !== id));
   };
 
