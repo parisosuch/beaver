@@ -170,7 +170,7 @@ export function ReactionBar({
   const overflow = max ? sorted.slice(max) : [];
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={300}>
       <div className="flex flex-wrap gap-1">
         {visible.map((r) => (
           <Tooltip key={r.emoji}>
@@ -182,7 +182,7 @@ export function ReactionBar({
                   e.stopPropagation();
                   onToggle(r.emoji);
                 }}
-                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm transition-colors ${
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] ${
                   r.userReacted
                     ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
                     : "bg-gray-100 text-foreground hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20"

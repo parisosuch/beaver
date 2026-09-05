@@ -20,9 +20,11 @@ import {
 } from "@dnd-kit/sortable";
 import { readUnreadCounts } from "@/lib/unread-store";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDownIcon, ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
+import { ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
   ContextMenu,
@@ -31,6 +33,10 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "./ui/context-menu";
+
+// The list state as it stood before an optimistic edit, kept so a rejected
+// write can be undone.
+type Snapshot = { ungrouped: Channel[]; groups: ChannelGroupWithChannels[] };
 
 // ─── ID helpers ───────────────────────────────────────────────────────────────
 const grpId = (id: number) => `grp-${id}` as UniqueIdentifier;
@@ -48,6 +54,7 @@ function SortableChannel({
   onNavigate,
   indent = false,
   unreadCount = 0,
+  disabled = false,
 }: {
   channel: Channel;
   projectId: number;
@@ -55,9 +62,15 @@ function SortableChannel({
   onNavigate?: () => void;
   indent?: boolean;
   unreadCount?: number;
+  disabled?: boolean;
 }) {
+  // A channel in a collapsed group stays mounted so the group can animate, but it
+  // is clipped to zero height. Leaving it registered would let closestCenter pick
+  // a row nobody can see, so a channel dropped on a collapsed group would land at
+  // some index inside it rather than on the group header.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: chId(channel.id),
+    disabled,
   });
   const reduceMotion = useReducedMotion();
 
@@ -111,6 +124,7 @@ function SortableChannel({
 function SortableGroup({
   group,
   collapsed,
+  animateCollapse,
   onToggle,
   onRename,
   onDelete,
@@ -125,6 +139,7 @@ function SortableGroup({
 }: {
   group: ChannelGroupWithChannels;
   collapsed: boolean;
+  animateCollapse: boolean;
   onToggle: () => void;
   onRename: (id: number) => void;
   onDelete: (id: number) => void;
@@ -148,13 +163,14 @@ function SortableGroup({
     <button
       {...(canEdit ? { ...attributes, ...listeners } : {})}
       onClick={onToggle}
-      className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-colors select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
+      className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
     >
-      {collapsed ? (
-        <ChevronRightIcon size={12} className="shrink-0" />
-      ) : (
-        <ChevronDownIcon size={12} className="shrink-0" />
-      )}
+      <ChevronRightIcon
+        size={12}
+        className={`shrink-0 ${collapsed ? "" : "rotate-90"} ${
+          animateCollapse ? "transition-transform duration-150 ease-out" : ""
+        }`}
+      />
       <span className="truncate">{group.name}</span>
     </button>
   );
@@ -189,23 +205,34 @@ function SortableGroup({
         headerButton
       )}
 
-      {!collapsed && (
-        <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
-          <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
-            {group.channels.map((ch) => (
-              <SortableChannel
-                key={ch.id}
-                channel={ch}
-                projectId={projectId}
-                isActive={isChannelActive(ch.id)}
-                onNavigate={onNavigate}
-                indent
-                unreadCount={unreadCounts[ch.id] ?? 0}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      )}
+      {/* The channel list stays mounted and collapses by animating the grid row from 0fr
+          to 1fr, so dnd-kit's SortableContext is not torn down and rebuilt on every toggle.
+          `animateCollapse` is false while a group is being dragged: every group is force
+          collapsed at drag start, and animating all of them closed would fight the drag. */}
+      <div
+        className={`grid ${collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"} ${
+          animateCollapse ? "transition-[grid-template-rows] duration-200 ease-out" : ""
+        }`}
+      >
+        <div className="overflow-hidden" inert={collapsed}>
+          <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
+            <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
+              {group.channels.map((ch) => (
+                <SortableChannel
+                  key={ch.id}
+                  channel={ch}
+                  projectId={projectId}
+                  isActive={isChannelActive(ch.id)}
+                  onNavigate={onNavigate}
+                  indent
+                  unreadCount={unreadCounts[ch.id] ?? 0}
+                  disabled={collapsed}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </div>
+      </div>
     </div>
   );
 }
@@ -280,6 +307,9 @@ export default function ChannelGroupsDnd({
   const [groups, setGroups] = useState<ChannelGroupWithChannels[]>(initialGroups);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
+  // Only a user toggle animates the collapse. The drag-start force collapse below turns
+  // this off so eight groups do not animate shut as a drag begins.
+  const [animateCollapse, setAnimateCollapse] = useState(false);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [renamingGroupId, setRenamingGroupId] = useState<number | null>(null);
@@ -295,9 +325,33 @@ export default function ChannelGroupsDnd({
     groupsRef.current = groups;
   }, [groups]);
 
-  const snapshotRef = useRef<{ ungrouped: Channel[]; groups: ChannelGroupWithChannels[] } | null>(
-    null,
-  );
+  const snapshotRef = useRef<Snapshot | null>(null);
+
+  // Every write below is applied to local state first, so a rejected request has
+  // to put the list back. Restoring the pre-drag snapshot is what the cancel case
+  // already does; the failure case is the same undo with something said about it.
+  const restoreSnapshot = (snapshot: Snapshot | null) => {
+    if (!snapshot) return;
+    setUngrouped(snapshot.ungrouped);
+    setGroups(snapshot.groups);
+  };
+
+  const persistOrRollback = async (
+    send: () => Promise<Response>,
+    snapshot: Snapshot | null,
+    message: string,
+  ) => {
+    let ok = false;
+    try {
+      ok = (await send()).ok;
+    } catch {
+      ok = false;
+    }
+    if (ok) return;
+    restoreSnapshot(snapshot);
+    toast.error(message);
+  };
+
   const collapsedSnapshotRef = useRef<Set<number>>(new Set());
 
   // Sync pathname on navigation
@@ -392,6 +446,7 @@ export default function ChannelGroupsDnd({
       groups: groupsRef.current.map((g) => ({ ...g, channels: g.channels.map((c) => ({ ...c })) })),
     };
     if (isGrp(active.id)) {
+      setAnimateCollapse(false);
       setIsDraggingGroup(true);
       collapsedSnapshotRef.current = new Set(collapsed);
       setCollapsed(new Set(groupsRef.current.map((g) => g.id)));
@@ -450,38 +505,46 @@ export default function ChannelGroupsDnd({
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveId(null);
 
+    // Hold the pre-drag state for the length of the request. The ref is cleared
+    // here so the next drag starts clean either way.
+    const snapshot = snapshotRef.current;
+    snapshotRef.current = null;
+
     if (!over) {
-      if (snapshotRef.current) {
-        setUngrouped(snapshotRef.current.ungrouped);
-        setGroups(snapshotRef.current.groups);
-      }
+      restoreSnapshot(snapshot);
       setIsDraggingGroup(false);
-      snapshotRef.current = null;
       return;
     }
 
     if (isGrp(active.id)) {
       setIsDraggingGroup(false);
       setCollapsed(collapsedSnapshotRef.current);
-      if (!isGrp(over.id)) {
-        snapshotRef.current = null;
-        return;
-      }
+      if (!isGrp(over.id)) return;
       const cur = groupsRef.current;
       const oldIdx = cur.findIndex((g) => grpId(g.id) === active.id);
       const newIdx = cur.findIndex((g) => grpId(g.id) === over.id);
-      if (oldIdx !== newIdx) {
-        const reordered = arrayMove(cur, oldIdx, newIdx);
-        setGroups(reordered);
-        fetch("/api/channel-group", {
-          method: "PATCH",
-          body: JSON.stringify({ groups: reordered.map((g, i) => ({ id: g.id, order: i })) }),
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      snapshotRef.current = null;
+      if (oldIdx === newIdx) return;
+      const reordered = arrayMove(cur, oldIdx, newIdx);
+      setGroups(reordered);
+      void persistOrRollback(
+        () =>
+          fetch("/api/channel-group", {
+            method: "PATCH",
+            body: JSON.stringify({ groups: reordered.map((g, i) => ({ id: g.id, order: i })) }),
+            headers: { "Content-Type": "application/json" },
+          }),
+        snapshot,
+        "Could not save the new group order. The groups are back where they were.",
+      );
       return;
     }
+
+    // The channel write used to run from a setTimeout(0) reading the refs, because
+    // the reorder below landed through setState and the refs only catch up after
+    // the next render. Building the next lists here instead means the request has
+    // both of them in hand and a failure has somewhere to be reported.
+    let nextUngrouped = ungroupedRef.current;
+    let nextGroups = groupsRef.current;
 
     if (isCh(active.id) && isCh(over.id) && active.id !== over.id) {
       const chNum = parseChId(active.id);
@@ -491,48 +554,42 @@ export default function ChannelGroupsDnd({
 
       if (srcContainer === dstContainer) {
         if (srcContainer === "ungrouped") {
-          setUngrouped((prev) => {
-            const oldIdx = prev.findIndex((c) => c.id === chNum);
-            const newIdx = prev.findIndex((c) => c.id === overNum);
-            return arrayMove(prev, oldIdx, newIdx);
-          });
+          const oldIdx = nextUngrouped.findIndex((c) => c.id === chNum);
+          const newIdx = nextUngrouped.findIndex((c) => c.id === overNum);
+          nextUngrouped = arrayMove(nextUngrouped, oldIdx, newIdx);
+          setUngrouped(nextUngrouped);
         } else if (typeof srcContainer === "number") {
-          setGroups((prev) =>
-            prev.map((g) => {
-              if (g.id !== srcContainer) return g;
-              const oldIdx = g.channels.findIndex((c) => c.id === chNum);
-              const newIdx = g.channels.findIndex((c) => c.id === overNum);
-              return { ...g, channels: arrayMove(g.channels, oldIdx, newIdx) };
-            }),
-          );
+          nextGroups = nextGroups.map((g) => {
+            if (g.id !== srcContainer) return g;
+            const oldIdx = g.channels.findIndex((c) => c.id === chNum);
+            const newIdx = g.channels.findIndex((c) => c.id === overNum);
+            return { ...g, channels: arrayMove(g.channels, oldIdx, newIdx) };
+          });
+          setGroups(nextGroups);
         }
       }
     }
 
-    setTimeout(() => {
-      const u = ungroupedRef.current;
-      const g = groupsRef.current;
-      const allItems = [
-        ...u.map((c, i) => ({ id: c.id, order: i, groupId: null as null })),
-        ...g.flatMap((grp) =>
-          grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id })),
-        ),
-      ];
-      fetch("/api/channel", {
-        method: "PATCH",
-        body: JSON.stringify({ channels: allItems }),
-        headers: { "Content-Type": "application/json" },
-      });
-    }, 0);
-
-    snapshotRef.current = null;
+    const allItems = [
+      ...nextUngrouped.map((c, i) => ({ id: c.id, order: i, groupId: null as null })),
+      ...nextGroups.flatMap((grp) =>
+        grp.channels.map((c, i) => ({ id: c.id, order: i, groupId: grp.id })),
+      ),
+    ];
+    void persistOrRollback(
+      () =>
+        fetch("/api/channel", {
+          method: "PATCH",
+          body: JSON.stringify({ channels: allItems }),
+          headers: { "Content-Type": "application/json" },
+        }),
+      snapshot,
+      "Could not save the new channel order. The channels are back where they were.",
+    );
   };
 
   const handleDragCancel = () => {
-    if (snapshotRef.current) {
-      setUngrouped(snapshotRef.current.ungrouped);
-      setGroups(snapshotRef.current.groups);
-    }
+    restoreSnapshot(snapshotRef.current);
     setCollapsed(collapsedSnapshotRef.current);
     setActiveId(null);
     setIsDraggingGroup(false);
@@ -554,25 +611,50 @@ export default function ChannelGroupsDnd({
 
   const handleRenameGroup = async (id: number, name: string) => {
     setRenamingGroupId(null);
+    const previousName = groupsRef.current.find((g) => g.id === id)?.name;
     setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, name } : g)));
-    await fetch("/api/channel-group", {
-      method: "PUT",
-      body: JSON.stringify({ id, name }),
-      headers: { "Content-Type": "application/json" },
-    });
+
+    let ok = false;
+    try {
+      ok = (
+        await fetch("/api/channel-group", {
+          method: "PUT",
+          body: JSON.stringify({ id, name }),
+          headers: { "Content-Type": "application/json" },
+        })
+      ).ok;
+    } catch {
+      ok = false;
+    }
+    if (ok) return;
+
+    // Only the one name moved, so put that back rather than a whole snapshot —
+    // a channel event landing mid-request should survive the undo.
+    if (previousName !== undefined) {
+      setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, name: previousName } : g)));
+    }
+    toast.error("Could not rename the group. The old name is back.");
   };
 
   const handleDeleteGroup = async (id: number) => {
     const group = groupsRef.current.find((g) => g.id === id);
+    // The delete moves channels as well as groups, so both lists go into the
+    // snapshot that a failure restores.
+    const snapshot: Snapshot = { ungrouped: ungroupedRef.current, groups: groupsRef.current };
     if (group) {
       setUngrouped((prev) => [...prev, ...group.channels.map((c) => ({ ...c, groupId: null }))]);
     }
     setGroups((prev) => prev.filter((g) => g.id !== id));
-    await fetch("/api/channel-group", {
-      method: "DELETE",
-      body: JSON.stringify({ id }),
-      headers: { "Content-Type": "application/json" },
-    });
+    await persistOrRollback(
+      () =>
+        fetch("/api/channel-group", {
+          method: "DELETE",
+          body: JSON.stringify({ id }),
+          headers: { "Content-Type": "application/json" },
+        }),
+      snapshot,
+      "Could not delete the group. It is back in the sidebar.",
+    );
   };
 
   const ungroupedItems = ungrouped.map((c) => chId(c.id));
@@ -589,21 +671,31 @@ export default function ChannelGroupsDnd({
         <h1 className="text-sm font-mono">Channels</h1>
         {canEdit && (
           <div className="flex items-center gap-1.5">
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setCreatingGroup(true)}
               title="New group"
-              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="New group"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <FolderPlusIcon size={15} />
-            </button>
-            <a
-              href={`/dashboard/${projectId}/create-channel`}
-              onClick={() => onNavigate?.()}
-              title="New channel"
-              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+              <FolderPlusIcon className="size-4" />
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <PlusIcon size={15} />
-            </a>
+              <a
+                href={`/dashboard/${projectId}/create-channel`}
+                onClick={() => onNavigate?.()}
+                title="New channel"
+                aria-label="New channel"
+              >
+                <PlusIcon className="size-4" />
+              </a>
+            </Button>
           </div>
         )}
       </div>
@@ -649,14 +741,16 @@ export default function ChannelGroupsDnd({
                 key={group.id}
                 group={group}
                 collapsed={isDraggingGroup || collapsed.has(group.id)}
-                onToggle={() =>
+                animateCollapse={animateCollapse}
+                onToggle={() => {
+                  setAnimateCollapse(true);
                   setCollapsed((prev) => {
                     const next = new Set(prev);
                     if (next.has(group.id)) next.delete(group.id);
                     else next.add(group.id);
                     return next;
-                  })
-                }
+                  });
+                }}
                 onRename={setRenamingGroupId}
                 onDelete={handleDeleteGroup}
                 onNewGroup={() => setCreatingGroup(true)}

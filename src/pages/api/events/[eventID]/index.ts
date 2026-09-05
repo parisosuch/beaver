@@ -2,6 +2,37 @@ import { deleteEvent, getEvent } from "@/lib/beaver/event";
 import { getUserProjectRole } from "@/lib/beaver/project-member";
 import type { APIContext } from "astro";
 
+export async function GET({ params, locals }: APIContext) {
+  const user = locals.user;
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
+  const eventId = parseInt(params.eventID!);
+  if (isNaN(eventId)) {
+    return new Response(JSON.stringify({ error: "Invalid event ID" }), { status: 400 });
+  }
+
+  const event = await getEvent(eventId, user.id);
+  if (!event) {
+    return new Response(JSON.stringify({ error: "Event not found" }), { status: 404 });
+  }
+
+  const role = user.isAdmin ? "owner" : await getUserProjectRole(event.projectId, user.id);
+  if (!role) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+  }
+
+  // The panel renders the same EventDetail as the standalone page, which needs
+  // to know up front whether to show the delete affordance.
+  return new Response(
+    JSON.stringify({ event, canDelete: role === "owner" || role === "maintainer" }),
+    {
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
+
 export async function DELETE({ params, locals }: APIContext) {
   const user = locals.user;
   if (!user) {

@@ -1,7 +1,12 @@
 ---
 import "@/styles/global.css";
+// Sonner injects this stylesheet into document.head at runtime, and a View
+// Transition body swap drops it, leaving every later toast unstyled. Importing
+// it here puts it in the bundle instead, where ClientRouter cannot lose it.
+import "sonner/dist/styles.css";
 import SidePanel from "@/components/side-panel.astro";
 import CommandPalette from "@/components/command-palette";
+import { Toaster } from "@/components/ui/sonner";
 import { getProject, getProjects } from "@/lib/beaver/project";
 import { getChannels } from "@/lib/beaver/channel";
 import { getChannelGroups } from "@/lib/beaver/channel-group";
@@ -117,5 +122,6 @@ const themePalette = dbUser?.themePalette ?? "default";
       userRole={userRole ?? "guest"}
       transition:persist
     />
+    <Toaster client:load transition:persist />
   </body>
 </html>

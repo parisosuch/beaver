@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { navigate } from "astro:transitions/client";
+import { toast } from "sonner";
 
 type SavedView = {
   id: number;
@@ -84,7 +85,18 @@ export default function SavedViewsMenu({
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/saved-views/${id}`, { method: "DELETE" });
+    let ok = false;
+    try {
+      ok = (await fetch(`/api/saved-views/${id}`, { method: "DELETE" })).ok;
+    } catch {
+      ok = false;
+    }
+    // The dialog is already closing by now, so the list is the only thing left
+    // to get right: drop the view once the server has, and say so when it has not.
+    if (!ok) {
+      toast.error("Could not delete the view. It is still saved.");
+      return;
+    }
     setViews((prev) => prev.filter((v) => v.id !== id));
     setConfirmDelete(null);
   };
@@ -152,16 +164,18 @@ export default function SavedViewsMenu({
                 >
                   <span className="truncate">{view.name}</span>
                   {canManageViews && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setConfirmDelete(view);
                       }}
-                      className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-destructive"
+                      className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
                       aria-label={`Delete ${view.name}`}
                     >
                       <TrashIcon className="size-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </DropdownMenuItem>
               ))}

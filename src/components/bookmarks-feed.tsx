@@ -6,6 +6,7 @@ import EventSearchBar from "./event-search-bar";
 import { BookmarkIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import EventFilterDialog from "./event-filter-dialog";
+import { EventRowSkeleton } from "./ui/skeleton";
 
 export default function BookmarksFeed({
   projectID,
@@ -129,8 +130,13 @@ export default function BookmarksFeed({
       {/* Events */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center items-center p-8">
-            <p>Loading...</p>
+          <div
+            className={`px-4 md:px-8 py-4 md:py-8 w-full lg:w-1/2 mx-auto flex flex-col ${compact ? "gap-2" : "gap-4"}`}
+            aria-busy="true"
+          >
+            {Array.from({ length: 6 }, (_, i) => (
+              <EventRowSkeleton key={i} index={i} compact={compact} />
+            ))}
           </div>
         ) : events.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-16 gap-3 text-muted-foreground">

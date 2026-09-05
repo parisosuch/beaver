@@ -18,14 +18,14 @@ export default function ApiKeyReveal({ apiKey }: { apiKey: string }) {
       </code>
       <button
         onClick={() => setRevealed((r) => !r)}
-        className="shrink-0 p-1 rounded hover:bg-amber-100 dark:hover:bg-white/10 text-amber-600 dark:text-amber-400 transition-colors"
+        className="shrink-0 p-1 rounded hover:bg-amber-100 dark:hover:bg-white/10 text-amber-600 dark:text-amber-400 transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97]"
         aria-label={revealed ? "Hide API key" : "Reveal API key"}
       >
         {revealed ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
       </button>
       <button
         onClick={handleCopy}
-        className="shrink-0 p-1 rounded hover:bg-amber-100 dark:hover:bg-white/10 text-amber-600 dark:text-amber-400 transition-colors"
+        className="shrink-0 p-1 rounded hover:bg-amber-100 dark:hover:bg-white/10 text-amber-600 dark:text-amber-400 transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97]"
         aria-label="Copy API key"
       >
         {copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}

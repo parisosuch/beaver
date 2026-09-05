@@ -3,6 +3,15 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { SendIcon, Trash2Icon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 type Comment = {
   id: number;
@@ -27,6 +36,38 @@ const TRIGGERS = {
 type Trigger = keyof typeof TRIGGERS;
 
 const MAX_SUGGESTIONS = 6;
+
+// How close to the end of the thread still counts as "reading the end of it".
+const NEAR_BOTTOM_PX = 120;
+
+// A posted comment comes back over the SSE stream rather than from the POST, so
+// the scroll has to wait for a frame that may never arrive. Past this window the
+// intent is stale and someone else's comment must not inherit it.
+const FOLLOW_WINDOW_MS = 5000;
+
+// scrollIntoView moves the nearest scrollable ancestor, which is the document on
+// the event page and the <aside> in the feed's side panel. Read from the same
+// element so the near-bottom test matches whatever the scroll will actually move.
+function scrollContainer(el: HTMLElement | null): Element | null {
+  for (let node = el?.parentElement ?? null; node; node = node.parentElement) {
+    const overflowY = getComputedStyle(node).overflowY;
+    if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+  }
+  return document.scrollingElement;
+}
+
+function isNearBottom(el: HTMLElement | null) {
+  const container = scrollContainer(el);
+  if (!container) return false;
+  return container.scrollHeight - container.scrollTop - container.clientHeight <= NEAR_BOTTOM_PX;
+}
+
+function excerpt(body: string, max = 80) {
+  const text = body.trim().replace(/\s+/g, " ");
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
 
 function initials(name: string) {
   return name
@@ -96,8 +137,14 @@ export default function EventComments({
     end: number;
   } | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<Comment | null>(null);
+  // Held separately from pendingDelete so the dialog still reads correctly
+  // while it fades out, after the target has been cleared.
+  const [deletePreview, setDeletePreview] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const followUntilRef = useRef(0);
 
   // Load initial comments
   useEffect(() => {
@@ -153,9 +200,13 @@ export default function EventComments({
     return () => es.close();
   }, [eventId]);
 
-  // Scroll to bottom when comments load
+  // Follow the thread only for a comment this reader just posted, and only if
+  // they were already at the end of it. Everything else — the initial fetch and
+  // every SSE frame from someone else — leaves the viewport where they put it.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (Date.now() > followUntilRef.current) return;
+    followUntilRef.current = 0;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [comments.length]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -216,6 +267,9 @@ export default function EventComments({
 
   const handleSubmit = async () => {
     if (!body.trim() || submitting) return;
+    // Measure before the request: by the time it resolves the thread may have
+    // grown, and the question is where the reader was when they hit send.
+    const wasAtBottom = isNearBottom(bottomRef.current);
     setSubmitting(true);
     try {
       const res = await fetch(`/api/events/${eventId}/comments`, {
@@ -226,6 +280,7 @@ export default function EventComments({
       if (res.ok) {
         setBody("");
         setAutocomplete(null);
+        followUntilRef.current = wasAtBottom ? Date.now() + FOLLOW_WINDOW_MS : 0;
       }
     } finally {
       setSubmitting(false);
@@ -233,8 +288,35 @@ export default function EventComments({
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/events/${eventId}/comments/${id}`, { method: "DELETE" });
+    let ok = false;
+    try {
+      ok = (await fetch(`/api/events/${eventId}/comments/${id}`, { method: "DELETE" })).ok;
+    } catch {
+      ok = false;
+    }
+    // Drop it from the thread only once the server has. A rejected delete used
+    // to take the comment out of the list anyway, and it reappeared on reload.
+    if (!ok) {
+      toast.error("Could not delete the comment. It is still in the thread.");
+      return;
+    }
     setComments((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const askDelete = (c: Comment) => {
+    setPendingDelete(c);
+    setDeletePreview(excerpt(c.body));
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await handleDelete(pendingDelete.id);
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -286,13 +368,15 @@ export default function EventComments({
               </p>
             </div>
             {(c.userId === currentUserId || canModerate) && (
-              <button
-                onClick={() => handleDelete(c.id)}
-                className="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 self-start mt-0.5"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => askDelete(c)}
+                className="size-6 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 self-start mt-0.5"
                 aria-label="Delete comment"
               >
                 <Trash2Icon className="size-3.5" />
-              </button>
+              </Button>
             )}
           </div>
         ))}
@@ -308,11 +392,13 @@ export default function EventComments({
           onKeyDown={handleKeyDown}
           placeholder="Leave a comment… (⌘↵ to send, @ to mention, # for a channel)"
           rows={3}
-          className="resize-none pr-12"
+          className="block resize-none pr-12"
         />
         <Button
           size="icon"
-          className="absolute bottom-2 right-2 size-7"
+          // Disabled defaults to the primary fill at 50% opacity, which reads as
+          // a dark smudge over the input rather than an inert control.
+          className="absolute bottom-3 right-3 size-7 disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground"
           onClick={handleSubmit}
           disabled={!body.trim() || submitting}
           aria-label="Send comment"
@@ -326,7 +412,7 @@ export default function EventComments({
             {suggestions.map((s, i) => (
               <button
                 key={s.key}
-                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] ${
                   i === activeIndex ? "bg-accent" : "hover:bg-accent"
                 }`}
                 onMouseEnter={() => setActiveIndex(i)}
@@ -348,6 +434,30 @@ export default function EventComments({
           </div>
         )}
       </div>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete comment?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete &ldquo;{deletePreview}&rdquo;. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -94,7 +94,7 @@ function RangeSelector({
           <button
             key={r.value}
             onClick={() => onChange(r.value)}
-            className={`px-3 py-1 text-sm transition-colors ${
+            className={`px-3 py-1 text-sm transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] ${
               range === r.value
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted text-muted-foreground"

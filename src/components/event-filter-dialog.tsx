@@ -455,12 +455,15 @@ export default function EventFilterDialog({
                     className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-sm"
                   >
                     {tagFilterLabel(tag)}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => removeTag(i)}
-                      className="ml-1 rounded hover:bg-secondary-foreground/10"
+                      aria-label={`Remove ${tagFilterLabel(tag)}`}
+                      className="ml-1 size-6 hover:bg-secondary-foreground/10"
                     >
                       <XIcon className="size-3" />
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>

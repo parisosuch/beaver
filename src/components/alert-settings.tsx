@@ -168,12 +168,15 @@ export default function AlertSettings({
             >
               {rule.enabled ? "Enabled" : "Disabled"}
             </Button>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setDeleteTarget(rule)}
-              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+              aria-label={`Delete alert ${rule.name}`}
+              className="text-muted-foreground hover:text-destructive"
             >
-              <Trash2Icon size={15} />
-            </button>
+              <Trash2Icon className="size-4" />
+            </Button>
           </div>
         </div>
       ))}
