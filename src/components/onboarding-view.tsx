@@ -64,7 +64,9 @@ const CreateAdminAccount = ({
         <Label htmlFor="admin-username">Username</Label>
         <Input
           id="admin-username"
+          name="admin-username"
           type="text"
+          autoComplete="username"
           placeholder="admin"
           className="w-full"
           value={username}
@@ -82,7 +84,9 @@ const CreateAdminAccount = ({
         </div>
         <Input
           id="admin-password"
+          name="admin-password"
           type="password"
+          autoComplete="new-password"
           placeholder="password"
           className="w-full"
           value={password}
@@ -92,7 +96,9 @@ const CreateAdminAccount = ({
         />
         <Input
           id="admin-confirm-password"
+          name="admin-confirm-password"
           type="password"
+          autoComplete="new-password"
           placeholder="confirm password"
           className="w-full"
           value={confirmPassword}
