@@ -13,7 +13,16 @@ import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import EventCard from "./event-card";
 import EventDetailPanel from "./event-detail-panel";
-import { XIcon, ArrowUpDownIcon, DownloadIcon, CheckCheckIcon, MailIcon } from "lucide-react";
+import {
+  XIcon,
+  ArrowUpDownIcon,
+  CheckIcon,
+  CopyIcon,
+  DownloadIcon,
+  CheckCheckIcon,
+  InboxIcon,
+  MailIcon,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { navigate } from "astro:transitions/client";
 import type { Channel } from "@/lib/beaver/channel";
@@ -28,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Badge } from "./ui/badge";
+import { EventRowSkeleton, Skeleton } from "./ui/skeleton";
 
 type SortOption = `${SortField}_${SortOrder}`;
 
@@ -89,6 +99,9 @@ export default function EventFeed({
   const [lastReadDate, setLastReadDate] = useState<Date | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
+  // Only known in the browser, so it lands after hydration rather than during render.
+  const [origin, setOrigin] = useState("");
+  const [copiedCurl, setCopiedCurl] = useState(false);
 
   const eventIdsRef = useRef<Set<number>>(new Set());
   const newEventIdsRef = useRef<Set<number>>(new Set());
@@ -171,7 +184,7 @@ export default function EventFeed({
 
   const handleSortChange = (value: SortOption) => {
     const [field, order] = value.split("_") as [SortField, SortOrder];
-    window.location.href = buildFilterUrl({ sortBy: field, sortOrder: order });
+    navigate(buildFilterUrl({ sortBy: field, sortOrder: order }));
   };
 
   const currentSort: SortOption = `${(sortBy as SortField) || "date"}_${(sortOrder as SortOrder) || "desc"}`;
@@ -411,6 +424,8 @@ export default function EventFeed({
     return () => window.removeEventListener("channel:read", handler as EventListener);
   }, []);
 
+  useEffect(() => setOrigin(window.location.origin), []);
+
   const hasActiveFilters = !!(
     title ||
     object ||
@@ -547,13 +562,24 @@ export default function EventFeed({
     return `${start} - ${end}`;
   };
 
-  if (loading) {
-    return (
-      <div className="p-4 md:p-8 w-full min-h-screen flex justify-center items-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  // The empty state hands a new self-hoster something to paste. On a channel
+  // page the channel's own name goes in, so the sample lands where they are
+  // looking; the project feed has no single channel to name.
+  const canEdit = userRole === "owner" || userRole === "maintainer";
+  const sampleCurl = `curl -X POST ${origin || "https://your-beaver-instance"}/api/event \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "name": "user.signed_up",
+    "title": "New user registered",
+    "channel": "${channel?.name ?? "your-channel"}"
+  }'`;
+
+  const handleCopyCurl = async () => {
+    await navigator.clipboard.writeText(sampleCurl);
+    setCopiedCurl(true);
+    setTimeout(() => setCopiedCurl(false), 2000);
+  };
 
   if (!projectID && !channel) {
     return (
@@ -577,10 +603,14 @@ export default function EventFeed({
             <h1 className="text-2xl font-semibold">
               {type === "project" ? "Feed" : `# ${channel?.name}`}
             </h1>
-            {eventCount !== null && (
+            {eventCount !== null ? (
               <Badge variant="secondary" className="tabular-nums">
                 {eventCount.toLocaleString()} {eventCount === 1 ? "event" : "events"}
               </Badge>
+            ) : (
+              // Holds the badge's slot so the title does not shift sideways
+              // when the count lands.
+              <Skeleton className="h-5 w-20 rounded-md" />
             )}
           </div>
           {type === "channel" && channel?.description && (
@@ -596,54 +626,34 @@ export default function EventFeed({
           action={action ?? null}
           onApply={handleSearchApply}
         />
+        {/* Two clusters: everything that reshapes the list, then the actions
+            that do something to it. The rule between them is dropped on narrow
+            viewports, where the row wraps and carries no left-to-right order. */}
         <div className="flex flex-wrap gap-2 items-center">
-          <EventFilterDialog
-            type={type}
-            projectID={projectID}
-            channelID={channel?.id}
-            currentStartDate={startDate ?? null}
-            currentEndDate={endDate ?? null}
-            currentTags={parsedTags}
-            onApplyFilters={handleApplyFilters}
-          />
-          <Select value={currentSort} onValueChange={handleSortChange}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px] gap-2">
-              <ArrowUpDownIcon className="size-4 shrink-0" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <DownloadIcon className="size-4 mr-2" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("json")}>
-                Export as JSON
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {projectID && (
-            <SavedViewsMenu
-              projectId={projectID}
-              currentParams={currentParams}
-              basePath={getBasePath()}
-              hasActiveFilters={hasActiveFilters}
-              canManageViews={userRole !== "guest" && userRole != null}
+          <div className="flex flex-1 sm:flex-none flex-wrap gap-2 items-center min-w-0">
+            <EventFilterDialog
+              type={type}
+              projectID={projectID}
+              channelID={channel?.id}
+              currentStartDate={startDate ?? null}
+              currentEndDate={endDate ?? null}
+              currentTags={parsedTags}
+              onApplyFilters={handleApplyFilters}
             />
-          )}
-          {type === "channel" && channel && (
-            <>
+            <Select value={currentSort} onValueChange={handleSortChange}>
+              <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px] gap-2">
+                <ArrowUpDownIcon className="size-4 shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {type === "channel" && channel && (
               <Button
                 variant={unreadOnly ? "default" : "outline"}
                 size="sm"
@@ -654,6 +664,36 @@ export default function EventFeed({
                 <MailIcon className="size-4 mr-2" />
                 Unread
               </Button>
+            )}
+            {projectID && (
+              <SavedViewsMenu
+                projectId={projectID}
+                currentParams={currentParams}
+                basePath={getBasePath()}
+                hasActiveFilters={hasActiveFilters}
+                canManageViews={userRole !== "guest" && userRole != null}
+              />
+            )}
+          </div>
+          <div aria-hidden="true" className="hidden sm:block self-center h-5 w-px bg-border mx-1" />
+          <div className="flex flex-wrap gap-2 items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <DownloadIcon className="size-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport("json")}>
+                  Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("csv")}>
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {type === "channel" && channel && (
               <Button
                 variant="outline"
                 size="sm"
@@ -664,8 +704,8 @@ export default function EventFeed({
                 <CheckCheckIcon className="size-4 mr-2" />
                 Mark as read
               </Button>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -706,11 +746,46 @@ export default function EventFeed({
           back to navigating to the standalone event page. */}
       <div className="flex flex-1 min-h-0">
         <div ref={scrollContainerRef} className="flex-1 min-w-0 overflow-y-auto scroll-smooth">
-          {events.length === 0 ? (
-            <div className="w-full text-center pt-8">
-              <h2 className="text-2xl">
-                Looks like this {type === "project" ? "project" : "channel"} has no events!
-              </h2>
+          {loading ? (
+            <div className="px-4 md:px-6 py-4 w-full max-w-5xl" aria-busy="true">
+              {Array.from({ length: 10 }, (_, i) => (
+                <EventRowSkeleton key={i} index={i} compact={compact} />
+              ))}
+            </div>
+          ) : events.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-4 py-16 text-center">
+              <InboxIcon size={36} strokeWidth={1.5} className="text-muted-foreground" />
+              <p className="text-muted-foreground">
+                No events in this {type === "project" ? "project" : "channel"} yet.
+              </p>
+              {canEdit && (
+                <>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    Send one from your app, or paste this into a terminal with your project&rsquo;s
+                    API key.
+                  </p>
+                  <pre className="w-full max-w-xl overflow-auto rounded-lg border bg-muted/40 p-4 text-left text-xs font-mono leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {sampleCurl}
+                  </pre>
+                  <Button variant="outline" size="sm" onClick={handleCopyCurl}>
+                    {copiedCurl ? (
+                      <CheckIcon className="size-4 mr-2" />
+                    ) : (
+                      <CopyIcon className="size-4 mr-2" />
+                    )}
+                    {copiedCurl ? "Copied" : "Copy"}
+                  </Button>
+                  {/* The key is revealed on the API docs page itself, which
+                      maintainers can reach; the General settings tab that also
+                      shows it is owner-only. */}
+                  <a
+                    href={`/dashboard/${projectID}/api-docs#authentication`}
+                    className="text-sm underline underline-offset-2 text-muted-foreground hover:text-foreground"
+                  >
+                    Get your API key in the API docs
+                  </a>
+                </>
+              )}
             </div>
           ) : unreadOnly && displayedEvents.length === 0 ? (
             <div className="w-full text-center pt-8">
