@@ -48,6 +48,7 @@ function SortableChannel({
   onNavigate,
   indent = false,
   unreadCount = 0,
+  disabled = false,
 }: {
   channel: Channel;
   projectId: number;
@@ -55,9 +56,15 @@ function SortableChannel({
   onNavigate?: () => void;
   indent?: boolean;
   unreadCount?: number;
+  disabled?: boolean;
 }) {
+  // A channel in a collapsed group stays mounted so the group can animate, but it
+  // is clipped to zero height. Leaving it registered would let closestCenter pick
+  // a row nobody can see, so a channel dropped on a collapsed group would land at
+  // some index inside it rather than on the group header.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: chId(channel.id),
+    disabled,
   });
   const reduceMotion = useReducedMotion();
 
@@ -213,6 +220,7 @@ function SortableGroup({
                   onNavigate={onNavigate}
                   indent
                   unreadCount={unreadCounts[ch.id] ?? 0}
+                  disabled={collapsed}
                 />
               ))}
             </div>
