@@ -62,7 +62,9 @@ export default function ChangePasswordView({ userName }: { userName: string }) {
               <Label htmlFor="password">New password</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 characters"
@@ -73,7 +75,9 @@ export default function ChangePasswordView({ userName }: { userName: string }) {
               <Label htmlFor="confirm">Confirm password</Label>
               <Input
                 id="confirm"
+                name="confirm"
                 type="password"
+                autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Repeat password"

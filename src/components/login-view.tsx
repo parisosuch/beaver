@@ -65,7 +65,9 @@ function LoginView() {
             <Label htmlFor="username">Username</Label>
             <Input
               id="username"
+              name="username"
               type="text"
+              autoComplete="username"
               placeholder="username"
               className="w-full"
               value={username}
@@ -77,7 +79,9 @@ function LoginView() {
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               placeholder="password"
               className="w-full"
               value={password}
