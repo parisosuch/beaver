@@ -368,13 +368,15 @@ export default function EventComments({
               </p>
             </div>
             {(c.userId === currentUserId || canModerate) && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => askDelete(c)}
-                className="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 self-start mt-0.5"
+                className="size-6 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 self-start mt-0.5"
                 aria-label="Delete comment"
               >
                 <Trash2Icon className="size-3.5" />
-              </button>
+              </Button>
             )}
           </div>
         ))}
@@ -410,7 +412,7 @@ export default function EventComments({
             {suggestions.map((s, i) => (
               <button
                 key={s.key}
-                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97] ${
                   i === activeIndex ? "bg-accent" : "hover:bg-accent"
                 }`}
                 onMouseEnter={() => setActiveIndex(i)}

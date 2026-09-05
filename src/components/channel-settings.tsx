@@ -194,7 +194,9 @@ export default function ChannelSettings({
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => {
                     setEditTarget(channel);
                     setEditName(channel.name);
@@ -202,17 +204,20 @@ export default function ChannelSettings({
                     setEditError("");
                     setEditNameWarningAcked(false);
                   }}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Edit channel"
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <PencilIcon size={15} />
-                </button>
+                  <PencilIcon className="size-4" />
+                </Button>
               </TooltipTrigger>
               <TooltipContent>Edit channel</TooltipContent>
             </Tooltip>
             {clientChannels.length > 1 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => {
                       setMergeSource(channel);
                       setMergeTargetId("");
@@ -220,26 +225,30 @@ export default function ChannelSettings({
                       setCustomName("");
                       setMergeError("");
                     }}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Merge channel"
+                    className="text-muted-foreground hover:text-foreground"
                   >
-                    <GitMergeIcon size={15} />
-                  </button>
+                    <GitMergeIcon className="size-4" />
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>Merge channel</TooltipContent>
               </Tooltip>
             )}
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => {
                     setDeleteTarget(channel);
                     setDeleteConfirmName("");
                     setDeleteError("");
                   }}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Delete channel"
+                  className="text-muted-foreground hover:text-destructive"
                 >
-                  <Trash2Icon size={15} />
-                </button>
+                  <Trash2Icon className="size-4" />
+                </Button>
               </TooltipTrigger>
               <TooltipContent>Delete channel</TooltipContent>
             </Tooltip>

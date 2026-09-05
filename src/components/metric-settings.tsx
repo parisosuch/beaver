@@ -230,7 +230,9 @@ export default function MetricSettings({
           <div className="flex items-center gap-1 flex-shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => {
                     setEditTarget(metric);
                     setEditName(metric.name);
@@ -239,25 +241,29 @@ export default function MetricSettings({
                     setEditError("");
                     setEditNameWarningAcked(false);
                   }}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Edit metric"
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <PencilIcon size={15} />
-                </button>
+                  <PencilIcon className="size-4" />
+                </Button>
               </TooltipTrigger>
               <TooltipContent>Edit metric</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => {
                     setDeleteTarget(metric);
                     setDeleteConfirmName("");
                     setDeleteError("");
                   }}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Delete metric"
+                  className="text-muted-foreground hover:text-destructive"
                 >
-                  <Trash2Icon size={15} />
-                </button>
+                  <Trash2Icon className="size-4" />
+                </Button>
               </TooltipTrigger>
               <TooltipContent>Delete metric</TooltipContent>
             </Tooltip>

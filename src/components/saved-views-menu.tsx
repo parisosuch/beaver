@@ -164,16 +164,18 @@ export default function SavedViewsMenu({
                 >
                   <span className="truncate">{view.name}</span>
                   {canManageViews && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setConfirmDelete(view);
                       }}
-                      className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-destructive"
+                      className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
                       aria-label={`Delete ${view.name}`}
                     >
                       <TrashIcon className="size-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </DropdownMenuItem>
               ))}

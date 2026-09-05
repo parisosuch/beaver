@@ -69,34 +69,43 @@ export default function APIKey({ project }: { project: Project }) {
           </p>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setRevealed((r) => !r)}
-                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={revealed ? "Hide API key" : "Reveal API key"}
+                className="size-6 text-muted-foreground hover:text-foreground"
               >
-                {revealed ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
-              </button>
+                {revealed ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+              </Button>
             </TooltipTrigger>
             <TooltipContent>{revealed ? "Hide" : "Reveal"}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={handleCopy}
-                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Copy API key"
+                className="size-6 text-muted-foreground hover:text-foreground"
               >
-                {copied ? <CheckIcon size={14} /> : <ClipboardIcon size={14} />}
-              </button>
+                {copied ? <CheckIcon className="size-4" /> : <ClipboardIcon className="size-4" />}
+              </Button>
             </TooltipTrigger>
             <TooltipContent>{copied ? "Copied!" : "Copy"}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setRotateOpen(true)}
-                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Rotate API key"
+                className="size-6 text-muted-foreground hover:text-foreground"
               >
-                <RefreshCwIcon size={14} />
-              </button>
+                <RefreshCwIcon className="size-4" />
+              </Button>
             </TooltipTrigger>
             <TooltipContent>Rotate API key</TooltipContent>
           </Tooltip>

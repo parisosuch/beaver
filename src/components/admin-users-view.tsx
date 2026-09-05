@@ -39,12 +39,15 @@ function TempPasswordCell({ tempPassword }: { tempPassword: string }) {
       <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{tempPassword}</code>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={handleCopy}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Copy password"
+            className="size-6 text-muted-foreground hover:text-foreground"
           >
-            {copied ? <CheckIcon size={14} /> : <ClipboardIcon size={14} />}
-          </button>
+            {copied ? <CheckIcon className="size-4" /> : <ClipboardIcon className="size-4" />}
+          </Button>
         </TooltipTrigger>
         <TooltipContent>{copied ? "Copied!" : "Copy password"}</TooltipContent>
       </Tooltip>
@@ -84,12 +87,21 @@ function UserActions({
       {user.id !== currentUserId && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onToggleCanCreateProjects(user.id, !user.canCreateProjects)}
-              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={
+                user.canCreateProjects ? "Revoke project creation" : "Allow project creation"
+              }
+              className="text-muted-foreground hover:text-foreground"
             >
-              {user.canCreateProjects ? <FolderPlusIcon size={15} /> : <FolderIcon size={15} />}
-            </button>
+              {user.canCreateProjects ? (
+                <FolderPlusIcon className="size-4" />
+              ) : (
+                <FolderIcon className="size-4" />
+              )}
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             {user.canCreateProjects ? "Revoke project creation" : "Allow project creation"}
@@ -99,12 +111,19 @@ function UserActions({
       {user.id !== currentUserId && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onToggleAdmin(user.id, !user.isAdmin)}
-              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={user.isAdmin ? "Remove admin" : "Make admin"}
+              className="text-muted-foreground hover:text-foreground"
             >
-              {user.isAdmin ? <ShieldOffIcon size={15} /> : <ShieldIcon size={15} />}
-            </button>
+              {user.isAdmin ? (
+                <ShieldOffIcon className="size-4" />
+              ) : (
+                <ShieldIcon className="size-4" />
+              )}
+            </Button>
           </TooltipTrigger>
           <TooltipContent>{user.isAdmin ? "Remove admin" : "Make admin"}</TooltipContent>
         </Tooltip>
@@ -112,12 +131,15 @@ function UserActions({
       {!(user.id === currentUserId && user.isAdmin) && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onReset(user)}
-              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Reset password"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <RefreshCwIcon size={15} />
-            </button>
+              <RefreshCwIcon className="size-4" />
+            </Button>
           </TooltipTrigger>
           <TooltipContent>Reset password</TooltipContent>
         </Tooltip>
@@ -125,12 +147,15 @@ function UserActions({
       {user.id !== currentUserId && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onDelete(user)}
-              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+              aria-label="Delete user"
+              className="text-muted-foreground hover:text-destructive"
             >
-              <Trash2Icon size={15} />
-            </button>
+              <Trash2Icon className="size-4" />
+            </Button>
           </TooltipTrigger>
           <TooltipContent>Delete user</TooltipContent>
         </Tooltip>

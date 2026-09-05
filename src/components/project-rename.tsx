@@ -95,12 +95,15 @@ export default function ProjectRename({ project }: { project: Project }) {
         <p>{project.name}</p>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setEditing(true)}
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Rename project"
+              className="size-6 text-muted-foreground hover:text-foreground"
             >
-              <Pencil size={14} />
-            </button>
+              <Pencil className="size-4" />
+            </Button>
           </TooltipTrigger>
           <TooltipContent>Rename project</TooltipContent>
         </Tooltip>

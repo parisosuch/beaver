@@ -103,12 +103,15 @@ export default function RateLimitSettings({ project }: { project: Project }) {
         <p>{savedLimit ? `${savedLimit} requests / min` : "Unlimited"}</p>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setEditing(true)}
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Edit rate limit"
+              className="size-6 text-muted-foreground hover:text-foreground"
             >
-              <Pencil size={14} />
-            </button>
+              <Pencil className="size-4" />
+            </Button>
           </TooltipTrigger>
           <TooltipContent>Edit rate limit</TooltipContent>
         </Tooltip>

@@ -716,12 +716,15 @@ export default function EventFeed({
           {(startDate || endDate) && (
             <div className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm">
               {formatTimeFilter()}
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={handleRemoveTimeFilter}
-                className="ml-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 p-0.5"
+                aria-label="Clear the time filter"
+                className="ml-1 size-6"
               >
                 <XIcon className="size-3" />
-              </button>
+              </Button>
             </div>
           )}
           {parsedTags.map((tag, i) => (
@@ -730,12 +733,15 @@ export default function EventFeed({
               className="flex items-center gap-1 rounded-md bg-white dark:bg-white/10 border dark:border-white/10 px-2.5 py-1 text-sm"
             >
               <span>{tagFilterLabel(tag)}</span>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => handleRemoveTag(i)}
-                className="ml-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 p-0.5"
+                aria-label={`Remove ${tagFilterLabel(tag)}`}
+                className="ml-1 size-6"
               >
                 <XIcon className="size-3" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
