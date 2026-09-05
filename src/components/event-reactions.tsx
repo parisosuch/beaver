@@ -170,7 +170,7 @@ export function ReactionBar({
   const overflow = max ? sorted.slice(max) : [];
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={300}>
       <div className="flex flex-wrap gap-1">
         {visible.map((r) => (
           <Tooltip key={r.emoji}>
