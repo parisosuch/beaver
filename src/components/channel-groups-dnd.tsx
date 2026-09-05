@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { readUnreadCounts } from "@/lib/unread-store";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDownIcon, ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
+import { ChevronRightIcon, FolderPlusIcon, PlusIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
@@ -48,6 +48,7 @@ function SortableChannel({
   onNavigate,
   indent = false,
   unreadCount = 0,
+  disabled = false,
 }: {
   channel: Channel;
   projectId: number;
@@ -55,9 +56,15 @@ function SortableChannel({
   onNavigate?: () => void;
   indent?: boolean;
   unreadCount?: number;
+  disabled?: boolean;
 }) {
+  // A channel in a collapsed group stays mounted so the group can animate, but it
+  // is clipped to zero height. Leaving it registered would let closestCenter pick
+  // a row nobody can see, so a channel dropped on a collapsed group would land at
+  // some index inside it rather than on the group header.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: chId(channel.id),
+    disabled,
   });
   const reduceMotion = useReducedMotion();
 
@@ -111,6 +118,7 @@ function SortableChannel({
 function SortableGroup({
   group,
   collapsed,
+  animateCollapse,
   onToggle,
   onRename,
   onDelete,
@@ -125,6 +133,7 @@ function SortableGroup({
 }: {
   group: ChannelGroupWithChannels;
   collapsed: boolean;
+  animateCollapse: boolean;
   onToggle: () => void;
   onRename: (id: number) => void;
   onDelete: (id: number) => void;
@@ -150,11 +159,12 @@ function SortableGroup({
       onClick={onToggle}
       className={`flex w-full items-center gap-1 px-1 py-0.5 text-xs font-semibold capitalize text-muted-foreground hover:text-foreground rounded hover:bg-gray-100 dark:hover:bg-white/8 transition-colors select-none ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
     >
-      {collapsed ? (
-        <ChevronRightIcon size={12} className="shrink-0" />
-      ) : (
-        <ChevronDownIcon size={12} className="shrink-0" />
-      )}
+      <ChevronRightIcon
+        size={12}
+        className={`shrink-0 ${collapsed ? "" : "rotate-90"} ${
+          animateCollapse ? "transition-transform duration-150 ease-out" : ""
+        }`}
+      />
       <span className="truncate">{group.name}</span>
     </button>
   );
@@ -189,23 +199,34 @@ function SortableGroup({
         headerButton
       )}
 
-      {!collapsed && (
-        <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
-          <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
-            {group.channels.map((ch) => (
-              <SortableChannel
-                key={ch.id}
-                channel={ch}
-                projectId={projectId}
-                isActive={isChannelActive(ch.id)}
-                onNavigate={onNavigate}
-                indent
-                unreadCount={unreadCounts[ch.id] ?? 0}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      )}
+      {/* The channel list stays mounted and collapses by animating the grid row from 0fr
+          to 1fr, so dnd-kit's SortableContext is not torn down and rebuilt on every toggle.
+          `animateCollapse` is false while a group is being dragged: every group is force
+          collapsed at drag start, and animating all of them closed would fight the drag. */}
+      <div
+        className={`grid ${collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"} ${
+          animateCollapse ? "transition-[grid-template-rows] duration-200 ease-out" : ""
+        }`}
+      >
+        <div className="overflow-hidden" inert={collapsed}>
+          <SortableContext items={channelItems} strategy={verticalListSortingStrategy}>
+            <div className={`mt-0.5 ${dimChannels ? "opacity-50 pointer-events-none" : ""}`}>
+              {group.channels.map((ch) => (
+                <SortableChannel
+                  key={ch.id}
+                  channel={ch}
+                  projectId={projectId}
+                  isActive={isChannelActive(ch.id)}
+                  onNavigate={onNavigate}
+                  indent
+                  unreadCount={unreadCounts[ch.id] ?? 0}
+                  disabled={collapsed}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </div>
+      </div>
     </div>
   );
 }
@@ -280,6 +301,9 @@ export default function ChannelGroupsDnd({
   const [groups, setGroups] = useState<ChannelGroupWithChannels[]>(initialGroups);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
+  // Only a user toggle animates the collapse. The drag-start force collapse below turns
+  // this off so eight groups do not animate shut as a drag begins.
+  const [animateCollapse, setAnimateCollapse] = useState(false);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [renamingGroupId, setRenamingGroupId] = useState<number | null>(null);
@@ -392,6 +416,7 @@ export default function ChannelGroupsDnd({
       groups: groupsRef.current.map((g) => ({ ...g, channels: g.channels.map((c) => ({ ...c })) })),
     };
     if (isGrp(active.id)) {
+      setAnimateCollapse(false);
       setIsDraggingGroup(true);
       collapsedSnapshotRef.current = new Set(collapsed);
       setCollapsed(new Set(groupsRef.current.map((g) => g.id)));
@@ -649,14 +674,16 @@ export default function ChannelGroupsDnd({
                 key={group.id}
                 group={group}
                 collapsed={isDraggingGroup || collapsed.has(group.id)}
-                onToggle={() =>
+                animateCollapse={animateCollapse}
+                onToggle={() => {
+                  setAnimateCollapse(true);
                   setCollapsed((prev) => {
                     const next = new Set(prev);
                     if (next.has(group.id)) next.delete(group.id);
                     else next.add(group.id);
                     return next;
-                  })
-                }
+                  });
+                }}
                 onRename={setRenamingGroupId}
                 onDelete={handleDeleteGroup}
                 onNewGroup={() => setCreatingGroup(true)}

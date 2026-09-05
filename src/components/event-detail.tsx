@@ -152,6 +152,9 @@ export default function EventDetail({
                 </div>
               </div>
               <div className="flex items-center shrink-0 -ml-2 sm:ml-0">
+                {/* One provider for the whole action row: skipDelayDuration lives on the
+                    provider, so a provider per button makes each adjacent tooltip re-pay
+                    the full delay as the pointer moves along the row. */}
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -167,8 +170,6 @@ export default function EventDetail({
                     </TooltipTrigger>
                     <TooltipContent>{bookmarked ? "Remove bookmark" : "Bookmark"}</TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -182,9 +183,7 @@ export default function EventDetail({
                     </TooltipTrigger>
                     <TooltipContent>{copied ? "Copied!" : "Copy link"}</TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
-                {canDelete && (
-                  <TooltipProvider delayDuration={300}>
+                  {canDelete && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -198,8 +197,8 @@ export default function EventDetail({
                       </TooltipTrigger>
                       <TooltipContent>Delete event</TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                )}
+                  )}
+                </TooltipProvider>
               </div>
             </div>
           </div>

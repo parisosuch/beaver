@@ -64,7 +64,12 @@ function CommandPaletteContent({
   const otherProjects = currentProjects.filter((p) => p.id !== project?.id);
 
   return (
+    /* No entrance animation on the palette. It is opened with ⌘K dozens of times a day,
+       and the shared dialog zoom reads as lag on something that frequent — the overlay
+       fade stays. It must be a class, not an inline style: Radix's popper owns the inline
+       `animation` property and overwrites any inline override. */
     <CommandDialog
+      className="[animation:none]!"
       open={open}
       onOpenChange={setOpen}
       showCloseButton={false}
