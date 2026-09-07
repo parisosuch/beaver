@@ -221,7 +221,6 @@ export default function AdminUsersView({
   const [ownedProjects, setOwnedProjects] = useState<OwnedProject[] | null>(null);
   const [ownedLoading, setOwnedLoading] = useState(false);
   const [ownedError, setOwnedError] = useState<string | null>(null);
-  const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [reassignTo, setReassignTo] = useState<Record<number, string>>({});
   const [reassigningId, setReassigningId] = useState<number | null>(null);
 
@@ -252,7 +251,6 @@ export default function AdminUsersView({
     if (!deleteTarget) return;
     setOwnedProjects(null);
     setOwnedError(null);
-    setDeleteConfirmName("");
     setReassignTo({});
 
     let cancelled = false;
@@ -330,10 +328,7 @@ export default function AdminUsersView({
       const res = await fetch("/api/users", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: deleteTarget.id,
-          deleteOwnedProjects: (ownedProjects?.length ?? 0) > 0,
-        }),
+        body: JSON.stringify({ id: deleteTarget.id }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -399,12 +394,10 @@ export default function AdminUsersView({
     .map((p) => `${p.name} (${p.eventCount.toLocaleString()} events)`)
     .join(", ");
   const reassignCandidates = users.filter((u) => u.id !== deleteTarget?.id);
+  // Deleting an owner is refused by the API, so the button stays disabled until every
+  // project has been handed to someone else.
   const deleteBlocked =
-    deleting ||
-    ownedLoading ||
-    !!ownedError ||
-    ownedProjects === null ||
-    (ownsProjects && deleteConfirmName !== deleteTarget?.userName);
+    deleting || ownedLoading || !!ownedError || ownedProjects === null || ownsProjects;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -659,13 +652,14 @@ export default function AdminUsersView({
                   </span>{" "}
                   owns {ownedProjects?.length}{" "}
                   {ownedProjects?.length === 1 ? "project" : "projects"}:{" "}
-                  <span className="text-foreground">{ownedSummary}</span>. Deleting this account
-                  deletes those projects and everything in them — events, comments, alert rules and
-                  member access. This cannot be undone.
+                  <span className="text-foreground">{ownedSummary}</span>. Hand{" "}
+                  {ownedProjects?.length === 1 ? "it" : "each of them"} to someone else before
+                  deleting this account — the events, comments and alert rules in{" "}
+                  {ownedProjects?.length === 1 ? "it" : "them"} go with the project.
                 </p>
 
                 <div className="space-y-2">
-                  <Label>Reassign instead</Label>
+                  <Label>Reassign to</Label>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {ownedProjects?.map((project) => (
                       <div key={project.id} className="flex items-center gap-2">
@@ -705,19 +699,6 @@ export default function AdminUsersView({
                     ))}
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="delete-confirm-username">
-                    Type the username to confirm deletion
-                  </Label>
-                  <Input
-                    id="delete-confirm-username"
-                    autoComplete="off"
-                    placeholder={deleteTarget?.userName}
-                    value={deleteConfirmName}
-                    onChange={(e) => setDeleteConfirmName(e.target.value)}
-                  />
-                </div>
               </div>
             )}
 
@@ -726,7 +707,7 @@ export default function AdminUsersView({
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deleteBlocked}>
-                {deleting ? "Deleting…" : ownsProjects ? "Delete user and projects" : "Delete"}
+                {deleting ? "Deleting…" : "Delete"}
               </Button>
             </div>
           </DialogContent>

@@ -139,7 +139,7 @@ export const DELETE: APIRoute = async (context) => {
   if (denied) return denied;
 
   try {
-    const { id, deleteOwnedProjects } = await context.request.json();
+    const { id } = await context.request.json();
 
     if (!id) {
       return new Response(JSON.stringify({ error: "id is required." }), {
@@ -163,10 +163,14 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
-    // projects.owner_id cascades, so deleting an owner takes their projects and every
-    // event, comment and alert rule in them. Refuse unless the caller says so outright.
+    // projects.owner_id is declared ON DELETE CASCADE, but bun:sqlite leaves
+    // PRAGMA foreign_keys at 0 and db.ts never turns it on, so the cascade does not
+    // run. Deleting an owner today leaves their projects behind pointing at a user
+    // row that is gone. Enabling the pragma would instead destroy those projects and
+    // every event in them. Neither outcome is one an admin should get by surprise,
+    // so ownership has to move first and this refuses either way.
     const ownedProjects = await getOwnedProjectsWithEventCounts(targetId);
-    if (ownedProjects.length > 0 && deleteOwnedProjects !== true) {
+    if (ownedProjects.length > 0) {
       const summary = ownedProjects
         .map((p) => `${p.name} (${p.eventCount.toLocaleString("en-US")} events)`)
         .join(", ");
@@ -175,8 +179,7 @@ export const DELETE: APIRoute = async (context) => {
           error:
             `This user still owns ${ownedProjects.length} ` +
             `${ownedProjects.length === 1 ? "project" : "projects"}: ${summary}. ` +
-            "Transfer ownership first, or pass deleteOwnedProjects: true to delete them " +
-            "along with the account.",
+            "Transfer ownership before deleting the account.",
           ownedProjects,
         }),
         {

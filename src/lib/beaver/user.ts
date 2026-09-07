@@ -1,5 +1,5 @@
 import { db } from "../db/db";
-import { users, sessions } from "../db/schema";
+import { users, sessions, projectMembers } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 export type DatabaseUser = {
@@ -130,6 +130,11 @@ export async function setCanCreateProjects(id: number, canCreateProjects: boolea
 
 export async function deleteUser(id: number): Promise<void> {
   await db.delete(sessions).where(eq(sessions.userId, id));
+  // Every users.id reference in the schema is declared ON DELETE CASCADE, but
+  // bun:sqlite leaves PRAGMA foreign_keys at 0, so none of them run and the rows
+  // are left pointing at an id that no longer exists. Membership rows are access
+  // grants, so they are cleared here rather than left behind.
+  await db.delete(projectMembers).where(eq(projectMembers.userId, id));
   await db.delete(users).where(eq(users.id, id));
 }
 
