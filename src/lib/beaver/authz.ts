@@ -71,3 +71,10 @@ export function unauthorized(): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+/** Admin-only guard for API routes. Returns the response to send when denied, else null. */
+export function requireAdmin(user: { isAdmin: boolean } | undefined): Response | null {
+  if (!user) return unauthorized();
+  if (!user.isAdmin) return forbidden();
+  return null;
+}

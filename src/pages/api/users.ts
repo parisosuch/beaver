@@ -1,4 +1,4 @@
-import type { APIContext, APIRoute } from "astro";
+import type { APIRoute } from "astro";
 import {
   getAllUsers,
   createUserAccount,
@@ -7,6 +7,8 @@ import {
   setCanCreateProjects,
 } from "@/lib/beaver/user";
 import { addProjectMember, type Role } from "@/lib/beaver/project-member";
+import { getOwnedProjectsWithEventCounts } from "@/lib/beaver/project";
+import { requireAdmin } from "@/lib/beaver/authz";
 
 const VALID_ROLES: Role[] = ["owner", "maintainer", "guest"];
 
@@ -26,18 +28,8 @@ function parseProjectAssignments(input: unknown): ProjectAssignment[] | null {
   return assignments;
 }
 
-function requireAdmin(context: APIContext): Response | null {
-  if (!context.locals.user?.isAdmin) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  return null;
-}
-
 export const GET: APIRoute = async (context) => {
-  const denied = requireAdmin(context);
+  const denied = requireAdmin(context.locals.user);
   if (denied) return denied;
 
   try {
@@ -55,7 +47,7 @@ export const GET: APIRoute = async (context) => {
 };
 
 export const POST: APIRoute = async (context) => {
-  const denied = requireAdmin(context);
+  const denied = requireAdmin(context.locals.user);
   if (denied) return denied;
 
   try {
@@ -102,7 +94,7 @@ export const POST: APIRoute = async (context) => {
 
 // Toggle admin status or canCreateProjects
 export const PATCH: APIRoute = async (context) => {
-  const denied = requireAdmin(context);
+  const denied = requireAdmin(context.locals.user);
   if (denied) return denied;
 
   try {
@@ -143,7 +135,7 @@ export const PATCH: APIRoute = async (context) => {
 };
 
 export const DELETE: APIRoute = async (context) => {
-  const denied = requireAdmin(context);
+  const denied = requireAdmin(context.locals.user);
   if (denied) return denied;
 
   try {
@@ -156,14 +148,48 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
-    if (id === context.locals.user?.id) {
+    const targetId = Number(id);
+    if (!Number.isInteger(targetId)) {
+      return new Response(JSON.stringify({ error: "id must be a number." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (targetId === context.locals.user?.id) {
       return new Response(JSON.stringify({ error: "You cannot delete your own account." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    await deleteUser(id);
+    // projects.owner_id is declared ON DELETE CASCADE, but bun:sqlite leaves
+    // PRAGMA foreign_keys at 0 and db.ts never turns it on, so the cascade does not
+    // run. Deleting an owner today leaves their projects behind pointing at a user
+    // row that is gone. Enabling the pragma would instead destroy those projects and
+    // every event in them. Neither outcome is one an admin should get by surprise,
+    // so ownership has to move first and this refuses either way.
+    const ownedProjects = await getOwnedProjectsWithEventCounts(targetId);
+    if (ownedProjects.length > 0) {
+      const summary = ownedProjects
+        .map((p) => `${p.name} (${p.eventCount.toLocaleString("en-US")} events)`)
+        .join(", ");
+      return new Response(
+        JSON.stringify({
+          error:
+            `This user still owns ${ownedProjects.length} ` +
+            `${ownedProjects.length === 1 ? "project" : "projects"}: ${summary}. ` +
+            "Transfer ownership before deleting the account.",
+          ownedProjects,
+        }),
+        {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    await deleteUser(targetId);
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

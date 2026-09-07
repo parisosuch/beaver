@@ -12,6 +12,7 @@ const ACTION_LABELS: Record<string, string> = {
   "api_key.rotated": "API key rotated",
   "project.renamed": "Project renamed",
   "rate_limit.changed": "Rate limit changed",
+  "project.owner_transferred": "Project owner transferred",
   "channel.created": "Channel created",
   "channel.renamed": "Channel renamed",
   "channel.deleted": "Channel deleted",
@@ -49,6 +50,8 @@ function describe(entry: AuditEntry): string {
         : meta.from === null
           ? `set rate limit to ${meta.to} req/min`
           : `changed rate limit from ${meta.from} to ${meta.to} req/min`;
+    case "project.owner_transferred":
+      return `transferred project ownership from @${meta.from} to @${meta.to}`;
     case "channel.created":
       return `created channel ${name}`;
     case "channel.renamed":
