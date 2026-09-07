@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { RoleSelectItem } from "./role-select-item";
+import { toast } from "sonner";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 type ProjectOption = { id: number; name: string };
+type OwnedProject = { id: number; name: string; eventCount: number };
 type Assignment = { projectId: string; role: Role };
 
 function TempPasswordCell({ tempPassword }: { tempPassword: string }) {
@@ -216,6 +218,49 @@ export default function AdminUsersView({
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [ownedProjects, setOwnedProjects] = useState<OwnedProject[] | null>(null);
+  const [ownedLoading, setOwnedLoading] = useState(false);
+  const [ownedError, setOwnedError] = useState<string | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [reassignTo, setReassignTo] = useState<Record<number, string>>({});
+  const [reassigningId, setReassigningId] = useState<number | null>(null);
+
+  // isStale guards against a reply for a user whose dialog has already been closed
+  // landing in the dialog of the next one.
+  const loadOwnedProjects = async (userId: number, isStale: () => boolean = () => false) => {
+    setOwnedLoading(true);
+    setOwnedError(null);
+    try {
+      const res = await fetch(`/api/users/owned-projects?userId=${userId}`);
+      const data = await res.json().catch(() => null);
+      if (isStale()) return;
+      if (!res.ok) {
+        setOwnedError(data?.error || "Could not check which projects this user owns.");
+        return;
+      }
+      setOwnedProjects(data.ownedProjects as OwnedProject[]);
+    } catch {
+      if (isStale()) return;
+      setOwnedError("Could not check which projects this user owns.");
+    } finally {
+      if (!isStale()) setOwnedLoading(false);
+    }
+  };
+
+  // What the delete would take with it, fetched when the dialog opens.
+  useEffect(() => {
+    if (!deleteTarget) return;
+    setOwnedProjects(null);
+    setOwnedError(null);
+    setDeleteConfirmName("");
+    setReassignTo({});
+
+    let cancelled = false;
+    loadOwnedProjects(deleteTarget.id, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [deleteTarget]);
 
   // Reset password confirmation
   const [resetTarget, setResetTarget] = useState<User | null>(null);
@@ -253,6 +298,31 @@ export default function AdminUsersView({
     }
   };
 
+  const handleReassign = async (project: OwnedProject) => {
+    const newOwnerId = reassignTo[project.id];
+    if (!newOwnerId) return;
+    setReassigningId(project.id);
+    try {
+      const res = await fetch("/api/project/transfer-owner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: project.id, newOwnerId: parseInt(newOwnerId) }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error || "Failed to transfer ownership.");
+        return;
+      }
+      const newOwner = users.find((u) => String(u.id) === newOwnerId);
+      toast.success(`${project.name} now belongs to @${newOwner?.userName ?? "its new owner"}.`);
+      setOwnedProjects((prev) => (prev ? prev.filter((p) => p.id !== project.id) : prev));
+    } catch {
+      toast.error("Failed to transfer ownership.");
+    } finally {
+      setReassigningId(null);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -260,12 +330,20 @@ export default function AdminUsersView({
       const res = await fetch("/api/users", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: deleteTarget.id }),
+        body: JSON.stringify({
+          id: deleteTarget.id,
+          deleteOwnedProjects: (ownedProjects?.length ?? 0) > 0,
+        }),
       });
-      if (res.ok) {
-        setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
-        setDeleteTarget(null);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to delete user.");
+        return;
       }
+      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Failed to delete user.");
     } finally {
       setDeleting(false);
     }
@@ -315,6 +393,18 @@ export default function AdminUsersView({
       setResetting(false);
     }
   };
+
+  const ownsProjects = (ownedProjects?.length ?? 0) > 0;
+  const ownedSummary = (ownedProjects ?? [])
+    .map((p) => `${p.name} (${p.eventCount.toLocaleString()} events)`)
+    .join(", ");
+  const reassignCandidates = users.filter((u) => u.id !== deleteTarget?.id);
+  const deleteBlocked =
+    deleting ||
+    ownedLoading ||
+    !!ownedError ||
+    ownedProjects === null ||
+    (ownsProjects && deleteConfirmName !== deleteTarget?.userName);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -531,19 +621,112 @@ export default function AdminUsersView({
             <DialogHeader>
               <DialogTitle>Delete user</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete{" "}
-              <span className="font-mono font-medium text-foreground">
-                @{deleteTarget?.userName}
-              </span>
-              ? This cannot be undone.
-            </p>
+
+            {ownedLoading && (
+              <p className="text-sm text-muted-foreground">
+                Checking what @{deleteTarget?.userName} owns…
+              </p>
+            )}
+
+            {ownedError && (
+              <div className="space-y-2">
+                <p className="text-sm text-destructive">{ownedError}</p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => deleteTarget && loadOwnedProjects(deleteTarget.id)}
+                >
+                  Try again
+                </Button>
+              </div>
+            )}
+
+            {!ownedLoading && !ownedError && ownedProjects !== null && !ownsProjects && (
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete{" "}
+                <span className="font-mono font-medium text-foreground">
+                  @{deleteTarget?.userName}
+                </span>
+                ? This cannot be undone.
+              </p>
+            )}
+
+            {!ownedLoading && !ownedError && ownsProjects && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-mono font-medium text-foreground">
+                    @{deleteTarget?.userName}
+                  </span>{" "}
+                  owns {ownedProjects?.length}{" "}
+                  {ownedProjects?.length === 1 ? "project" : "projects"}:{" "}
+                  <span className="text-foreground">{ownedSummary}</span>. Deleting this account
+                  deletes those projects and everything in them — events, comments, alert rules and
+                  member access. This cannot be undone.
+                </p>
+
+                <div className="space-y-2">
+                  <Label>Reassign instead</Label>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {ownedProjects?.map((project) => (
+                      <div key={project.id} className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{project.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {project.eventCount.toLocaleString()}{" "}
+                            {project.eventCount === 1 ? "event" : "events"}
+                          </p>
+                        </div>
+                        <Select
+                          value={reassignTo[project.id] ?? ""}
+                          onValueChange={(val) =>
+                            setReassignTo((prev) => ({ ...prev, [project.id]: val }))
+                          }
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue placeholder="New owner…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {reassignCandidates.map((candidate) => (
+                              <SelectItem key={candidate.id} value={String(candidate.id)}>
+                                @{candidate.userName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={!reassignTo[project.id] || reassigningId === project.id}
+                          onClick={() => handleReassign(project)}
+                        >
+                          {reassigningId === project.id ? "Reassigning…" : "Reassign"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="delete-confirm-username">
+                    Type the username to confirm deletion
+                  </Label>
+                  <Input
+                    id="delete-confirm-username"
+                    autoComplete="off"
+                    placeholder={deleteTarget?.userName}
+                    value={deleteConfirmName}
+                    onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 justify-end mt-2">
               <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deleting}>
-                {deleting ? "Deleting…" : "Delete"}
+              <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deleteBlocked}>
+                {deleting ? "Deleting…" : ownsProjects ? "Delete user and projects" : "Delete"}
               </Button>
             </div>
           </DialogContent>
